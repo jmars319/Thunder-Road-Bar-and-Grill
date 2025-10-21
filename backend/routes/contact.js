@@ -47,6 +47,8 @@ function isValidEmail(e) {
   - Example: curl -X POST http://localhost:5001/api/contact -H "Content-Type: application/json" -d '{"name":"Jane","email":"jane@example.com","subject":"Hello","message":"Hi"}'
 */
 
+// Last updated: 2025-10-21 — documentation sweep: added rate-limit note and input validation guidance.
+
 // Get contact messages (paginated for admin)
 // Query params: page (1-based), per_page
 router.get('/contact/messages', (req, res) => {

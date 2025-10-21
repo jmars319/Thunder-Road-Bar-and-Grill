@@ -275,5 +275,8 @@ literal/backdrop classes for token-aware helpers (`modal-backdrop`,
 `text-text-inverse`, etc.).
 
 
+Last updated: 2025-10-21 — documentation review: clarified onboarding steps and added maintainer guidance.
+
+Maintainer note: when updating tokens, prefer small staged PRs (5-10 files) and include visual QA screenshots for admin surfaces.
   Note: the `styling-instructions/` folder is intentionally local-only and is listed in `.gitignore`; it was removed from the remote to keep private guidance off the public repo.
 

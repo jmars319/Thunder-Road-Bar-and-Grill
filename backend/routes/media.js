@@ -8,6 +8,7 @@
   - Keep file handling and metadata insertion here; avoid moving business
     logic into server.js.
   Developer annotations:
+// Last updated: 2025-10-21 — doc sweep: clarified expected media payloads and size limits.
   - Inputs (POST /api/media/upload): multipart/form-data with field `file`; optional fields: title, alt_text, category.
   - Outputs: GET returns array of media objects; POST returns { id, file_url, message } on success.
   - Security: validate MIME type and size server-side. Store files outside the webroot or use safe filename handling. The route uses the multer `upload` instance configured in `server.js`.

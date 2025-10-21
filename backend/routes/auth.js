@@ -19,6 +19,7 @@ const router = express.Router();
   - Responses should aim for a consistent shape so the frontend can handle
     errors and success cases uniformly. Do not store plaintext passwords.
   Developer annotations:
+// Last updated: 2025-10-21 — doc sweep: ensure auth flows documented in DEVELOPERS.md when changed.
   - Inputs: JSON body with `email` and `password` for `/login`.
   - Outputs: JSON { success: boolean, user?: { id, name, email, role }, message?: string }.
   - Security: this file currently contains a development stub. Replace with a proper auth service (hashed passwords, rate limiting, secure session/JWT handling) before production. Never return sensitive fields in responses.

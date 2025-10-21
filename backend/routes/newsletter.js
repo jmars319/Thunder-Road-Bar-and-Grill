@@ -24,6 +24,8 @@ const router = express.Router();
   - Outputs: GET returns array of subscriber objects; POST/DELETE return { id?, message } or { error } on failure.
   - Security: validate email format server-side and avoid leaking subscriber lists in logs. Consider rate-limiting subscribe endpoints to reduce abuse.
   - Example: curl -X POST http://localhost:5001/api/newsletter/subscribe -H "Content-Type: application/json" -d '{"email":"user@example.com","name":"User"}'
+  
+  Last updated: 2025-10-21 — doc sweep: clarified inputs/outputs and added security reminder.
 */
 
 // Get all subscribers

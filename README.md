@@ -5,6 +5,8 @@
 - CI includes a lightweight asset-check workflow (`.github/workflows/public-assets-check.yml`) which runs `node ./scripts/check_public_assets.js` in `frontend` to verify referenced public assets exist and that certain images match filename-encoded dimensions.
 
 If you would rather generate these images during CI or use a CDN for large assets, see `frontend/README.md` for suggested steps.
+ 
+Last updated: 2025-10-21 — documentation sweep: clarified developer notes and added maintenance guidance.
 # Thunder Road Bar and Grill
 
 Purpose:

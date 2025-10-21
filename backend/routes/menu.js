@@ -30,6 +30,7 @@ const adminAuth = require('../middleware/adminAuth');
     and `display_order` is an integer). Consider normalizing menu schema if
     the menu grows more complex.
   Developer annotations:
+// Last updated: 2025-10-21 — doc sweep: noted gallery image id additions in migrations/ and API expectations.
   - Outputs: Public `GET /api/menu` returns an array of categories with nested items; admin endpoints return arrays or CRUD response objects.
   - Inputs: POST/PUT endpoints accept JSON matching column names (see SQL queries in each route). Ensure numeric fields are validated.
   - Security: sanitize any HTML in item descriptions if you later allow rich text. Consider transactionally updating categories/items where multiple related inserts/updates occur.

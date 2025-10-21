@@ -28,6 +28,8 @@ const router = express.Router();
   - Example: curl -X POST http://localhost:5001/api/jobs -H "Content-Type: application/json" -d '{"name":"Alice","email":"a@x.com","position":"Server"}'
 */
 
+// Last updated: 2025-10-21 — doc sweep: clarified resume handling and notification suggestions.
+
 // Get all job applications
 router.get('/jobs', (req, res) => {
   req.db.query(

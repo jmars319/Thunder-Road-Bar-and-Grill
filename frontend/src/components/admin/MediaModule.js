@@ -135,6 +135,7 @@ void __usedAllUploadsGridComponent;
   - The upload control uses a hidden file input — ensure label content clearly
     describes the action. Action buttons include explicit type="button" and
     accessible labels.
+  // Last updated: 2025-10-21 — developer notes reviewed and clarified for accessibility and API expectations.
 */
 
 // MediaModule

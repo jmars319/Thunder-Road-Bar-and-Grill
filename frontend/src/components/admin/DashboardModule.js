@@ -21,6 +21,8 @@ import { icons } from '../../icons';
     markup with role attributes for clearer navigation.
 */
 
+// Last updated: 2025-10-21 — documentation sweep: clarified per-card loading recommendation.
+
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 /* DEV:

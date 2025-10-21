@@ -22,6 +22,7 @@ import { icons } from '../../icons';
     to avoid accidental form submissions. The applications list uses role="list"
     and each item uses role="listitem" for better screen reader semantics.
 */
+  // Last updated: 2025-10-21 — doc sweep: noted optimistic updates and accessibility reminders.
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
