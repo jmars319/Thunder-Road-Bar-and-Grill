@@ -10,6 +10,15 @@ export default function MenuSection() {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const panelsRef = useRef({});
 
+  const measurePanel = (id) => {
+    const el = panelsRef.current[id];
+    if (!el) return;
+    // Only adjust if this panel is currently expanded
+    if (Number(expandedCategory) === Number(id)) {
+      el.style.maxHeight = `${el.scrollHeight}px`;
+    }
+  };
+
   // initial fetch + stale-while-revalidate
   useEffect(() => {
     let mounted = true;
@@ -36,7 +45,7 @@ export default function MenuSection() {
           setCategories(normalizedFresh);
         }
       } catch (e) {
-        if (mounted && !Array.isArray(categories)) setCategories([]);
+        if (mounted) setCategories([]);
       }
     })();
 
@@ -81,6 +90,19 @@ export default function MenuSection() {
     });
   }, [expandedCategory, categories]);
 
+  // Re-measure helper used by image load handlers and resize
+  useEffect(() => {
+    const onResize = () => {
+      if (!expandedCategory) return;
+      const el = panelsRef.current[expandedCategory];
+      if (!el) return;
+      // apply current scrollHeight
+      el.style.maxHeight = `${el.scrollHeight}px`;
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [expandedCategory]);
+
   return (
     <div id="menu" className="py-16 bg-surface-warm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -115,6 +137,8 @@ export default function MenuSection() {
                     alt={category.name}
                     loading="lazy"
                     decoding="async"
+                    onLoad={() => measurePanel(category.id)}
+                    onError={() => measurePanel(category.id)}
                     className="w-full h-40 object-cover"
                   />
                   <div className="absolute inset-0 overlay-gradient"></div>

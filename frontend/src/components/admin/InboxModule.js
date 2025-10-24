@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { icons } from '../../icons';
 
 /*
@@ -47,22 +47,7 @@ function InboxModule() {
   const perPage = 25; // static for now; change to state if you want a per-page selector
   const [selectedMessage, setSelectedMessage] = useState(null);
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
-
-  useEffect(() => {
-    // refetch when pagination changes
-    fetchMessages();
-  }, [page, perPage]);
-
-  useEffect(() => {
-    const handler = () => fetchMessages();
-    window.addEventListener('contactMessageSent', handler);
-    return () => window.removeEventListener('contactMessageSent', handler);
-  }, []);
-
-  const fetchMessages = () => {
+  const fetchMessages = useCallback(() => {
     // Prefer a minimal check for OK responses and gracefully handle unexpected shapes
     fetch(`${API_BASE}/contact/messages?page=${page}&per_page=${perPage}`)
       .then(res => {
@@ -74,7 +59,20 @@ function InboxModule() {
         setTotal(typeof data.total === 'number' ? data.total : 0);
       })
       .catch(() => { setMessages([]); setTotal(0); });
-  };
+  }, [page, perPage]);
+
+  useEffect(() => {
+    // initial fetch and refetch when page/perPage change (fetchMessages is stable via useCallback)
+    fetchMessages();
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    const handler = () => fetchMessages();
+    window.addEventListener('contactMessageSent', handler);
+    return () => window.removeEventListener('contactMessageSent', handler);
+  }, [fetchMessages]);
+
+  
 
   const markAsRead = (id) => {
     // Only send the update; if it fails keep the UI consistent by refetching.

@@ -34,33 +34,28 @@
   /* Borders */
   --border-color: #e2e8f0;
   --divider-color: #f1f5f9;
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-  
+
   /* Transitions */
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
   /* Logo badge tokens (light neutral background that adapts to dark mode) */
-  /* Branded off-white used for logo badge in all themes */
   --logo-badge-bg: #fff7f2; /* branded off-white */
   --logo-badge-border: rgba(16,24,40,0.06);
   --logo-badge-shadow: 0 6px 20px rgba(16,24,40,0.08);
-}
-
-  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Panel animation variables (override to tweak animation) */
   --panel-transition-duration: 360ms;
   --panel-transition-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
   --panel-fade-duration: 240ms;
   --panel-max-height: 1200px; /* fallback if JS measurement isn't available */
-     the --text-primary token by default. External images (<img>) won't
-     inherit this; serve SVGs inline if you want them recolorable. */
+}
 .logo-badge svg {
   color: var(--text-primary);
   width: auto;
