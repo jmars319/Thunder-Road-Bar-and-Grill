@@ -256,6 +256,22 @@ export default function PublicNavbar({ onGoToAdmin }) {
               >
                 Order Online
               </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  try {
+                    if (typeof onGoToAdmin === 'function') onGoToAdmin();
+                  } catch (err) {
+                    // fallback: navigate directly
+                    window.location.href = '/admin';
+                  }
+                }}
+                type="button"
+                aria-label="Admin login"
+                className="bg-surface text-text-primary px-4 py-2 rounded-lg hover:bg-surface-warm transition text-sm font-semibold mx-4"
+              >
+                Admin Login
+              </button>
             </div>
           </div>
         )}

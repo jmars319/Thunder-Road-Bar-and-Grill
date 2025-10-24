@@ -4,11 +4,11 @@
 
 PASS src/App.test.js
 PASS src/hooks/usePaginatedResource.test.js
-PASS src/__tests__/publicAssets.test.js
 PASS src/lib/__tests__/makeAbsolute.test.js
+PASS src/__tests__/publicAssets.test.js
 
 Test Suites: 4 passed, 4 total
 Tests:       10 passed, 10 total
 Snapshots:   0 total
-Time:        1.024 s
+Time:        1.15 s
 Ran all test suites.
