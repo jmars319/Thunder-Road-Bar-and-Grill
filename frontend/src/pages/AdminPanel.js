@@ -57,9 +57,9 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
   const CurrentModule = candidate?.component ? candidate.component : candidate;
 
   return (
-    <div className="min-h-screen bg-admin-pageBg flex">
+    <div className="h-screen bg-admin-pageBg flex overflow-hidden">
       <aside
-        className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-surface-dark text-text-inverse transition-all duration-300 flex flex-col`}
+        className={`${sidebarOpen ? 'w-64' : 'w-20'} admin-sidebar bg-surface-dark text-text-inverse transition-all duration-300 flex flex-col h-full`}
       >
         <div className="p-4 flex items-center justify-between border-b border-divider">
           <div className="flex items-center gap-3">
@@ -135,7 +135,7 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
           </div>
         </header>
 
-        <section className="flex-1 overflow-auto p-8">
+  <section className="flex-1 overflow-auto p-8 admin-main__content">
           {CurrentModule ? <CurrentModule /> : <div className="text-center py-12">Module not found</div>}
   </section>
 
