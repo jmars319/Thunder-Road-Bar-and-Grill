@@ -63,6 +63,7 @@ Related documentation
 ---------------------
 - `TESTING.md` — concise instructions for running frontend unit tests and the backend integration script, plus aggregated test logs in `test-logs/`.
 - `README.md` — high-level repository overview and quick start instructions.
+- `STYLING.md` — self-contained design-token guidance, migration checklist, and verification commands; useful when migrating away from literal Tailwind utilities.
 
 Run ESLint (JS/JSX):
 ```bash
