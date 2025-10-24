@@ -9,8 +9,8 @@ export default function makeAbsolute(fileUrl) {
 }
 
 // CommonJS fallback for Node/Jest tests that use require()
+/* global module */
 try {
-  // eslint-disable-next-line no-undef
   if (typeof module !== 'undefined' && module.exports) module.exports = makeAbsolute;
 } catch (e) {
   // ignore in browsers
