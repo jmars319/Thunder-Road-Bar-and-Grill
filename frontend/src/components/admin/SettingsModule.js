@@ -28,6 +28,7 @@ function SettingsModule() {
   const [aboutContent, setAboutContent] = useState({});
   const [businessHours, setBusinessHours] = useState([]);
   const [saved, setSaved] = useState(false);
+  const [menuSaved, setMenuSaved] = useState(false);
 
   useEffect(() => {
     // Load all settings in a single async function with error handling
@@ -86,6 +87,11 @@ function SettingsModule() {
 
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
+        // show a small toast if the menu description was part of the save
+        if (siteSettings.menu_description && siteSettings.menu_description.length > 0) {
+          setMenuSaved(true);
+          setTimeout(() => setMenuSaved(false), 2500);
+        }
       }
     } catch {
       // swallow for now; could show toast on failure
@@ -218,6 +224,14 @@ function SettingsModule() {
             <icons.Save size={18} />
             Save Site Settings
           </button>
+          {menuSaved && (
+            <div className="fixed right-6 top-6 z-50">
+              <div className="bg-success text-text-inverse px-4 py-2 rounded shadow flex items-center gap-2">
+                <icons.Check size={16} />
+                <span className="text-sm">Menu description saved</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
