@@ -80,8 +80,8 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
               </div>
             )}
           </div>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
-            {sidebarOpen ? React.createElement(icons.X, { size: 20 }) : React.createElement(icons.Menu, { size: 20 })}
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2" aria-label={sidebarOpen?"Collapse sidebar":"Expand sidebar"}>
+            {sidebarOpen ? React.createElement(icons.ChevronLeft, { size: 20 }) : React.createElement(icons.ChevronRight, { size: 20 })}
           </button>
         </div>
 
