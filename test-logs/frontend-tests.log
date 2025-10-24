@@ -1,0 +1,14 @@
+
+> frontend@0.1.0 test
+> react-scripts test --watchAll=false --runInBand
+
+PASS src/App.test.js
+PASS src/hooks/usePaginatedResource.test.js
+PASS src/__tests__/publicAssets.test.js
+PASS src/lib/__tests__/makeAbsolute.test.js
+
+Test Suites: 4 passed, 4 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        0.736 s, estimated 1 s
+Ran all test suites.
