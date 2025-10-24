@@ -54,37 +54,41 @@ router.get('/site-settings', (req, res) => {
 
 // Update site settings
 router.put('/site-settings', (req, res) => {
-  const { business_name, tagline, logo_url, phone, email, address, hero_images } = req.body;
+  const { business_name, tagline, logo_url, phone, email, address, hero_images, menu_description } = req.body;
   
   // Debug: log incoming hero_images so we can trace admin saves
   console.log('PUT /site-settings received hero_images:', Array.isArray(hero_images) ? hero_images.length : typeof hero_images);
 
   const heroImagesJson = Array.isArray(hero_images) ? JSON.stringify(hero_images) : null;
 
-  // Ensure the hero_images column exists (migration may not have been applied on some environments)
+  // Ensure hero_images and menu_description columns exist (migration may not have been applied on some environments)
   req.db.query('ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_images TEXT NULL DEFAULT NULL', (alterErr) => {
     if (alterErr) {
       console.error('Failed to ensure hero_images column exists:', alterErr.message);
-      // continue anyway; the subsequent UPDATE will fail if column missing
+      // continue; next step will attempt to ALTER menu_description as well
     }
 
-    req.db.query(
-      'UPDATE site_settings SET business_name = ?, tagline = ?, logo_url = ?, phone = ?, email = ?, address = ?, hero_images = ? WHERE id = 1',
-      [business_name, tagline, logo_url, phone, email, address, heroImagesJson],
-      (err) => {
-        if (err) {
-          console.error('Failed to update site_settings:', err.message);
-          return res.status(500).json({ error: err.message });
-        }
+    req.db.query('ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS menu_description TEXT NULL DEFAULT NULL', (altErr2) => {
+      if (altErr2) console.error('Failed to ensure menu_description column exists:', altErr2.message);
 
-        // Log current DB value for easier verification
-        req.db.query('SELECT hero_images FROM site_settings WHERE id = 1', (selErr, rows) => {
-          if (selErr) console.error('Failed to read back site_settings.hero_images:', selErr.message);
-          else console.log('site_settings.hero_images after update:', rows[0]?.hero_images);
-          res.json({ message: 'Settings updated' });
-        });
-      }
-    );
+      req.db.query(
+        'UPDATE site_settings SET business_name = ?, tagline = ?, logo_url = ?, phone = ?, email = ?, address = ?, hero_images = ?, menu_description = ? WHERE id = 1',
+        [business_name, tagline, logo_url, phone, email, address, heroImagesJson, menu_description || null],
+        (err) => {
+          if (err) {
+            console.error('Failed to update site_settings:', err.message);
+            return res.status(500).json({ error: err.message });
+          }
+
+          // Log current DB value for easier verification
+          req.db.query('SELECT hero_images, menu_description FROM site_settings WHERE id = 1', (selErr, rows) => {
+            if (selErr) console.error('Failed to read back site_settings fields:', selErr.message);
+            else console.log('site_settings after update:', rows[0]);
+            res.json({ message: 'Settings updated' });
+          });
+        }
+      );
+    });
   });
 });
 

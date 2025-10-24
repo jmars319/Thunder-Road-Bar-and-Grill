@@ -162,6 +162,16 @@ function SettingsModule() {
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-text-primary mb-1">Menu Description (public)</label>
+            <textarea
+              value={siteSettings.menu_description || ''}
+              onChange={(e) => setSiteSettings({...siteSettings, menu_description: e.target.value})}
+              className="w-full form-input"
+              rows="3"
+              placeholder="A short description shown on the public menu page"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-text-primary mb-1">Phone</label>
             <input
               type="text"

@@ -8,6 +8,7 @@ const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 export default function MenuSection() {
   const [categories, setCategories] = useState([]);
+  const [siteMenuDescription, setSiteMenuDescription] = useState(menuDescription);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const panelsRef = useRef({});
 
@@ -44,6 +45,13 @@ export default function MenuSection() {
             gallery_image_url: makeAbsolute(cat.gallery_image_url || cat.image_url || ''),
           }));
           setCategories(normalizedFresh);
+        }
+        // fetch site-settings (menu description) as a fallback to the build-time config
+        try {
+          const s = await cachedFetch(`${API_BASE}/site-settings`);
+          if (mounted && s && typeof s.menu_description === 'string') setSiteMenuDescription(s.menu_description);
+        } catch (e) {
+          // ignore — we'll keep the build-time menuDescription
         }
       } catch (e) {
         if (mounted) setCategories([]);
@@ -108,9 +116,9 @@ export default function MenuSection() {
     <div id="menu" className="py-16 bg-surface-warm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-4xl font-heading font-bold text-center mb-4">Our Menu</h2>
-        {menuDescription && (
+        {siteMenuDescription && (
           <p className="mx-auto text-center text-lg text-text-secondary max-w-2xl mb-8">
-            {menuDescription}
+            {siteMenuDescription}
           </p>
         )}
 
