@@ -1,3 +1,4 @@
+
 TESTING
 =======
 
@@ -28,7 +29,7 @@ The backend integration script makes HTTP requests against a running API. Start 
 
 Default API endpoint:
 
- - `http://localhost:5001/api` (the test script uses `API_BASE` environment variable if set)
+- `http://localhost:5001/api` (the test script uses `API_BASE` environment variable if set)
 
 In zsh:
 

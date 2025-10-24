@@ -95,8 +95,10 @@ Next steps
 
 Signed-off-by: automated verification script
 
+
 Housekeeping note
 -----------------
 On 2025-10-15 the repository stopped tracking a local `styling-instructions/` folder (if present) so that private or workspace-specific guidance could remain local to maintainers. The essential guidance was consolidated into `DEVELOPERS.md` and `TESTING.md` so that any developer cloning the repository has all necessary migration and verification information without needing workspace-local files.
 
 If maintainers keep a private `styling-instructions/` locally for more detailed migration notes, that is fine — it is optional and not required to understand or maintain the codebase.
+
