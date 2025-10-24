@@ -26,9 +26,6 @@ export default function PublicFooter({ onGoToAdmin }) {
   // NOTE: Footer uses token classes (`bg-surface`, `text-text-inverse`,
   // `text-text-muted`) so it responds to runtime theme changes. Prefer token
   // updates in `custom-styles.css` when refining color styles.
-  // DEV: Footer color tokens are the canonical surface/text tokens. If you
-  // need to adjust contrast or spacing across the site, change the tokens in
-  // `frontend/src/custom-styles.css` so updates apply everywhere consistently.
   const [columns, setColumns] = useState([]);
   const [showHours, setShowHours] = useState(false);
   const [siteSettings, setSiteSettings] = useState(null);
@@ -37,128 +34,170 @@ export default function PublicFooter({ onGoToAdmin }) {
   const [showContact, setShowContact] = useState(false);
 
   useEffect(() => {
-    // Keep fetch resilient: swallow errors and fallback to an empty array so the
-    // public site doesn't crash if the API is temporarily unavailable.
     (async () => {
-        try {
-          const cols = await cachedFetch(`${API_BASE}/footer-columns`);
-          setColumns(Array.isArray(cols) ? cols : []);
-        } catch (e) {
-          setColumns([]);
-        }
+      try {
+        const cols = await cachedFetch(`${API_BASE}/footer-columns`);
+        setColumns(Array.isArray(cols) ? cols : []);
+      } catch (e) {
+        setColumns([]);
+      }
 
-        try {
-          const s = await cachedFetch(`${API_BASE}/site-settings`);
-          setSiteSettings(s || {});
-        } catch (e) {
-          setSiteSettings({});
-        }
-      })();
+      try {
+        const s = await cachedFetch(`${API_BASE}/site-settings`);
+        setSiteSettings(s || {});
+      } catch (e) {
+        setSiteSettings({});
+      }
+    })();
 
-        const handler = () => {
-          // admin updates may include siteSettings updates; clear relevant cache
-          clearCacheFor(`${API_BASE}/site-settings`);
-          clearCacheFor(`${API_BASE}/footer-columns`);
-          // re-trigger a reload of settings
-          cachedFetch(`${API_BASE}/site-settings`).then(s => setSiteSettings(s || {}));
-          cachedFetch(`${API_BASE}/footer-columns`).then(cols => setColumns(Array.isArray(cols) ? cols : []));
-        };
+    const handler = () => {
+      clearCacheFor(`${API_BASE}/site-settings`);
+      clearCacheFor(`${API_BASE}/footer-columns`);
+      cachedFetch(`${API_BASE}/site-settings`).then(s => setSiteSettings(s || {}));
+      cachedFetch(`${API_BASE}/footer-columns`).then(cols => setColumns(Array.isArray(cols) ? cols : []));
+    };
 
-        window.addEventListener('siteSettingsUpdated', handler);
-        return () => window.removeEventListener('siteSettingsUpdated', handler);
+    window.addEventListener('siteSettingsUpdated', handler);
+    return () => window.removeEventListener('siteSettingsUpdated', handler);
   }, []);
 
   return (
-    <footer className="bg-surface text-text-inverse py-12" role="contentinfo" aria-label="Site footer">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-        {columns.map(col => (
-          <div key={col.id}>
-            <h4 className="text-lg font-heading font-semibold mb-3 text-text-primary">{col.column_title}</h4>
-            <ul className="space-y-2">
-              {Array.isArray(col.links) && col.links.map(link => (
-                <li key={link.id}>
-                  {link.url === '#privacy' ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowPrivacy(true)}
-                      className="text-text-muted hover:text-text-primary transition"
-                    >
-                      {link.label}
-                    </button>
-                  ) : link.url === '#terms' ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowTerms(true)}
-                      className="text-text-muted hover:text-text-primary transition"
-                    >
-                      {link.label}
-                    </button>
-                  ) : (
-                    <a href={link.url} className="text-text-muted hover:text-text-primary transition">{link.label}</a>
-                  )}
-                </li>
-              ))}
+    <footer className="bg-surface-dark text-text-inverse py-8" role="contentinfo" aria-label="Site footer">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+        {/* Left group: API columns + compact contact */}
+  <div className="flex flex-col md:flex-row md:items-start md:gap-8 w-full md:w-auto md:-ml-6 lg:-ml-12 xl:-ml-16">
+          <div className="flex gap-8">
+            {columns
+              .filter(col => !/(quick links|legal)/i.test(String(col.column_title || '')))
+              .slice(0, 2)
+              .map(col => (
+                <div key={col.id}>
+                  <h4 className="text-sm font-heading font-semibold mb-2 text-text-primary">{col.column_title}</h4>
+                  <ul className="space-y-0.5">
+                    {Array.isArray(col.links) && col.links.map(link => (
+                      <li key={link.id}>
+                        {link.url === '#privacy' ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowPrivacy(true)}
+                            className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
+                          >
+                            {link.label}
+                          </button>
+                        ) : link.url === '#terms' ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowTerms(true)}
+                            className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
+                          >
+                            {link.label}
+                          </button>
+                        ) : (
+                          <a href={link.url} className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight">{link.label}</a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+            ))}
+          </div>
+
+          {/* compact center contact - stays to left group so right group stays flush right */}
+          <div className="flex flex-col items-start md:items-start ml-4">
+            <div className="mb-1 text-xs text-text-secondary">© {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'}</div>
+            <div className="flex flex-col items-start gap-1">
+              {siteSettings?.phone && (
+                <a href={`tel:${siteSettings.phone}`} className="text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.phone}</a>
+              )}
+
+              {siteSettings?.email && (
+                <a href={`mailto:${siteSettings.email}`} className="text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.email}</a>
+              )}
+
+              {siteSettings?.address && (
+                <span className="text-text-muted text-xs">{siteSettings.address}</span>
+              )}
+
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowContact(true)}
+                  className="text-text-muted hover:text-text-primary underline text-xs"
+                  aria-haspopup="dialog"
+                >
+                  Contact
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowHours(true)}
+                  className="text-text-muted hover:text-text-primary underline text-xs"
+                  aria-haspopup="dialog"
+                >
+                  Hours
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right group: Quick Links + Legal/Admin as two columns on md+ */}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-end gap-6 md:gap-12">
+          {/* Quick Links column */}
+          <div className="md:text-left">
+            <h4 className="text-sm font-heading font-semibold mb-1 text-text-primary">Quick Links</h4>
+            <ul className="space-y-0.5">
+              <li><a href="#menu" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">Menu</a></li>
+              <li><a href="#about" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">About</a></li>
+              <li><a href="#reservations" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">Reservations</a></li>
+              <li><a href="#jobs" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">Careers</a></li>
             </ul>
           </div>
-        ))}
-      </div>
-      <div className="mt-8 text-center text-sm text-text-secondary">
-        <div className="mb-2">© {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'}</div>
-        <div className="flex items-center justify-center gap-4">
-          {siteSettings?.phone && (
-            <a href={`tel:${siteSettings.phone}`} className="text-text-muted hover:text-text-primary text-sm">{siteSettings.phone}</a>
-          )}
 
-          {siteSettings?.email && (
-            <a href={`mailto:${siteSettings.email}`} className="text-text-muted hover:text-text-primary text-sm">{siteSettings.email}</a>
-          )}
+          {/* Legal + Admin column */}
+          <div className="md:text-right">
+            <h4 className="text-sm font-heading font-semibold mb-1 text-text-primary">Legal</h4>
+            <ul className="space-y-0.5">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacy(true)}
+                  className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
+                >
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setShowTerms(true)}
+                  className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
+                >
+                  Terms &amp; Conditions
+                </button>
+              </li>
+            </ul>
 
-          {siteSettings?.address && (
-            <span className="text-text-muted text-sm">{siteSettings.address}</span>
-          )}
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowContact(true)}
-              className="text-text-muted hover:text-text-primary underline text-sm"
-              aria-haspopup="dialog"
-            >
-              Contact
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowHours(true)}
-              className="text-text-muted hover:text-text-primary underline text-sm"
-              aria-haspopup="dialog"
-            >
-              Hours
-            </button>
-          </div>
-          
-          {/* unobtrusive admin link moved to footer */}
-          <div className="ml-4">
-            <a
-              href="/admin"
-              onClick={(e) => {
-                try {
-                  e.preventDefault();
-                  if (typeof onGoToAdmin === 'function') {
-                    onGoToAdmin();
-                  } else {
-                    // fallback to a full navigation if parent didn't provide handler
+            <div className="border-t border-divider mt-3 pt-2">
+              <a
+                href="/admin"
+                onClick={(e) => {
+                  try {
+                    e.preventDefault();
+                    if (typeof onGoToAdmin === 'function') {
+                      onGoToAdmin();
+                    } else {
+                      window.location.href = '/admin';
+                    }
+                  } catch (err) {
                     window.location.href = '/admin';
                   }
-                } catch (err) {
-                  // if anything goes wrong, fallback to navigation
-                  window.location.href = '/admin';
-                }
-              }}
-              className="text-text-muted hover:text-text-primary text-sm"
-            >
-              Admin
-            </a>
+                }}
+                className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight"
+              >
+                Admin
+              </a>
+            </div>
           </div>
         </div>
       </div>
