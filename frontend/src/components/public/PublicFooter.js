@@ -136,6 +136,11 @@ export default function PublicFooter() {
               Hours
             </button>
           </div>
+          
+          {/* unobtrusive admin link moved to footer */}
+          <div className="ml-4">
+            <a href="/admin" className="text-text-muted hover:text-text-primary text-sm">Admin</a>
+          </div>
         </div>
       </div>
 

@@ -29,6 +29,8 @@ import ThemeToggle from '../ThemeToggle';
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 export default function PublicNavbar({ onGoToAdmin }) {
+  // kept for backwards compatibility with parent callers; no-op in navbar now
+  void onGoToAdmin;
   const [siteSettings, setSiteSettings] = useState(null);
   const [logoSvg, setLogoSvg] = useState(null);
   const [navLinks, setNavLinks] = useState([]);
@@ -191,11 +193,11 @@ export default function PublicNavbar({ onGoToAdmin }) {
                 `frontend/src/custom-styles.css` rather than changing utility classes here. */}
             <button
               type="button"
-              onClick={onGoToAdmin}
-              aria-label="Open admin panel"
+              aria-disabled="true"
+              title="Order Online - coming soon"
               className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm font-semibold"
             >
-              Admin
+              Order Online
             </button>
             {React.createElement(ThemeToggle, { inline: true, className: 'ml-2' })}
             {/* ensure ThemeToggle symbol is considered used by linters */}
@@ -246,15 +248,13 @@ export default function PublicNavbar({ onGoToAdmin }) {
                   );
                 })}
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onGoToAdmin();
-                }}
+                onClick={() => setMobileMenuOpen(false)}
                 type="button"
-                aria-label="Admin login"
+                aria-disabled="true"
+                title="Order Online - coming soon"
                 className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm font-semibold mx-4"
               >
-                Admin Login
+                Order Online
               </button>
             </div>
           </div>
