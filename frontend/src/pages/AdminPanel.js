@@ -106,10 +106,16 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
         </nav>
 
         <div className="p-4 border-t border-divider space-y-2">
-          <button onClick={onBackToSite} className="w-full text-left">
+          <button
+            onClick={onBackToSite}
+            className="w-full text-left px-3 py-2 rounded-lg border border-divider text-text-primary hover:bg-surface-warm"
+          >
             Back to Site
           </button>
-          <button onClick={onLogout} className="w-full text-left">
+          <button
+            onClick={onLogout}
+            className="w-full text-left px-3 py-2 rounded-lg bg-error text-text-inverse hover:bg-error-muted"
+          >
             Logout
           </button>
         </div>
