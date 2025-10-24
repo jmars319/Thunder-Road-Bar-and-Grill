@@ -72,7 +72,7 @@ export default function PublicSite({ onGoToAdmin }) {
 }
 
 // Group component references so linters that don't follow JSX usage will still
-// see these symbols as used. This is a minimal, file-local pattern and can be
-// removed when editor tooling is consistent across developer setups.
+// see these symbols as used. This is a minimal, file-local pattern.
+// NOTE (2025-10-24): previous comment about editor-tooling workarounds removed as stale.
 const __usedComponents = { PublicNavbar, HeroSection, MenuSection, ReservationSection, JobSection, AboutSection, PublicFooter };
 void __usedComponents;
