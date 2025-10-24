@@ -30,6 +30,8 @@ function MenuModule() {
   const uploadXhr = useRef(null);
   const [editingItem, setEditingItem] = useState(null);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
+  // drag-and-drop state for reordering items within a category
+  const [dragging, setDragging] = useState({ itemId: null, fromCategoryId: null });
   const MEDIA_LIMIT_MENU = 24;
 
   // paginated gallery media hook (infinite scroll sentinel provided by hook)
@@ -218,6 +220,93 @@ function MenuModule() {
       fetch(`${API_BASE}/menu/items/${id}`, { method: 'DELETE' })
         .then(() => fetchCategories());
     }
+  };
+
+  // Reorder items in a category locally and persist display_order to the server
+  const reorderItems = async (categoryId, fromIndex, toIndex) => {
+    const cat = categories.find(c => c.id === categoryId);
+    if (!cat) return;
+    const items = Array.isArray(cat.items) ? [...cat.items] : [];
+    // clamp toIndex
+    const to = Math.max(0, Math.min(items.length - 1, toIndex));
+    // move item
+    const [moved] = items.splice(fromIndex, 1);
+    items.splice(to, 0, moved);
+
+    // compute new display_order values (0-based -> server may expect ints)
+    const updates = items.map((it, idx) => ({ id: it.id, display_order: idx }));
+
+    // Optimistically update UI
+    setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, items } : c));
+
+    // Persist changed display orders. Send only when changed.
+    try {
+      const promises = updates.map(u => {
+        const original = cat.items.find(i => i.id === u.id);
+        if (!original) return Promise.resolve();
+        if ((original.display_order || 0) === u.display_order) return Promise.resolve();
+        return fetch(`${API_BASE}/menu/items/${u.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ display_order: u.display_order, category_id: categoryId })
+        });
+      });
+      await Promise.all(promises);
+      // refresh to ensure server-side canonical ordering
+      fetchCategories();
+      setToast({ type: 'success', message: 'Order saved' });
+      setTimeout(() => setToast(null), 2500);
+    } catch (e) {
+      setToast({ type: 'error', message: 'Failed to save order' });
+      setTimeout(() => setToast(null), 2500);
+      // fallback: refetch original
+      fetchCategories();
+    }
+  };
+
+  const handleDragStart = (e, itemId, categoryId) => {
+    try { e.dataTransfer.setData('text/plain', String(itemId)); } catch (err) {}
+    e.dataTransfer.effectAllowed = 'move';
+    setDragging({ itemId, fromCategoryId: categoryId });
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, categoryId, dropIndex) => {
+    e.preventDefault();
+    const itemId = dragging.itemId || (e.dataTransfer && e.dataTransfer.getData('text/plain')) || null;
+    if (!itemId) {
+      setDragging({ itemId: null, fromCategoryId: null });
+      return;
+    }
+
+    // find source category and indices
+    const fromCategoryId = dragging.fromCategoryId;
+    const fromCat = categories.find(c => c.id === fromCategoryId);
+    if (!fromCat) return handleDragEnd();
+    const fromIndex = fromCat.items.findIndex(i => String(i.id) === String(itemId));
+    if (fromIndex === -1) return handleDragEnd();
+
+    // determine target index (if dropping after last element, append)
+    const cat = categories.find(c => c.id === categoryId);
+    const maxIndex = (cat && cat.items) ? cat.items.length - 1 : 0;
+    const toIndex = Math.max(0, Math.min(maxIndex, dropIndex));
+
+    // if same index and same category, nothing to do
+    if (fromCategoryId === categoryId && fromIndex === toIndex) {
+      handleDragEnd();
+      return;
+    }
+
+    // perform reorder
+    reorderItems(categoryId, fromIndex, toIndex).finally(() => handleDragEnd());
+  };
+
+  const handleDragEnd = () => {
+    setDragging({ itemId: null, fromCategoryId: null });
   };
 
   return (
@@ -557,8 +646,26 @@ function MenuModule() {
               <div id={`category-items-${category.id}`} className="p-4" role="region" aria-label={`${category.name} items`}>
                 {category.items && category.items.length > 0 ? (
                   <div className="space-y-2">
-                    {category.items.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-surface-warm rounded-lg">
+                    {category.items.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between p-3 bg-surface-warm rounded-lg ${dragging.itemId === item.id ? 'opacity-60' : ''}`}
+                        role="listitem"
+                        aria-grabbed={dragging.itemId === item.id}
+                        onDragOver={(e) => handleDragOver(e)}
+                        onDrop={(e) => handleDrop(e, category.id, idx)}
+                      >
+                        {/* Drag handle - drag only when grabbing the handle to avoid accidental drags */}
+                        <button
+                          type="button"
+                          className={`mr-3 p-2 rounded ${dragging.itemId === item.id ? 'cursor-grabbing' : 'cursor-grab'} text-text-secondary`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, item.id, category.id)}
+                          onDragEnd={handleDragEnd}
+                          aria-label={`Drag ${item.name}`}
+                        >
+                          <icons.Menu size={16} />
+                        </button>
                         <div className="flex-1">
                           <p className="font-medium text-text-primary">{item.name}</p>
                           <p className="text-sm text-text-secondary">{item.description}</p>
