@@ -1,3 +1,20 @@
+Styling & tokenization (summary)
+--------------------------------
+This project uses a design-token approach to styling rather than literal Tailwind color utilities. The core ideas are summarized here so a developer can proceed without relying on any local-only guidance files.
+
+ - Token philosophy: Use semantic token classes (for example, `bg-primary`, `text-text-primary`, `bg-surface`) throughout JSX/CSS. Tokens are defined as CSS variables in `frontend/src/custom-styles.css` and referenced by Tailwind via `tailwind.config.js` fallbacks.
+ - Why tokens: Tokens allow runtime theming (light/dark) via CSS variables, and make color changes predictable and theme-aware.
+ - Typical workflow to migrate a component:
+   1. Identify literal Tailwind color classes (e.g., `bg-blue-500`, `text-gray-700`) or inline hex styles.
+   2. Replace with token classes (e.g., `bg-primary`, `text-text-primary`). If a token doesn't exist yet, add a token name to `custom-styles.css` and map it in `tailwind.config.js` with a safe fallback.
+   3. Run the app and visually verify in both light and dark themes.
+   4. Optionally add a small visual QA or snapshot test for critical admin surfaces.
+ - Verification steps:
+   - Run a repo-wide grep for potential literal color usages (patterns like `bg-[a-z]+-\d+`, `text-[a-z]+-\d+`, or `#([A-Fa-f0-9]{3,6})`).
+   - Run `npx stylelint` (if configured) against CSS files and run unit tests to ensure no regressions.
+   - For CI: add a job that runs ESLint, stylelint, and Jest to catch regressions automatically.
+
+The summary above replaces the need to consult a local `styling-instructions/` folder: all the practical steps and verification checks are captured here and in `TESTING.md`.
 DEVELOPERS GUIDE
 ================
 

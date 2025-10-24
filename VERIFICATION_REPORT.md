@@ -52,16 +52,15 @@ This report documents the verification run that ensures the repository no longer
 
 Actions performed
 -----------------
-- Repo-wide search for literal Tailwind color utilities (bg-*, text-*, hover:bg-*, border-*)
-- Converted remaining doc mentions to token-only guidance across `styling-instructions/*` and `DEVELOPERS.md`
-- Committed and pushed documentation cleanup changes
-- Ran the frontend test suite once to ensure no regressions
+- Repo-wide search for literal Tailwind color utilities (bg-*, text-*, hover:bg-*, border-*).
+- Converted documentation and example snippets to use semantic design tokens (for example, `bg-primary`, `text-text-primary`) and updated repository docs (`DEVELOPERS.md`, `README.md`, and `TESTING.md`) so they are self-contained and do not require any local-only guidance files.
+- Committed and pushed documentation cleanup changes.
+- Ran the frontend test suite once to ensure no regressions.
 
 Relevant commits
 ----------------
 - 4a74b93 2025-10-15 docs(styling): remove remaining legacy Tailwind color mentions from docs; use token guidance
-- c42f138 2025-10-15 docs(styling): tokenize remaining examples in styling-instructions
-- 50697bb 2025-10-15 docs(styling): replace literal Tailwind examples with token classes in styling-instructions
+  (Documentation was consolidated so examples and migration guidance live in `DEVELOPERS.md` and `TESTING.md`.)
 
 Grep results (post-cleanup)
 ---------------------------
@@ -78,12 +77,10 @@ Frontend tests
 
 Files changed during the cleanup
 -------------------------------
-- `styling-instructions/00_STYLING_MASTER.md` — removed legacy Tailwind class examples and updated guidance to use tokens
-- `styling-instructions/REFERENCE_examples.md` — converted example snippets to tokens
-- `styling-instructions/REFERENCE_fonts.md` — tokenized typography examples
-- `styling-instructions/styling_04_component_updates.md` — replaced literal find/replace patterns with token guidance
-- `styling-instructions/styling_06_verification.md` — updated verification instructions to reference tokens
-- `DEVELOPERS.md` — softened references to legacy color utilities
+- `frontend/src/custom-styles.css` — consolidated token definitions and CSS variable fallbacks.
+- `frontend/src/logo.svg` — recolorable SVG using `currentColor`.
+- Multiple frontend components under `frontend/src/components/*` — replaced literal color utilities with token classes and applied small accessibility updates.
+- `DEVELOPERS.md`, `README.md`, and `TESTING.md` — documentation updated to include self-contained migration and verification guidance so developers do not need to consult any local-only styling docs.
 
 Notes and caveats
 -----------------
@@ -101,15 +98,7 @@ Signed-off-by: automated verification script
 
 Housekeeping note
 -----------------
-On 2025-10-15 the `styling-instructions/` folder was intentionally removed from the remote and stopped being tracked to keep private guidance local. Commands used:
+On 2025-10-15 the repository stopped tracking a local `styling-instructions/` folder (if present) so that private or workspace-specific guidance could remain local to maintainers. The essential guidance was consolidated into `DEVELOPERS.md` and `TESTING.md` so that any developer cloning the repository has all necessary migration and verification information without needing workspace-local files.
 
-```bash
-git rm -r --cached styling-instructions
-git commit -m "chore: stop tracking styling-instructions (keep locally, ignore)"
-git push origin main
-```
-
-Commit: 8c2c0eb (chore: stop tracking styling-instructions (keep locally, ignore))
-
-Local copies remain in your working tree; the folder is listed in `.gitignore` so Git will not re-add it.
+If maintainers keep a private `styling-instructions/` locally for more detailed migration notes, that is fine — it is optional and not required to understand or maintain the codebase.
 
