@@ -370,6 +370,71 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--primary-color);
 }
 
+/* Admin-specific scrollbar and sticky sidebar */
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh; /* ensure full viewport height for sticky behavior */
+  z-index: 90;
+}
+
+.admin-sidebar nav {
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-sidebar nav::-webkit-scrollbar {
+  width: 10px;
+}
+
+.admin-sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-sidebar nav::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(220,38,38,0.92), rgba(146,64,14,0.92));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.admin-sidebar nav::-webkit-scrollbar-thumb:hover {
+  filter: brightness(0.95);
+}
+
+.admin-sidebar nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(220,38,38,0.92) transparent;
+}
+
+.admin-main__content::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admin-main__content::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 9999px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-main__content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.06);
+  }
+}
+
+/* Keyboard focus outlines for sidebar buttons */
+.admin-sidebar nav button:focus-visible,
+.admin-sidebar nav a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-radius: 8px;
+}
+
+.admin-sidebar nav button:focus,
+.admin-sidebar nav a:focus {
+  outline: none;
+}
+
 /* Selection Color */
 ::selection {
   background: var(--primary-color);
