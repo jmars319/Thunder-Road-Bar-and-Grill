@@ -227,7 +227,7 @@ function SettingsModule() {
           {menuSaved && (
             <div className="fixed right-6 top-6 z-50">
               <div className="bg-success text-text-inverse px-4 py-2 rounded shadow flex items-center gap-2">
-                <icons.Check size={16} />
+                <icons.CheckCircle size={16} />
                 <span className="text-sm">Menu description saved</span>
               </div>
             </div>
