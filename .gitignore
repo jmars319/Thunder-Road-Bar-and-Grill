@@ -37,3 +37,7 @@ frontend/.stylelintrc.json
 
 # ignore backup files
 *.backup
+
+# Runtime logs
+backend.log
+backend/*.log
