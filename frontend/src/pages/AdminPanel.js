@@ -64,11 +64,16 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
         <div className="p-4 flex items-center justify-between border-b border-divider">
           <div className="flex items-center gap-3">
             {siteSettings?.logo_url ? (
-              <img
-                src={siteSettings.logo_url}
-                alt={siteSettings?.business_name || 'Site logo'}
-                className="h-8 object-contain"
-              />
+              <>
+                <img
+                  src={siteSettings.logo_url}
+                  alt={siteSettings?.business_name || 'Site logo'}
+                  className="h-8 object-contain"
+                />
+                {sidebarOpen && (
+                  <span className="text-sm font-heading font-bold text-text-inverse">TRBG ADMIN</span>
+                )}
+              </>
             ) : (
               <div className="font-heading font-bold text-lg text-text-inverse">
                 {siteSettings?.business_name || 'Thunder Road'}
