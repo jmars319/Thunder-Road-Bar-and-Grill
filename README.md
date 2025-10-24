@@ -40,6 +40,12 @@ Complete restaurant management system with public website and admin panel.
 - **Backend:** Node.js, Express
 - **Database:** MySQL
 
+## Documentation
+
+- Developer guide: `DEVELOPERS.md` — onboarding, architecture notes, and tips for making changes to the frontend and admin modules.
+- Developer notes: `DEVELOPER_NOTES.md` — repository housekeeping and special-case notes about nested package folders.
+- Testing: `TESTING.md` — how to run frontend unit tests and the backend integration script, plus aggregated logs in `test-logs/`.
+
 ## Setup Instructions
 
 ### 1. Database Setup

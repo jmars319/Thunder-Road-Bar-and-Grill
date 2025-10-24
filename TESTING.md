@@ -50,6 +50,11 @@ Notes
 - The backend integration test requires a reachable server and a configured database. The integration script will fail if the API is unreachable or the DB is misconfigured.
 - Captured logs are stored in `test-logs/`. If you prefer not to commit logs, remove or ignore them in `.gitignore`.
 
+See also
+
+- `README.md` — high-level project overview and quick start.
+- `DEVELOPERS.md` — developer onboarding and deeper frontend/admin guidance.
+
 Suggested next steps
 - Convert the integration script into a Jest-managed integration test for easier CI integration and to allow running everything under a single test runner.
 - Add a short section in `README.md` linking to this `TESTING.md`.

@@ -28,3 +28,8 @@ rm -rf backend/frontend node_modules
 4. If you intend these to be real subprojects, add a short README inside each explaining purpose and keep them tracked as proper package roots.
 
 Last updated: 2025-10-21 — flagged accidental nested package folders and recommended cleanup.
+
+See also
+--------
+- `DEVELOPERS.md` — developer onboarding and frontend/admin guidance
+- `TESTING.md` — instructions for running tests and location of aggregated test logs (`test-logs/`)

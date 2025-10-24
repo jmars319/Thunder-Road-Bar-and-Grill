@@ -42,6 +42,11 @@ cd frontend
 npm test -- --watchAll=false
 ```
 
+Related documentation
+---------------------
+- `TESTING.md` — concise instructions for running frontend unit tests and the backend integration script, plus aggregated test logs in `test-logs/`.
+- `README.md` — high-level repository overview and quick start instructions.
+
 Run ESLint (JS/JSX):
 ```bash
 cd frontend
