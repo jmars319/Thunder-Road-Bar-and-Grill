@@ -51,8 +51,14 @@
   --logo-badge-shadow: 0 6px 20px rgba(16,24,40,0.08);
 }
 
-/* Logo: make inline SVG logos inherit the current design token color
-   - Inline SVGs placed inside elements with class .logo-badge will use
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Panel animation variables (override to tweak animation) */
+  --panel-transition-duration: 360ms;
+  --panel-transition-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --panel-fade-duration: 240ms;
+  --panel-max-height: 1200px; /* fallback if JS measurement isn't available */
      the --text-primary token by default. External images (<img>) won't
      inherit this; serve SVGs inline if you want them recolorable. */
 .logo-badge svg {
@@ -228,6 +234,59 @@ h1, h2, h3, h4, h5, h6 {
 .menu-card.expanded {
   transform: translateY(-12px);
   z-index: 60;
+}
+
+/* Expanded panel when placed over a gallery image: semi-transparent + blur
+   This improves text contrast while preserving some image visibility. The
+   color adapts for light/dark modes for consistent readability. */
+.expanded-panel--image {
+  background: rgba(255,255,255,0.92);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-lg);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .expanded-panel--image {
+    /* darker, higher-contrast panel on dark mode */
+    /* Use a richer, more opaque surface so text stands out over the image */
+    background: rgba(8,12,20,0.90);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+}
+
+/* Chevron rotation for category toggles */
+.chevron {
+  transition: transform 260ms var(--panel-transition-easing, cubic-bezier(0.2,0.8,0.2,1));
+}
+.chevron.rotated {
+  transform: rotate(180deg);
+}
+
+/* Expanded panel show/hide animation helpers */
+.expanded-panel {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height var(--panel-transition-duration, 360ms) var(--panel-transition-easing, cubic-bezier(0.2, 0.8, 0.2, 1)),
+              opacity var(--panel-fade-duration, 240ms) ease, transform calc(var(--panel-transition-duration, 360ms) - 40ms) var(--panel-transition-easing, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+.expanded-panel.expanded {
+  /* when JS measurement isn't available, fall back to CSS var */
+  max-height: var(--panel-max-height, 1200px);
+  opacity: 1;
+  transform: translateY(0);
+}
+.expanded-panel.collapsed {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 /* Button Ripple Effect */

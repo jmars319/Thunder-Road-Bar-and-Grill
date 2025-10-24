@@ -241,14 +241,27 @@ function MenuModule() {
 
     // Persist changed display orders. Send only when changed.
     try {
+      // Persist updates. Send the full item payload (name, description, price, image_url, is_available)
+      // to avoid accidentally nulling fields on the server which expects all columns in the UPDATE.
       const promises = updates.map(u => {
         const original = cat.items.find(i => i.id === u.id);
         if (!original) return Promise.resolve();
-        if ((original.display_order || 0) === u.display_order) return Promise.resolve();
+        // build payload from original fields and new display_order
+        const payload = {
+          name: original.name,
+          description: original.description,
+          price: typeof original.price === 'number' ? original.price : original.price,
+          image_url: original.image_url || null,
+          display_order: u.display_order,
+          is_available: typeof original.is_available !== 'undefined' ? original.is_available : 1,
+        };
         return fetch(`${API_BASE}/menu/items/${u.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ display_order: u.display_order, category_id: categoryId })
+          body: JSON.stringify(payload)
+        }).then(res => {
+          if (!res.ok) return Promise.reject(new Error('Failed to update item'));
+          return res;
         });
       });
       await Promise.all(promises);
@@ -565,6 +578,40 @@ function MenuModule() {
                   className="w-full form-input"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">Primary quantity (optional)</label>
+                <input
+                  type="text"
+                  value={editingItem.primary_quantity || ''}
+                  onChange={(e) => setEditingItem({...editingItem, primary_quantity: e.target.value})}
+                  className="w-full form-input"
+                  placeholder="e.g. 12oz, Small, Single"
+                />
+              </div>
+              <div>
+                <label className="inline-flex items-center gap-2">
+                  <input type="checkbox" checked={!!editingItem.secondary_price} onChange={(e) => {
+                    if (e.target.checked) {
+                      setEditingItem(c => ({ ...c, secondary_price: (c.secondary_price != null ? c.secondary_price : 0), secondary_quantity: c.secondary_quantity || '' }));
+                    } else {
+                      setEditingItem(c => ({ ...c, secondary_price: null, secondary_quantity: null }));
+                    }
+                  }} />
+                  <span className="text-sm text-text-primary">Has secondary price</span>
+                </label>
+              </div>
+              {editingItem.secondary_price != null && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1">Secondary quantity</label>
+                    <input type="text" value={editingItem.secondary_quantity || ''} onChange={(e) => setEditingItem({...editingItem, secondary_quantity: e.target.value})} className="w-full form-input" placeholder="e.g. Large, 16oz" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1">Secondary price</label>
+                    <input type="number" step="0.01" value={editingItem.secondary_price} onChange={(e) => setEditingItem({...editingItem, secondary_price: e.target.value === '' ? null : parseFloat(e.target.value)})} className="w-full form-input" />
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
                   type="button"

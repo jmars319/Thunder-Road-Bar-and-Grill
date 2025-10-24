@@ -65,6 +65,9 @@ router.get('/menu', (req, res) => {
       i.name as item_name,
       i.description as item_description,
       i.price as item_price,
+      i.primary_quantity as item_primary_quantity,
+      i.secondary_quantity as item_secondary_quantity,
+      i.secondary_price as item_secondary_price,
       i.image_url as item_image,
       i.display_order as item_order
     FROM menu_categories c
@@ -100,6 +103,9 @@ router.get('/menu', (req, res) => {
           name: row.item_name,
           description: row.item_description,
           price: row.item_price === null ? null : Number(row.item_price),
+          primary_quantity: row.item_primary_quantity || null,
+          secondary_quantity: row.item_secondary_quantity || null,
+          secondary_price: row.item_secondary_price === null ? null : (row.item_secondary_price !== null ? Number(row.item_secondary_price) : null),
           image_url: row.item_image,
           display_order: row.item_order
         });
@@ -131,6 +137,9 @@ router.get('/menu/admin', adminAuth, (req, res) => {
       i.name as item_name,
       i.description as item_description,
       i.price as item_price,
+      i.primary_quantity as item_primary_quantity,
+      i.secondary_quantity as item_secondary_quantity,
+      i.secondary_price as item_secondary_price,
       i.image_url as item_image,
       i.display_order as item_order,
       i.is_available as item_available
@@ -164,6 +173,9 @@ router.get('/menu/admin', adminAuth, (req, res) => {
           name: row.item_name,
           description: row.item_description,
           price: row.item_price === null ? null : Number(row.item_price),
+          primary_quantity: row.item_primary_quantity || null,
+          secondary_quantity: row.item_secondary_quantity || null,
+          secondary_price: row.item_secondary_price === null ? null : (row.item_secondary_price !== null ? Number(row.item_secondary_price) : null),
           image_url: row.item_image,
           display_order: row.item_order,
           is_available: row.item_available
@@ -239,10 +251,10 @@ router.delete('/menu/categories/:id', (req, res) => {
 
 // Create menu item
 router.post('/menu/items', (req, res) => {
-  const { category_id, name, description, price, image_url, display_order } = req.body;
+  const { category_id, name, description, price, image_url, display_order, primary_quantity, secondary_quantity, secondary_price, is_available } = req.body;
   req.db.query(
-    'INSERT INTO menu_items (category_id, name, description, price, image_url, display_order) VALUES (?, ?, ?, ?, ?, ?)',
-    [category_id, name, description, price, image_url, display_order || 0],
+    'INSERT INTO menu_items (category_id, name, description, price, image_url, display_order, primary_quantity, secondary_quantity, secondary_price, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [category_id, name, description, price, image_url, display_order || 0, primary_quantity || null, secondary_quantity || null, typeof secondary_price !== 'undefined' ? secondary_price : null, typeof is_available !== 'undefined' ? is_available : 1],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       invalidateMenuCache();
@@ -254,10 +266,10 @@ router.post('/menu/items', (req, res) => {
 // Update menu item
 router.put('/menu/items/:id', (req, res) => {
   const { id } = req.params;
-  const { name, description, price, image_url, display_order, is_available } = req.body;
+  const { name, description, price, image_url, display_order, is_available, primary_quantity, secondary_quantity, secondary_price } = req.body;
   req.db.query(
-    'UPDATE menu_items SET name = ?, description = ?, price = ?, image_url = ?, display_order = ?, is_available = ? WHERE id = ?',
-    [name, description, price, image_url, display_order, is_available, id],
+    'UPDATE menu_items SET name = ?, description = ?, price = ?, image_url = ?, display_order = ?, is_available = ?, primary_quantity = ?, secondary_quantity = ?, secondary_price = ? WHERE id = ?',
+    [name, description, price, image_url, display_order, is_available, primary_quantity || null, secondary_quantity || null, typeof secondary_price !== 'undefined' ? secondary_price : null, id],
     (err) => {
       if (err) return res.status(500).json({ error: err.message });
       invalidateMenuCache();
