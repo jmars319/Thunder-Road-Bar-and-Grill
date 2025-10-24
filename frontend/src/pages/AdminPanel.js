@@ -62,8 +62,18 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
         className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-surface-dark text-text-inverse transition-all duration-300 flex flex-col`}
       >
         <div className="p-4 flex items-center justify-between border-b border-divider">
-          <div className="font-heading font-bold text-lg text-text-inverse">
-            {siteSettings?.business_name || 'Thunder Road'}
+          <div className="flex items-center gap-3">
+            {siteSettings?.logo_url ? (
+              <img
+                src={siteSettings.logo_url}
+                alt={siteSettings?.business_name || 'Site logo'}
+                className="h-8 object-contain"
+              />
+            ) : (
+              <div className="font-heading font-bold text-lg text-text-inverse">
+                {siteSettings?.business_name || 'Thunder Road'}
+              </div>
+            )}
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
             {sidebarOpen ? React.createElement(icons.X, { size: 20 }) : React.createElement(icons.Menu, { size: 20 })}
