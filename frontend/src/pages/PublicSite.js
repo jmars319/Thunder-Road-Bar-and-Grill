@@ -66,7 +66,7 @@ export default function PublicSite({ onGoToAdmin }) {
   <AboutSection />
   <JobSection />
       </main>
-      <PublicFooter />
+      <PublicFooter onGoToAdmin={onGoToAdmin} />
     </div>
   );
 }

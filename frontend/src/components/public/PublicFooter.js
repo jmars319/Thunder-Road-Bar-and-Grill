@@ -22,7 +22,7 @@ void HoursModal; void PrivacyModal; void TermsModal; void ContactModal;
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
-export default function PublicFooter() {
+export default function PublicFooter({ onGoToAdmin }) {
   // NOTE: Footer uses token classes (`bg-surface`, `text-text-inverse`,
   // `text-text-muted`) so it responds to runtime theme changes. Prefer token
   // updates in `custom-styles.css` when refining color styles.
@@ -139,7 +139,26 @@ export default function PublicFooter() {
           
           {/* unobtrusive admin link moved to footer */}
           <div className="ml-4">
-            <a href="/admin" className="text-text-muted hover:text-text-primary text-sm">Admin</a>
+            <a
+              href="/admin"
+              onClick={(e) => {
+                try {
+                  e.preventDefault();
+                  if (typeof onGoToAdmin === 'function') {
+                    onGoToAdmin();
+                  } else {
+                    // fallback to a full navigation if parent didn't provide handler
+                    window.location.href = '/admin';
+                  }
+                } catch (err) {
+                  // if anything goes wrong, fallback to navigation
+                  window.location.href = '/admin';
+                }
+              }}
+              className="text-text-muted hover:text-text-primary text-sm"
+            >
+              Admin
+            </a>
           </div>
         </div>
       </div>
