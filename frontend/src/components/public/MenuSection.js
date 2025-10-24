@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { icons } from '../../icons';
 import cachedFetch, { clearCacheFor } from '../../lib/cachedFetch';
 import makeAbsolute from '../../lib/makeAbsolute';
+import menuDescription from '../../config/menuDescription';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
@@ -106,7 +107,12 @@ export default function MenuSection() {
   return (
     <div id="menu" className="py-16 bg-surface-warm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-heading font-bold text-center mb-12">Our Menu</h2>
+        <h2 className="text-4xl font-heading font-bold text-center mb-4">Our Menu</h2>
+        {menuDescription && (
+          <p className="mx-auto text-center text-lg text-text-secondary max-w-2xl mb-8">
+            {menuDescription}
+          </p>
+        )}
 
         <div className="space-y-4">
           {categories.map(category => (
