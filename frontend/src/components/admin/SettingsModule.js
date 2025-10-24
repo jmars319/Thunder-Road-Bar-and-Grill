@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { clearCacheFor } from '../../lib/cachedFetch';
 import { icons } from '../../icons';
 
 /*
@@ -71,11 +72,23 @@ function SettingsModule() {
         body: JSON.stringify(siteSettings)
       });
       if (res.ok) {
+        // Clear cached entries that depend on site-settings and menu so public UI updates immediately
+        clearCacheFor(`${API_BASE}/site-settings`);
+        clearCacheFor(`${API_BASE}/menu`);
+        // Emit window events so other tabs/components can respond
+        try {
+          const Ev = (typeof window !== 'undefined' && window.CustomEvent) ? window.CustomEvent : (typeof window !== 'undefined' ? window.Event : null);
+          if (Ev) {
+            window.dispatchEvent(new Ev('siteSettingsUpdated'));
+            window.dispatchEvent(new Ev('menuUpdated'));
+          }
+        } catch (e) {}
+
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       }
-  } catch {
-    // swallow for now; could show toast on failure
+    } catch {
+      // swallow for now; could show toast on failure
     }
   };
 
