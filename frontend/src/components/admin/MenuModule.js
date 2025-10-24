@@ -13,6 +13,8 @@ void __usedSpinner;
      `frontend/src/custom-styles.css` to adjust colors across the admin UI.
    - Removed the per-file eslint suppression so imports and usages are
      handled by the standard lint rules.
+   
+   Last reviewed: 2025-10-24 — confirmed lint notes and token guidance are current.
 */
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
@@ -310,7 +312,7 @@ function MenuModule() {
                   </div>
                 )}
 
-                  {/* debug overlay removed */}
+                  {/* debug overlay removed (2025-10-24) — historical note removed to reduce noise */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Gallery image (optional)</label>

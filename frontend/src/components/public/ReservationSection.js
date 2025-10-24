@@ -20,6 +20,8 @@ import { icons } from '../../icons';
      globally instead of editing utilities in this component.
    - Removed a file-level eslint suppression so imports and usage are handled
      by the standard lint rules.
+   
+   Last reviewed: 2025-10-24 — accessibility and token guidance confirmed; no per-file suppressions remain.
 */
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';

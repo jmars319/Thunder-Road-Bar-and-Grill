@@ -31,6 +31,8 @@ const router = express.Router();
   - Inputs: PUT endpoints accept JSON matching the described fields above. Validate lengths and sanitize any HTML stored for `about` content.
   - Security: ensure admin-only protection on mutation endpoints (PUT/POST/DELETE). Consider using transactions for multi-step updates and a safe pattern for file URLs (store metadata, not raw user input).
   - Example: curl http://localhost:5001/api/site-settings
+  
+  Last reviewed: 2025-10-24 — guidance reviewed; suggest adding schema validation (express-validator) when time permits.
 */
 
 // Get site settings

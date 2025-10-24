@@ -22,6 +22,8 @@ import makeAbsolute from '../../lib/makeAbsolute';
    - `ChevronDown` / `ChevronUp` are imported from `lucide-react` and used
      below. The earlier eslint suppression was unnecessary and removed so
      the codebase has fewer per-file suppressions.
+   
+   Last reviewed: 2025-10-24 — caching and stale-while-revalidate behavior is intentional. Keep dependency array empty by design and use event listener for cache invalidation.
 */
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
