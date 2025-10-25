@@ -15,7 +15,7 @@ This project uses a design-token approach to styling rather than literal Tailwin
 	 - Run `npx stylelint` (if configured) against CSS files and run unit tests to ensure no regressions.
 	 - For CI: add a job that runs ESLint, stylelint, and Jest to catch regressions automatically.
 
-The summary above replaces the need to consult a local `styling-instructions/` folder: all the practical steps and verification checks are captured here and in `TESTING.md`.
+The summary above replaces the need to consult a local `styling-instructions/` folder: all the practical steps and verification checks are captured here and in `../guides/TESTING.md`.
 DEVELOPERS GUIDE
 ================
 
@@ -62,9 +62,9 @@ npm test -- --watchAll=false
 
 Related documentation
 ---------------------
-- `TESTING.md` — concise instructions for running frontend unit tests and the backend integration script, plus aggregated test logs in `test-logs/`.
-- `README.md` — high-level repository overview and quick start instructions.
-- `STYLING.md` — self-contained design-token guidance, migration checklist, and verification commands; useful when migrating away from literal Tailwind utilities.
+- `../guides/TESTING.md` — concise instructions for running frontend unit tests and the backend integration script, plus aggregated test logs in `test-logs/`.
+- `../INDEX.md` — high-level repository overview and quick start instructions.
+- `../guides/STYLING.md` — self-contained design-token guidance, migration checklist, and verification commands; useful when migrating away from literal Tailwind utilities.
 
 Run ESLint (JS/JSX):
 ```bash

@@ -6,7 +6,7 @@ Basic workflow
 --------------
 1. Fork the repository and create a feature branch with a clear name, e.g. `feat/menu-search` or `fix/navbar-padding`.
 2. Make small, focused commits. Keep each commit message short and prefixed with a type (see "Commit messages").
-3. Run linters and tests locally before pushing (see LINTING.md and FRONTEND-DEVELOPER-GUIDE.md for commands).
+3. Run linters and tests locally before pushing (see `../guides/LINTING.md` and `../frontend/DEVELOPER-GUIDE.md` for commands).
 4. Push your branch and open a Pull Request against `main`. Use the PR template to fill in context and a checklist.
 
 Commit messages

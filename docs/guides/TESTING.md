@@ -45,11 +45,11 @@ Notes
 
 See also
 
-- `README.md` — high-level project overview and quick start.
-- `DEVELOPERS.md` — developer onboarding and deeper frontend/admin guidance.
+- `../INDEX.md` — docs index and high-level project overview.
+- `../notes/DEVELOPERS.md` — developer onboarding and deeper frontend/admin guidance.
 
 Suggested next steps
 - Convert the integration script into a Jest-managed integration test for easier CI integration and to allow running everything under a single test runner.
-- Add a short section in `README.md` linking to this `TESTING.md`.
+- Add a short section in `docs/INDEX.md` linking to this `TESTING.md`.
 
 Last updated: 2025-10-24

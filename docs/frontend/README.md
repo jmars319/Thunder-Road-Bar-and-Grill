@@ -1,7 +1,7 @@
 ```markdown
 # Getting Started (Create React App)
 
-This file is a short reference for running the dev server, tests, and building production output. See the repo `README.md` or `docs/frontend/DEVELOPER-GUIDE.md` for full-stack setup notes.
+This file is a short reference for running the dev server, tests, and building production output. See `../INDEX.md` or `DEVELOPER-GUIDE.md` for full-stack setup notes.
 
 ## Available Scripts
 
@@ -31,7 +31,7 @@ One-way operation to copy build config into your project. Use with caution.
 
 This project includes social preview images and PWA icons in `frontend/public/og/` and `frontend/public/splash/`. Helper scripts under `frontend/scripts/` can regenerate these images and an asset-checker validates files referenced by `index.html` and `manifest.json`.
 
-See `frontend/scripts/README.md` for details on the image generators and the asset checker.
+See `scripts/README.md` for details on the image generators and the asset checker.
 
 Last updated: 2025-10-21
 

@@ -4,16 +4,15 @@ This page collects the most useful developer-facing docs in the repository and o
 
 Primary docs
 ------------
-- `README.md` — high-level overview and quick start (repo root).
-- `CONTRIBUTING.md` — contribution workflow, commit message style, PR checklist.
-- `DEVELOPERS.md` — onboarding, architecture notes, and frontend/admin guidance.
-- `DEVELOPER_NOTES.md` — special-case notes and housekeeping guidance (e.g., accidental nested package folders).
-- `FRONTEND-DEVELOPER-GUIDE.md` — frontend quick-start, tests and Tailwind notes.
- - `FRONTEND-DEVELOPER-GUIDE.md` — frontend quick-start, tests and Tailwind notes.
-- `LINTING.md` — ESLint and Stylelint setup, Tailwind handling, how to run and auto-fix linting.
-- `STYLING.md` — design token philosophy, where tokens live, and verification commands.
-- `MAINTENANCE.md` — release and tagging guidance, dependency update notes, and CI reminders.
-- `TESTING.md` — test run instructions and locations for test logs.
+- `INDEX.md` — docs index and high-level quick start (this file).
+- `contributing/CONTRIBUTING.md` — contribution workflow, commit message style, PR checklist.
+- `notes/DEVELOPERS.md` — onboarding, architecture notes, and frontend/admin guidance.
+- `notes/DEVELOPER_NOTES.md` — special-case notes and housekeeping guidance (e.g., accidental nested package folders).
+- `frontend/DEVELOPER-GUIDE.md` — frontend quick-start, tests and Tailwind notes.
+- `guides/LINTING.md` — ESLint and Stylelint setup, Tailwind handling, how to run and auto-fix linting.
+- `guides/STYLING.md` — design token philosophy, where tokens live, and verification commands.
+- `ops/MAINTENANCE.md` — release and tagging guidance, dependency update notes, and CI reminders.
+- `guides/TESTING.md` — test run instructions and locations for test logs.
 
 Frontend-specific docs
 ----------------------
@@ -66,8 +65,8 @@ Notes and rationale
 
 Where to start for new contributors
 ----------------------------------
-1. Read `CONTRIBUTING.md` for the PR workflow and commit conventions.
-2. Follow `FRONTEND-DEVELOPER-GUIDE.md` to get the frontend running locally.
-3. Run linters and tests before opening a PR.
+1. Read `contributing/CONTRIBUTING.md` for the PR workflow and commit conventions.
+2. Follow `frontend/DEVELOPER-GUIDE.md` to get the frontend running locally.
+3. Run linters and tests before opening a PR (see `guides/LINTING.md` and `guides/TESTING.md`).
 
 Last updated: 2025-10-25

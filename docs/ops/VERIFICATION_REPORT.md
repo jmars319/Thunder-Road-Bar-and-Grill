@@ -40,7 +40,7 @@ Outstanding items / recommendations
 
 Summary
 -------
-All planned admin module accessibility edits were applied, tests and linters for JS/CSS completed with no outstanding errors, and documentation files (`DEVELOPERS.md`, `README.md`, `TESTING.md`) were added to summarize changes and next steps.
+All planned admin module accessibility edits were applied, tests and linters for JS/CSS completed with no outstanding errors, and documentation files (`../notes/DEVELOPERS.md`, `../INDEX.md`, `../guides/TESTING.md`) were added to summarize changes and next steps.
 
 # Verification Report — Tailwind tokenization and documentation sweep
 
@@ -54,14 +54,14 @@ This report documents the verification run that ensures the repository no longer
 Actions performed
 -----------------
 - Repo-wide search for literal Tailwind color utilities (bg-*, text-*, hover:bg-*, border-*).
-- Converted documentation and example snippets to use semantic design tokens (for example, `bg-primary`, `text-text-primary`) and updated repository docs (`DEVELOPERS.md`, `README.md`, and `TESTING.md`) so they are self-contained and do not require any local-only styling docs.
+-- Converted documentation and example snippets to use semantic design tokens (for example, `bg-primary`, `text-text-primary`) and updated repository docs (`../notes/DEVELOPERS.md`, `../INDEX.md`, and `../guides/TESTING.md`) so they are self-contained and do not require any local-only styling docs.
 - Committed and pushed documentation cleanup changes.
 - Ran the frontend test suite once to ensure no regressions.
 
 Relevant commits
 ----------------
 - 4a74b93 2025-10-15 docs(styling): remove remaining legacy Tailwind color mentions from docs; use token guidance
-	(Documentation was consolidated so examples and migration guidance live in `DEVELOPERS.md` and `TESTING.md`.)
+	(Documentation was consolidated so examples and migration guidance live in `../notes/DEVELOPERS.md` and `../guides/TESTING.md`.)
 
 Grep results (post-cleanup)
 ---------------------------
@@ -81,7 +81,7 @@ Files changed during the cleanup
 - `frontend/src/custom-styles.css` — consolidated token definitions and CSS variable fallbacks.
 - `frontend/src/logo.svg` — recolorable SVG using `currentColor`.
 - Multiple frontend components under `frontend/src/components/*` — replaced literal color utilities with token classes and applied small accessibility updates.
-- `DEVELOPERS.md`, `README.md`, and `TESTING.md` — documentation updated to include self-contained migration and verification guidance so developers do not need to consult any local-only styling docs.
+- `../notes/DEVELOPERS.md`, `../INDEX.md`, and `../guides/TESTING.md` — documentation updated to include self-contained migration and verification guidance so developers do not need to consult any local-only styling docs.
 
 Notes and caveats
 -----------------
@@ -98,7 +98,7 @@ Signed-off-by: automated verification script
 
 Housekeeping note
 -----------------
-On 2025-10-15 the repository stopped tracking a local `styling-instructions/` folder (if present) so that private or workspace-specific guidance could remain local to maintainers. The essential guidance was consolidated into `DEVELOPERS.md` and `TESTING.md` so that any developer cloning the repository has all necessary migration and verification information without needing workspace-local files.
+On 2025-10-15 the repository stopped tracking a local `styling-instructions/` folder (if present) so that private or workspace-specific guidance could remain local to maintainers. The essential guidance was consolidated into `../notes/DEVELOPERS.md` and `../guides/TESTING.md` so that any developer cloning the repository has all necessary migration and verification information without needing workspace-local files.
 
 If maintainers keep a private `styling-instructions/` locally for more detailed migration notes, that is fine — it is optional and not required to understand or maintain the codebase.
 
