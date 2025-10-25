@@ -125,7 +125,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
   return (
     <nav className="bg-surface shadow-md header-sticky top-0 z-50 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+  <div className="flex justify-between items-center h-16 md:h-20">
           <div className="flex items-center gap-3">
             {siteSettings?.logo_url && (
               <div className="logo-badge">
@@ -134,20 +134,20 @@ export default function PublicNavbar({ onGoToAdmin }) {
                   <span
                     role="img"
                     aria-label={siteSettings.business_name || 'Site logo'}
-                    className="h-11 w-auto inline-block"
+                    className="h-full w-auto inline-block"
                     dangerouslySetInnerHTML={{ __html: logoSvg }}
                   />
                 ) : (
                   <img
                     src={siteSettings.logo_url}
                     alt={siteSettings.business_name}
-                    className="h-11 w-auto"
+                    className="h-full w-auto"
                   />
                 )}
               </div>
             )}
             <div>
-              <div className="text-xl font-bold text-text-primary font-heading">
+              <div className="text-lg font-bold text-text-primary font-heading">
                 {siteSettings?.business_name || 'Thunder Road Bar and Grill'}
               </div>
               {siteSettings?.tagline && (
@@ -157,7 +157,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
           </div>
 
           {/* Desktop navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-4">
             {/**
              * Small mapping: treat an incoming 'Contact' navigation item as the
              * public-facing careers link and map 'About' to the About section.
@@ -195,7 +195,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
               type="button"
               aria-disabled="true"
               title="Order Online - coming soon"
-              className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm font-semibold"
+              className="bg-primary text-text-inverse px-3 py-1 rounded-lg hover:bg-primary-dark transition text-sm font-semibold"
             >
               Order Online
             </button>
@@ -209,7 +209,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-surface-warm"
+            className="md:hidden p-1 rounded-lg hover:bg-surface-warm"
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-menu"
             aria-label="Toggle navigation menu"
@@ -220,8 +220,8 @@ export default function PublicNavbar({ onGoToAdmin }) {
 
         {/* Mobile menu content - keeps markup separate for clarity */}
         {mobileMenuOpen && (
-          <div id="mobile-menu" className="md:hidden pb-4 border-t">
-            <div className="flex flex-col gap-4 pt-4">
+          <div id="mobile-menu" className="md:hidden pb-3 border-t">
+            <div className="flex flex-col gap-3 pt-3">
               {navLinks
                 .filter((link) => {
                   const label = String(link.label || '').trim().toLowerCase();
@@ -240,7 +240,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                     <a
                       key={link.id}
                       href={renderUrl}
-                      className="text-text-primary hover:text-primary font-medium transition-colors px-4 py-2 hover:bg-surface-warm rounded"
+                      className="text-text-primary hover:text-primary font-medium transition-colors px-3 py-1 hover:bg-surface-warm rounded"
                       onClick={(e) => handleNavClick(e, renderUrl)}
                     >
                       {renderLabel}
@@ -252,7 +252,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                 type="button"
                 aria-disabled="true"
                 title="Order Online - coming soon"
-                className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm font-semibold mx-4"
+                className="bg-primary text-text-inverse px-3 py-1 rounded-lg hover:bg-primary-dark transition text-sm font-semibold mx-2"
               >
                 Order Online
               </button>
@@ -268,7 +268,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                 }}
                 type="button"
                 aria-label="Admin login"
-                className="bg-surface text-text-primary px-4 py-2 rounded-lg hover:bg-surface-warm transition text-sm font-semibold mx-4"
+                className="bg-surface text-text-primary px-3 py-1 rounded-lg hover:bg-surface-warm transition text-sm font-semibold mx-2"
               >
                 Admin Login
               </button>
@@ -285,7 +285,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
             aria-label="Back to top"
             aria-describedby="back-to-top-desc"
             title="Back to top"
-            className="fixed right-6 bottom-6 z-50 bg-primary text-text-inverse p-3 rounded-full shadow-lg hover:bg-primary-dark transition-transform duration-200 transform-gpu focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            className="fixed right-4 bottom-4 z-50 bg-primary text-text-inverse p-2 rounded-full shadow-sm hover:bg-primary-dark transition-transform duration-200 transform-gpu focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
           >
             <span id="back-to-top-desc" className="sr-only">Scroll to top of page</span>
             {React.createElement(icons.ChevronUp, { size: 18 })}

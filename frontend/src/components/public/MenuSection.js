@@ -113,11 +113,11 @@ export default function MenuSection() {
   }, [expandedCategory]);
 
   return (
-    <div id="menu" className="py-16 bg-surface-warm">
+  <div id="menu" className="py-12 bg-surface-warm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-heading font-bold text-center mb-4">Our Menu</h2>
+        <h2 className="text-2xl sm:text-3xl font-heading font-bold text-center mb-4">Our Menu</h2>
         {siteMenuDescription && (
-          <p className="mx-auto text-center text-lg text-text-secondary max-w-2xl mb-8 whitespace-pre-line">
+          <p className="mx-auto text-center text-base leading-snug text-text-secondary w-full max-w-screen-lg px-4 sm:px-6 mb-6 whitespace-pre-line">
             {siteMenuDescription}
           </p>
         )}
@@ -131,13 +131,13 @@ export default function MenuSection() {
               <button
                 type="button"
                 onClick={() => setExpandedCategory(prev => (prev === category.id ? null : category.id))}
-                className="w-full flex items-center justify-between p-6 hover:bg-surface-warm transition"
+                className="w-full flex items-center justify-between p-4 hover:bg-surface-warm transition"
                 aria-expanded={expandedCategory === category.id}
                 aria-controls={`menu-cat-${category.id}`}
               >
                 <div className="text-left">
-                  <h3 className="text-2xl font-heading font-bold text-text-primary">{category.name}</h3>
-                  <p className="text-text-secondary text-base leading-relaxed mt-1 whitespace-pre-line">{category.description}</p>
+                  <h3 className="text-xl md:text-2xl font-heading font-bold text-text-primary mb-1">{category.name}</h3>
+                  <p className="text-text-secondary text-sm leading-snug mt-1 whitespace-pre-line">{category.description}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   {React.createElement(icons.ChevronDown, { className: `chevron ${expandedCategory === category.id ? 'rotated text-primary' : 'text-text-muted'}`, size: 24 })}
@@ -168,9 +168,9 @@ export default function MenuSection() {
                 {Array.isArray(category.items) && category.items.length > 0 ? (
                   <div className="divide-y divide-divider">
                     {category.items.map(item => (
-                      <div key={item.id} className="p-6 flex justify-between items-start hover:bg-surface-warm transition">
+                      <div key={item.id} className="p-4 md:p-6 flex justify-between items-start hover:bg-surface-warm transition">
                         <div className="flex-1">
-                          <h4 className="text-lg font-heading font-semibold text-text-primary">{item.name}</h4>
+                          <h4 className="text-base md:text-lg font-heading font-semibold text-text-primary">{item.name}</h4>
                           <p className="text-text-secondary text-sm mt-1">{item.description}</p>
                         </div>
                         <div className="ml-4 flex flex-col items-end">

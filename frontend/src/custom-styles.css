@@ -56,18 +56,22 @@
   --panel-fade-duration: 240ms;
   --panel-max-height: 1200px; /* fallback if JS measurement isn't available */
 }
+.logo-badge img,
 .logo-badge svg {
-  color: var(--text-primary);
+  display: block;
+  /* keep the full image visible and preserve aspect ratio; constrain the
+    graphic to the badge height (minus a small inset) so it doesn't touch
+    the navbar edges. Use max-height so width:auto preserves aspect ratio. */
   width: auto;
-  height: 2.25rem; /* default height matching navbar spacing; adjust as needed */
-  display: inline-block;
+  height: auto;
+  max-height: calc(4rem - 0.5rem);
+  max-width: 100%;
+  object-fit: contain; /* fallback for supported elements */
 }
 
-.logo-badge img {
-  height: 2.25rem;
-  width: auto;
-  display: inline-block;
-}
+
+/* Responsive sizing of the badge is handled by the .logo-badge width/height
+   rules further down so the graphic scales to fill that area. */
 
 /* Dark Mode Variables */
 @media (prefers-color-scheme: dark) {
@@ -505,11 +509,26 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 10px;
-  border-radius: 9999px;
-  background: var(--logo-badge-bg);
-  border: 1px solid var(--logo-badge-border);
-  box-shadow: var(--logo-badge-shadow);
+  /* Match the navbar inner height (h-16 = 4rem) so the badge and logo fit
+     predictably. This explicit size avoids cases where 100% doesn't resolve
+     as expected due to differing layout contexts. */
+  height: 4rem; /* matches Tailwind h-16 */
+  width: auto;
+  padding: 0;
+  border-radius: 0.5rem; /* soft rounded square; change to 9999px for a circular badge */
+  /* Hide the badge background so the logo fully covers it. If you prefer the
+     previous background, change background to var(--logo-badge-bg) and restore
+     border/box-shadow. */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: hidden; /* ensure the logo covers/hides the badge area */
+}
+
+/* Slightly larger badge and graphic on md+ so it matches navbar md:h-20 */
+@media (min-width: 768px) {
+  .logo-badge { height: 5rem; }
+  .logo-badge img, .logo-badge svg { max-height: calc(5rem - 0.5rem); }
 }
 
 /* Sticky Header */
