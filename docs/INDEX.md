@@ -20,6 +20,10 @@ Frontend-specific docs
 - `frontend/scripts/README.md` — helper scripts for asset generation and checks.
 - `frontend/.stylelintrc.json` — local stylelint config (ignores Tailwind at-rules and includes targeted overrides).
 
+Backend-specific docs
+---------------------
+- `backend/README.md` — backend quick start, env vars, routes, and operational notes.
+
 How to use these docs (quick commands)
 -------------------------------------
 Run common tasks from the repo root:
