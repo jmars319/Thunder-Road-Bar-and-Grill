@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 
 import { icons } from '../../icons';
 import ThemeToggle from '../ThemeToggle';
+import OrderModal from './OrderModal';
 
 /*
   PublicNavbar
@@ -36,6 +37,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
   const [navLinks, setNavLinks] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [orderOpen, setOrderOpen] = useState(false);
 
   useEffect(() => {
     // Load site-level settings (logo, name, tagline). Keep errors silent for now.
@@ -193,7 +195,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                 `frontend/src/custom-styles.css` rather than changing utility classes here. */}
             <button
               type="button"
-              aria-disabled="true"
+              onClick={() => setOrderOpen(true)}
               title="Order Online - coming soon"
               className="bg-primary text-text-inverse px-3 py-1 rounded-lg hover:bg-primary-dark transition text-sm font-semibold"
             >
@@ -248,9 +250,8 @@ export default function PublicNavbar({ onGoToAdmin }) {
                   );
                 })}
               <button
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => { setMobileMenuOpen(false); setOrderOpen(true); }}
                 type="button"
-                aria-disabled="true"
                 title="Order Online - coming soon"
                 className="bg-primary text-text-inverse px-3 py-1 rounded-lg hover:bg-primary-dark transition text-sm font-semibold mx-2"
               >
@@ -292,6 +293,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
           </button>,
           document.body
         )}
+        {orderOpen && <OrderModal onClose={() => setOrderOpen(false)} />}
       </div>
     </nav>
   );
