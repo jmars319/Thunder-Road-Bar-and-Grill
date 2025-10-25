@@ -37,6 +37,9 @@ Complete restaurant management system with public website and admin panel.
 - Developer notes: `DEVELOPER_NOTES.md` — repository housekeeping and special-case notes about nested package folders.
 - Testing: `TESTING.md` — how to run frontend unit tests and the backend integration script, plus aggregated logs in `test-logs/`.
 - Styling: `STYLING.md` — design-token philosophy, migration checklist, verification commands, and CI recommendations (self-contained).
+ - Contributor docs: `CONTRIBUTING.md` — how to contribute, commit message style, and PR checklist.
+ - Frontend developer guide: `FRONTEND-DEVELOPER-GUIDE.md` — quick-start, linting, tests, and Tailwind notes.
+ - Linting guidance: `LINTING.md` — ESLint and Stylelint instructions and Tailwind handling.
 
 ## Setup Instructions
 
@@ -104,6 +107,24 @@ thunder-road/
 └── database/
     └── schema.sql
 ```
+
+## Developer quick links
+
+Run these from the repository root when working locally:
+
+```bash
+# Frontend
+cd frontend
+npm install
+npm run lint        # JS lint
+npm run lint:css    # CSS lint
+npm start           # start dev server
+
+# Run unit tests (CI style)
+CI=true npm test -- --watchAll=false --runInBand
+```
+
+If you plan to contribute, see `CONTRIBUTING.md` for the PR checklist and commit message conventions.
 
 ## API Endpoints
 
