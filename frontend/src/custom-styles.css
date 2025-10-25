@@ -21,7 +21,7 @@
   /* Background */
   --background-color: #fef7ed;
   --background-light: #fffbfa;
-  --surface-color: #ffffff;
+  --surface-color: #fff;
   --surface-warm: #fff7f2;
   --surface-dark: #111827;
 
@@ -29,17 +29,17 @@
   --text-primary: #1c1917;
   --text-secondary: #78716c;
   --text-muted: #94a3b8;
-  --text-inverse: #ffffff;
+  --text-inverse: #fff;
 
   /* Borders */
   --border-color: #e2e8f0;
   --divider-color: #f1f5f9;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 5%);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 10%);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 10%);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 10%);
 
   /* Transitions */
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -47,8 +47,8 @@
 
   /* Logo badge tokens (light neutral background that adapts to dark mode) */
   --logo-badge-bg: #fff7f2; /* branded off-white */
-  --logo-badge-border: rgba(16,24,40,0.06);
-  --logo-badge-shadow: 0 6px 20px rgba(16,24,40,0.08);
+  --logo-badge-border: rgb(16 24 40 / 6%);
+  --logo-badge-shadow: 0 6px 20px rgb(16 24 40 / 8%);
 
   /* Panel animation variables (override to tweak animation) */
   --panel-transition-duration: 360ms;
@@ -56,9 +56,11 @@
   --panel-fade-duration: 240ms;
   --panel-max-height: 1200px; /* fallback if JS measurement isn't available */
 }
+
 .logo-badge img,
 .logo-badge svg {
   display: block;
+
   /* keep the full image visible and preserve aspect ratio; constrain the
     graphic to the badge height (minus a small inset) so it doesn't touch
     the navbar edges. Use max-height so width:auto preserves aspect ratio. */
@@ -88,22 +90,24 @@
     --primary-dark: #dc2626;
     --secondary-color: #b45309;
     --accent-color: #f59e0b;
-
   --text-primary: #e6eef8; /* near white */
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --text-inverse: #ffffff;
-
+  --text-inverse: #fff;
     --border-color: #1f2a37;
     --divider-color: #14202b;
+
     /* Subtle dark-mode adaptation: translucent branded off-white and
        lighter border; reduce shadow for a cleaner look on dark surfaces */
+
     /* brighten the dark-mode badge slightly (~15%) */
+
     /* Increase visibility in dark mode: brighter but still translucent */
+
     /* Make dark-mode badge more visible: brighter but still translucent */
-    --logo-badge-bg: rgba(255,255,255,0.30);
-    --logo-badge-border: rgba(255,255,255,0.16);
-    --logo-badge-shadow: 0 4px 12px rgba(255,255,255,0.04);
+    --logo-badge-bg: rgb(255 255 255 / 30%);
+    --logo-badge-border: rgb(255 255 255 / 16%);
+    --logo-badge-shadow: 0 4px 12px rgb(255 255 255 / 4%);
   }
 }
 
@@ -114,49 +118,43 @@
   --surface-color: #0f1724;
   --surface-warm: #111827;
   --surface-dark: #03050a;
-
   --primary-color: #ef4444;
   --primary-dark: #dc2626;
   --secondary-color: #b45309;
   --accent-color: #f59e0b;
-
   --text-primary: #e6eef8;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --text-inverse: #ffffff;
-
+  --text-inverse: #fff;
   --border-color: #1f2a37;
   --divider-color: #14202b;
-  --logo-badge-bg: rgba(255,255,255,0.30);
-  --logo-badge-border: rgba(255,255,255,0.16);
-  --logo-badge-shadow: 0 4px 12px rgba(255,255,255,0.04);
+  --logo-badge-bg: rgb(255 255 255 / 30%);
+  --logo-badge-border: rgb(255 255 255 / 16%);
+  --logo-badge-shadow: 0 4px 12px rgb(255 255 255 / 4%);
 }
 
 :root[data-theme='light'] {
   /* Reinforce light theme variables */
   --background-color: #fef7ed;
   --background-light: #fffbfa;
-  --surface-color: #ffffff;
+  --surface-color: #fff;
   --surface-warm: #fff7f2;
   --surface-dark: #111827;
-
   --primary-color: #dc2626;
   --primary-dark: #b91c1c;
   --secondary-color: #92400e;
   --accent-color: #f59e0b;
-
   --text-primary: #1c1917;
   --text-secondary: #78716c;
   --text-muted: #94a3b8;
-  --text-inverse: #ffffff;
-
+  --text-inverse: #fff;
   --border-color: #e2e8f0;
   --divider-color: #f1f5f9;
 }
 
 /* Global Styles */
 body {
-  font-family: 'Roboto', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: Roboto, 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--background-color);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -171,13 +169,13 @@ html {
 
 /* Headings use Impact/Anton font */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Impact', 'Anton', 'Arial Black', sans-serif;
+  font-family: Impact, Anton, 'Arial Black', sans-serif;
   font-weight: 700;
 }
 
 /* Accent Text (decorative) */
 .accent-text {
-  font-family: 'Pacifico', 'Brush Script MT', cursive;
+  font-family: Pacifico, 'Brush Script MT', cursive;
 }
 
 /* Menu Price (monospace for clarity) */
@@ -197,7 +195,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Overlay gradient used on images to improve text readability */
 .overlay-gradient {
-  background: linear-gradient(to bottom, rgba(0,0,0,0.20), rgba(0,0,0,0.10));
+  background: linear-gradient(to bottom, rgb(0 0 0 / 20%), rgb(0 0 0 / 10%));
 }
 
 /* Hero Text Outline (for readability) */
@@ -210,7 +208,7 @@ h1, h2, h3, h4, h5, h6 {
     -1px -1px 0 var(--primary-color),
     1px -1px 0 var(--primary-color),
     -1px 1px 0 var(--primary-color),
-    0 2px 6px rgba(0,0,0,0.25);
+    0 2px 6px rgb(0 0 0 / 25%);
 }
 
 /* Card Hover Effects */
@@ -239,8 +237,8 @@ h1, h2, h3, h4, h5, h6 {
    This improves text contrast while preserving some image visibility. The
    color adapts for light/dark modes for consistent readability. */
 .expanded-panel--image {
-  background: rgba(255,255,255,0.92);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   box-shadow: var(--shadow-lg);
   border-bottom-left-radius: 0.5rem;
@@ -250,12 +248,13 @@ h1, h2, h3, h4, h5, h6 {
 @media (prefers-color-scheme: dark) {
   .expanded-panel--image {
     /* darker, higher-contrast panel on dark mode */
+
     /* Use a richer, more opaque surface so text stands out over the image */
-    background: rgba(8,12,20,0.90);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgb(8 12 20 / 90%);
     backdrop-filter: blur(8px);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.7);
-    border: 1px solid rgba(255,255,255,0.04);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 70%);
+    border: 1px solid rgb(255 255 255 / 4%);
   }
 }
 
@@ -263,6 +262,7 @@ h1, h2, h3, h4, h5, h6 {
 .chevron {
   transition: transform 260ms var(--panel-transition-easing, cubic-bezier(0.2,0.8,0.2,1));
 }
+
 .chevron.rotated {
   transform: rotate(180deg);
 }
@@ -276,12 +276,14 @@ h1, h2, h3, h4, h5, h6 {
   transition: max-height var(--panel-transition-duration, 360ms) var(--panel-transition-easing, cubic-bezier(0.2, 0.8, 0.2, 1)),
               opacity var(--panel-fade-duration, 240ms) ease, transform calc(var(--panel-transition-duration, 360ms) - 40ms) var(--panel-transition-easing, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
+
 .expanded-panel.expanded {
   /* when JS measurement isn't available, fall back to CSS var */
   max-height: var(--panel-max-height, 1200px);
   opacity: 1;
   transform: translateY(0);
 }
+
 .expanded-panel.collapsed {
   max-height: 0;
   opacity: 0;
@@ -297,7 +299,7 @@ h1, h2, h3, h4, h5, h6 {
 .ripple {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 30%);
   transform: scale(0);
   animation: ripple 0.6s linear;
   pointer-events: none;
@@ -313,13 +315,13 @@ h1, h2, h3, h4, h5, h6 {
 /* Button Selection Fix (prevent text from becoming invisible) */
 .btn::selection,
 .btn *::selection {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgb(0 0 0 / 12%);
   color: inherit;
 }
 
-.btn::-moz-selection,
-.btn *::-moz-selection {
-  background: rgba(0, 0, 0, 0.12);
+.btn::selection,
+.btn *::selection {
+  background: rgb(0 0 0 / 12%);
   color: inherit;
 }
 
@@ -350,7 +352,7 @@ h1, h2, h3, h4, h5, h6 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(0 0 0 / 50%);
   backdrop-filter: blur(4px);
   z-index: 9999;
 }
@@ -395,7 +397,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .admin-sidebar nav::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(220,38,38,0.92), rgba(146,64,14,0.92));
+  background: linear-gradient(180deg, rgb(220 38 38 / 92%), rgb(146 64 14 / 92%));
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -407,7 +409,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .admin-sidebar nav {
   scrollbar-width: thin;
-  scrollbar-color: rgba(220,38,38,0.92) transparent;
+  scrollbar-color: rgb(220 38 38 / 92%) transparent;
 }
 
 .admin-main__content::-webkit-scrollbar {
@@ -416,13 +418,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .admin-main__content::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.12);
+  background: rgb(0 0 0 / 12%);
   border-radius: 9999px;
 }
 
 @media (prefers-color-scheme: dark) {
   .admin-main__content::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.06);
+    background: rgb(255 255 255 / 6%);
   }
 }
 
@@ -430,7 +432,7 @@ h1, h2, h3, h4, h5, h6 {
 .admin-sidebar nav button:focus-visible,
 .admin-sidebar nav a:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  box-shadow: 0 0 0 3px rgb(220 38 38 / 12%);
   border-radius: 8px;
 }
 
@@ -445,7 +447,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-inverse);
 }
 
-::-moz-selection {
+::selection {
   background: var(--primary-color);
   color: var(--text-inverse);
 }
@@ -456,7 +458,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 1rem;
   height: 1rem;
   border: 2px solid transparent;
-  border-top: 2px solid currentColor;
+  border-top: 2px solid currentcolor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -465,7 +467,7 @@ h1, h2, h3, h4, h5, h6 {
 .form-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+  box-shadow: 0 0 0 3px rgb(220 38 38 / 8%);
 }
 
 /* Form Input base styles (improve contrast and placeholder readability) */
@@ -476,29 +478,29 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .form-input::placeholder {
-  color: rgba(28, 25, 23, 0.45); /* slightly muted but readable */
+  color: rgb(28 25 23 / 45%); /* slightly muted but readable */
 }
 
 .form-input:-webkit-autofill,
 .form-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px var(--surface-color) inset !important;
-  box-shadow: 0 0 0px 1000px var(--surface-color) inset !important;
+  box-shadow: 0 0 0 1000px var(--surface-color) inset !important;
+  box-shadow: 0 0 0 1000px var(--surface-color) inset !important;
 }
 
 /* Price Badge */
 .price-badge {
   display: inline-block;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 60%);
   color: var(--text-inverse);
   padding: 0.18rem 0.6rem;
   border-radius: 9999px;
   font-size: 0.95rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 40%);
 }
 
 @media (prefers-color-scheme: light) {
   .price-badge {
-    background: rgba(220, 38, 38, 0.12);
+    background: rgb(220 38 38 / 12%);
     color: var(--text-primary);
     box-shadow: none;
   }
@@ -509,6 +511,7 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   /* Match the navbar inner height (h-16 = 4rem) so the badge and logo fit
      predictably. This explicit size avoids cases where 100% doesn't resolve
      as expected due to differing layout contexts. */
@@ -516,6 +519,7 @@ h1, h2, h3, h4, h5, h6 {
   width: auto;
   padding: 0;
   border-radius: 0.5rem; /* soft rounded square; change to 9999px for a circular badge */
+
   /* Hide the badge background so the logo fully covers it. If you prefer the
      previous background, change background to var(--logo-badge-bg) and restore
      border/box-shadow. */
@@ -526,7 +530,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Slightly larger badge and graphic on md+ so it matches navbar md:h-20 */
-@media (min-width: 768px) {
+@media (width >= 768px) {
   .logo-badge { height: 5rem; }
   .logo-badge img, .logo-badge svg { max-height: calc(5rem - 0.5rem); }
 }
@@ -540,7 +544,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .header-scrolled {
-  background: rgba(248, 250, 252, 0.95);
+  background: rgb(248 250 252 / 95%);
   box-shadow: var(--shadow-lg);
 }
 
@@ -624,7 +628,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .header-scrolled {
-    background: rgba(30, 41, 59, 0.95);
+    background: rgb(30 41 59 / 95%);
   }
   
   .admin-card {
