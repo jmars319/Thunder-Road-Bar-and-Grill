@@ -1,3 +1,15 @@
+/*
+  Spinner
+
+  Purpose:
+  - Small, accessible SVG spinner used as an inline loading indicator.
+
+  Contract:
+  - Props: { size?: number } — size is the spinner width/height in pixels (default: 24)
+
+  Notes:
+  - Keeps markup minimal and relies on the `animate-spin` utility class.
+*/
 export default function Spinner({ size = 24 }) {
   const s = size;
   return (

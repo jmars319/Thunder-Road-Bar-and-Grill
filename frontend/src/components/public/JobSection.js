@@ -1,3 +1,18 @@
+/*
+  JobSection
+
+  Purpose:
+  - Public job application UI. Fetches open positions and optional dynamic
+    application fields, allows applicants to submit a form and upload a resume.
+
+  Contract:
+  - Submits POST /api/jobs. Uploads resume via POST /api/media/upload when present.
+
+  Notes:
+  - Performs client-side validation and uses XHR for upload progress feedback.
+    Keep MAX_FILE_BYTES and ALLOWED_TYPES in sync with server-side limits.
+*/
+
 import { useState, useRef, useEffect } from 'react';
 import Toast from '../ui/Toast';
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';

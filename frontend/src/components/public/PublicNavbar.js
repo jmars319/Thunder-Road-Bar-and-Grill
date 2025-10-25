@@ -1,3 +1,16 @@
+/*
+  PublicNavbar
+
+  Purpose:
+  - Top navigation for the public site. Loads site settings and navigation
+    and provides responsive navigation, theme toggle and the Order Online modal trigger.
+
+  Contract:
+  - Props: { onGoToAdmin?: function }
+
+  Notes:
+  - Attempts to inline SVG logos for recoloring when the configured logo is an SVG.
+*/
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -5,6 +18,9 @@ import { icons } from '../../icons';
 import ThemeToggle from '../ThemeToggle';
 import Spinner from '../ui/Spinner';
 // Lazy-load the OrderModal so it's only fetched when a user opens the modal.
+// This keeps the initial JS bundle smaller and loads the placeholder only on
+// demand. If you add analytics for interest in ordering, dispatch analytics
+// events from the click handler that sets `orderOpen`.
 const OrderModal = React.lazy(() => import('./OrderModal'));
 
 /*
@@ -39,6 +55,9 @@ export default function PublicNavbar({ onGoToAdmin }) {
   const [navLinks, setNavLinks] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  // Tracks whether the Order Online modal is visible. Use this flag to
+  // lazy-load and render the lightweight OrderModal. Prefer `React.Suspense`
+  // around the modal so a small loading fallback can be displayed.
   const [orderOpen, setOrderOpen] = useState(false);
 
   useEffect(() => {

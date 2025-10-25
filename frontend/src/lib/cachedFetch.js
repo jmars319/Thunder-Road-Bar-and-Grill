@@ -1,5 +1,18 @@
-// Small cached fetch helper using localStorage. Returns parsed JSON or null on failure.
-// Usage: cachedFetch(url, { ttl: 300000 })
+/*
+  cachedFetch
+
+  Purpose:
+  - Small helper that fetches JSON and caches the parsed response in localStorage
+    for a short TTL (default 5 minutes). Useful for stale-while-revalidate UX.
+
+  Contract:
+  - default export: async function cachedFetch(url, { ttl?: number, fetchOptions?: object }) -> parsed JSON | null
+  - named exports: clearCacheFor(url), clearAllCache()
+
+  Notes:
+  - Returns null on network or parse failure to keep callers simple. Avoid using
+    this for sensitive data (localStorage is not secure). TTL is in milliseconds.
+*/
 
 const DEFAULT_TTL = 300000; // 5 minutes
 

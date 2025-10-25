@@ -1,6 +1,38 @@
+/*
+  index.css
+
+  Purpose:
+  - Tailwind entrypoint for base/component/utility directives and minimal
+    global reset styles used by the app.
+
+  Notes:
+  - Keep only layout and global resets here; theme tokens and component
+    surface styles are in `custom-styles.css`.
+  - Linting note: the `@tailwind` at-rules are PostCSS/Tailwind directives and
+    may trigger stylelint or other CSS linters that don't recognize them.
+    If you see "Unknown at rule @tailwind" during static linting, fix it by
+    adding one of the following to your project lint configuration:
+
+    1) Install a Tailwind-aware stylelint config, e.g.:
+       npm install --save-dev stylelint-config-tailwindcss stylelint
+       and extend it in your .stylelintrc
+
+    2) Add the rules to ignore in your stylelint config:
+       {
+         "rules": {
+           "at-rule-no-unknown": [true, { "ignoreAtRules": ["tailwind", "apply", "variants", "responsive", "screen"] }]
+         }
+       }
+
+    3) Or locally disable the rule around these directives (used below) if
+       you prefer not to change global config.
+*/
+
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
 
 body {
   margin: 0;

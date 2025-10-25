@@ -1,3 +1,16 @@
+/*
+  InboxModule
+
+  Purpose:
+  - Admin inbox for viewing and managing contact messages. Supports marking
+    messages as read and deleting messages.
+
+  Contract:
+  - Rendered in admin shell. Expects GET/PUT/DELETE endpoints for contact messages.
+
+  Notes:
+  - Keep UI optimistic but refetch after mutations to ensure server canonical state.
+*/
 import { useState, useEffect, useCallback } from 'react';
 import { icons } from '../../icons';
 

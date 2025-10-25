@@ -1,3 +1,13 @@
+/*
+  usePaginatedResource.test.js
+
+  Purpose:
+  - Integration tests for `usePaginatedResource`, validating paginated fetch
+    flows and reset behavior with a mocked IntersectionObserver.
+
+  Notes:
+  - Uses a small mock IntersectionObserver to keep tests deterministic.
+*/
 /* eslint-env jest */
 /* global beforeAll, afterAll, jest, describe, test, expect */
 import React from 'react';

@@ -1,3 +1,16 @@
+/*
+  ReservationsModule
+
+  Purpose:
+  - Admin interface for reviewing and updating reservation statuses.
+
+  Contract:
+  - Rendered in admin shell. Expects GET /api/reservations and PUT /api/reservations/:id
+    for status updates.
+
+  Notes:
+  - Designed for simple status workflow; consider server-side pagination when lists grow.
+*/
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
 

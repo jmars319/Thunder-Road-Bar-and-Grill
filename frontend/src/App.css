@@ -1,3 +1,14 @@
+/*
+  App.css
+
+  Purpose:
+  - Minimal app-scoped stylesheet created by the starter template. Keeps a
+    few example classes used by app-level smoke tests and demos.
+
+  Notes:
+  - Most styling lives in Tailwind and `custom-styles.css`. Keep this file
+    small or consider removing it as the project matures.
+*/
 .App {
   text-align: center;
 }

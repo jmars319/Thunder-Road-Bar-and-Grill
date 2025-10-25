@@ -1,3 +1,16 @@
+/*
+  NewsletterModule
+
+  Purpose:
+  - Admin management of newsletter subscribers (list, remove, export).
+
+  Contract:
+  - Rendered inside admin shell. Expects GET /api/newsletter/subscribers and
+    DELETE /api/newsletter/subscribers/:id for removal.
+
+  Notes:
+  - For very large lists consider server-side paging or an export endpoint.
+*/
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
 

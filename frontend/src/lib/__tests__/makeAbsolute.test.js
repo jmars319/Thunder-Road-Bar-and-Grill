@@ -1,3 +1,13 @@
+/*
+  makeAbsolute.test.js
+
+  Purpose:
+  - Unit tests for the `makeAbsolute` helper that normalizes file URLs to an
+    absolute API origin during development and runtime.
+
+  Notes:
+  - Keeps environment overrides local to the test and restores process env after.
+*/
 /* eslint-env jest,node */
 /* global require, afterAll */
 const makeAbsolute = require('../makeAbsolute');

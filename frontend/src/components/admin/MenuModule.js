@@ -1,3 +1,20 @@
+/*
+  MenuModule
+
+  Purpose:
+  - Admin UI to manage menu categories and items. Provides CRUD operations
+    for categories and individual menu items and integrates a media picker
+    for image uploads.
+
+  Contract:
+  - Rendered inside the admin shell. Expects backend endpoints to exist for
+    menu and media operations. Keep data-fetching defensive; failures should
+    fall back gracefully.
+
+  Notes:
+  - Keep presentation tokenized (use `custom-styles.css` tokens) and avoid
+    placing heavy logic here; consider extracting upload helpers/tests.
+*/
 import { useState, useEffect, useRef } from 'react';
 import { icons } from '../../icons';
 import Toast from '../ui/Toast';

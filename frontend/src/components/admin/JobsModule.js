@@ -1,3 +1,16 @@
+/*
+  JobsModule
+
+  Purpose:
+  - Admin panel for reviewing job applications and managing job postings.
+
+  Contract:
+  - Rendered inside the admin shell. Expects job-related API endpoints for
+    listing and updating applications.
+
+  Notes:
+  - Keep applicant data handling minimal and avoid leaking PII in logs.
+*/
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
 

@@ -1,3 +1,15 @@
+/*
+  MediaModule
+
+  Purpose:
+  - Admin media manager for uploading and selecting images used across the site.
+
+  Contract:
+  - Rendered inside admin shell. Expects media endpoints (list, upload, delete).
+
+  Notes:
+  - Keep upload handling robust (size/type checks) and expose progress to the UI.
+*/
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
 import usePaginatedResource from '../../hooks/usePaginatedResource';

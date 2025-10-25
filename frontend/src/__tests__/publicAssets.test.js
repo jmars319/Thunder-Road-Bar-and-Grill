@@ -1,3 +1,13 @@
+/*
+  publicAssets.test.js
+
+  Purpose:
+  - Sanity checks for public/ assets referenced by `index.html` and
+    `site.webmanifest` to ensure required images exist in the `public/` folder.
+
+  Notes:
+  - Keeps the runtime public folder consistent for builds and deployment.
+*/
 /* eslint-env jest, node */
 /* global require, __dirname, it, describe, expect */
 const fs = require('fs');

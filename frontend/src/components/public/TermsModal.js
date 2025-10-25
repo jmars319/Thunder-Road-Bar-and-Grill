@@ -1,3 +1,17 @@
+/*
+  TermsModal
+
+  Purpose:
+  - Simple modal that displays site Terms of Service to public users.
+
+  Contract:
+  - Props: { onClose: function }
+
+  Notes:
+  - Presentational only. Keep content short and prefer server-driven legal
+    content if you later wire this to an admin-managed policy store.
+*/
+
 // No default React import required with the new JSX transform
 
 export default function TermsModal({ onClose }) {

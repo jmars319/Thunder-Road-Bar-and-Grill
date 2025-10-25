@@ -1,3 +1,18 @@
+/*
+  ContactModal
+
+  Purpose:
+  - Public contact form modal used to send messages to the site owner/admin.
+
+  Contract:
+  - Props: { onClose: function }
+
+  Notes:
+  - Performs minimal client-side validation and posts to POST /api/contact.
+  - Emits a `contactMessageSent` CustomEvent on success to allow admin UI
+    listeners to react.
+*/
+
 import { useState } from 'react';
 import Spinner from '../ui/Spinner';
 // reference Spinner to satisfy some analyzers that don't detect JSX usage in ternaries

@@ -1,3 +1,17 @@
+/*
+  PrivacyModal
+
+  Purpose:
+  - Show the site's Privacy Policy in a dismissible modal.
+
+  Contract:
+  - Props: { onClose: function }
+
+  Notes:
+  - Content is currently embedded in the component. If policies need to be
+    edited by non-developers, consider loading this from the backend.
+*/
+
 // No default React import required with the new JSX transform
 
 export default function PrivacyModal({ onClose }) {

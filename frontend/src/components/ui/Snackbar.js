@@ -1,3 +1,16 @@
+/*
+  Snackbar
+
+  Purpose:
+  - Minimal global snackbar that listens for `snackbar` CustomEvents and
+    displays transient toast messages in the bottom-right corner.
+
+  Contract:
+  - Emits: listens for `window.dispatchEvent(new CustomEvent('snackbar', { detail: 'message' }))`.
+
+  Notes:
+  - Messages auto-dismiss after ~3s. Keep content brief and user-friendly.
+*/
 import { useEffect, useState } from 'react';
 
 export default function Snackbar() {

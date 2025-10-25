@@ -1,3 +1,15 @@
+/*
+  SettingsModule
+
+  Purpose:
+  - Admin settings page for business information, site branding, and basic site configuration.
+
+  Contract:
+  - Rendered inside the admin shell. Reads and updates site settings via API.
+
+  Notes:
+  - Changing logos or branding should trigger a `siteSettingsUpdated` event so the public site updates live.
+*/
 import { useState, useEffect } from 'react';
 import { clearCacheFor } from '../../lib/cachedFetch';
 import { icons } from '../../icons';

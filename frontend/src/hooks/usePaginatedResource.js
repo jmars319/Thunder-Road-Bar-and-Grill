@@ -1,5 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+/*
+  usePaginatedResource
+
+  Purpose:
+  - Small hook to fetch paginated resources with optional infinite-scroll
+    sentinel support (IntersectionObserver). Returns items, loading state,
+    total count and helper methods to fetch/reset.
+
+  Contract:
+  - Input: baseUrl (string) - a URL that will be queried with `limit` and `offset` query params.
+           options: { limit?: number }
+  - Output: { items, loading, error, total, sentinelRef, fetchPage, reset }
+
+  Notes:
+  - Expects the server to return a JSON array and optionally set `X-Total-Count`
+    header for total item count. The hook appends `&limit=...&offset=...` to the
+    provided baseUrl when fetching pages.
+*/
 // Simple paginated fetch hook with optional infinite-scroll sentinel support.
 // - fetcher(url) should behave like window.fetch
 // - options: { limit }

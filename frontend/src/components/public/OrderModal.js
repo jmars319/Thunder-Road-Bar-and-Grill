@@ -1,3 +1,20 @@
+/**
+ * OrderModal
+ *
+ * Purpose:
+ * - Lightweight placeholder modal shown when users click "Order Online".
+ * - Intentionally simple: shows a Work-In-Progress message until a real
+ *   ordering flow (or external provider) is integrated.
+ *
+ * Props:
+ * - onClose: function invoked when the modal should be dismissed.
+ *
+ * Notes for maintainers:
+ * - This component is purposely small and synchronous. If you later
+ *   integrate a real ordering provider, consider making this a lazy-loaded
+ *   component (React.lazy) or replacing it with a portal-based flow to
+ *   isolate stacking context and focus management.
+ */
 export default function OrderModal({ onClose }) {
   return (
     <div className="modal-backdrop flex items-center justify-center z-50">

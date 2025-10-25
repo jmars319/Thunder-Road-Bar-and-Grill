@@ -1,3 +1,18 @@
+/*
+  HoursModal
+
+  Purpose:
+  - Fetch and display the business hours in a simple modal.
+
+  Contract:
+  - Props: { onClose: function }
+
+  Notes:
+  - This component performs a single GET to /api/business-hours and
+    renders the result. Keep the UI minimal to avoid large legal or policy
+    text inside this modal.
+*/
+
 import { useEffect, useState } from 'react';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';

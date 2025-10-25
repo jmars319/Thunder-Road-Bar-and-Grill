@@ -1,3 +1,15 @@
+/*
+  MediaCardSkeleton
+
+  Purpose:
+  - Lightweight skeleton loader for grids of media cards used during async loads.
+
+  Contract:
+  - Props: { count?: number } — number of skeleton cards to render (default: 8)
+
+  Notes:
+  - Uses `animate-pulse` and tokenized background colors so it responds to theme.
+*/
 export default function MediaCardSkeleton({ count = 8 }) {
   const cards = Array.from({ length: count });
   return (

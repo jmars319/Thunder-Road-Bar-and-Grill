@@ -203,9 +203,17 @@ export default function PublicFooter({ onGoToAdmin }) {
       </div>
 
       {showHours && (
-        <React.Suspense fallback={<div aria-hidden className="fixed inset-0 z-40 flex items-center justify-center"><div className="bg-black/40" /></div>}>
-          <HoursModal onClose={() => setShowHours(false)} />
-        </React.Suspense>
+        <>
+          {/*
+            Render lazily-loaded modals via React.Suspense so the main bundle
+            doesn't include modal-heavy content. The fallback keeps a simple
+            backdrop while the modal chunk loads. This pattern is used for
+            Hours, Contact, Privacy and Terms below.
+          */}
+          <React.Suspense fallback={<div aria-hidden className="fixed inset-0 z-40 flex items-center justify-center"><div className="bg-black/40" /></div>}>
+            <HoursModal onClose={() => setShowHours(false)} />
+          </React.Suspense>
+        </>
       )}
 
       {showContact && (

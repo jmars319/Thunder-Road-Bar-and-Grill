@@ -1,3 +1,17 @@
+/*
+  DashboardModule
+
+  Purpose:
+  - Admin dashboard overview that aggregates counts (reservations, jobs,
+    subscribers, messages) and provides quick links to admin modules.
+
+  Contract:
+  - Rendered inside the admin shell. Performs read-only fetches to display
+    aggregate metrics. Keep network calls resilient to partial failures.
+
+  Notes:
+  - Prefer adding per-card loading states if dashboard fetches become heavy.
+*/
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
 

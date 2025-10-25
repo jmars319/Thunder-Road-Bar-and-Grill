@@ -1,3 +1,20 @@
+/*
+  AdminPanel
+
+  Purpose:
+  - Top-level admin shell that composes the admin modules (Dashboard, Inbox,
+    Menu, Reservations, Jobs, Media, Settings, Newsletter) and provides the
+    sidebar navigation, header, and global controls.
+
+  Contract:
+  - Props: { user?: object, onLogout?: function, onBackToSite?: function }
+
+  Notes:
+  - Modules are registered in the `AdminModules` map so new modules can be
+    added without changing the shell logic. Keep module components focused on
+    API interactions; this file handles layout and module routing only.
+*/
+
 import React, { useState, useEffect } from 'react';
 import { icons } from '../icons';
 import ThemeToggle from '../components/ThemeToggle';

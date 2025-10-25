@@ -1,3 +1,19 @@
+/*
+  MenuSection
+
+  Purpose:
+  - Render the public menu. Loads menu categories and items from the API and
+  - allows expanding/collapsing categories with measured panel animations.
+
+  Contract:
+  - Expects GET /api/menu to return an array of categories with `items` arrays.
+  - Optionally reads `site-settings.menu_description` for a description override.
+
+  Notes:
+  - Uses stale-while-revalidate via `cachedFetch` to provide instant content
+  -   with background refresh.
+  - Panel expansion uses JS measurements to animate `max-height` smoothly.
+*/
 import React, { useState, useEffect, useRef } from 'react';
 import { icons } from '../../icons';
 import cachedFetch, { clearCacheFor } from '../../lib/cachedFetch';
