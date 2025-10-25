@@ -33,3 +33,18 @@ See also
 --------
 - `DEVELOPERS.md` — developer onboarding and frontend/admin guidance
 - `TESTING.md` — instructions for running tests and location of aggregated test logs (`test-logs/`)
+
+Stylelint & editor configuration
+--------------------------------
+Recent housekeeping added a lightweight stylelint setup for the frontend to avoid noisy "unknown at rule @tailwind" warnings in editors. Key points:
+
+- A workspace `.vscode/settings.json` was added to disable the built-in CSS/SCSS/LESS validators and prefer the Stylelint extension when opening the repository root.
+- The frontend contains `frontend/.stylelintrc.json` to ignore Tailwind at-rules and a targeted override for `src/custom-styles.css` and `src/App.css` so renaming CSS classes (which could break JS) is not required.
+- Local lint scripts are available in `frontend/package.json`:
+
+```bash
+cd frontend
+npm run lint:css   # run stylelint
+```
+
+If your editor still reports warnings after pulling these changes, reload the editor window and ensure the Stylelint extension is installed and configured to use workspace settings.
