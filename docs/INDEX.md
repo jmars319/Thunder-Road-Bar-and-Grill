@@ -24,6 +24,14 @@ Backend-specific docs
 ---------------------
 - `backend/README.md` — backend quick start, env vars, routes, and operational notes.
 
+Release & verification
+----------------------
+- `release/CHANGELOG.md` — changelog copy for discoverability (also at repo root).
+- `release/CHANGELOG-RELEASE-ENTRY.md` — per-release entry used for release automation.
+- `release/RELEASE_NOTES.md` — release summary and verification notes.
+- `release/2025-10-15-lint-cleanup.md` — specific release note included in `RELEASE_NOTES/`.
+- `ops/VERIFICATION_REPORT.md` — verification and audit summary for recent styling/tokenization work.
+
 How to use these docs (quick commands)
 -------------------------------------
 Run common tasks from the repo root:
