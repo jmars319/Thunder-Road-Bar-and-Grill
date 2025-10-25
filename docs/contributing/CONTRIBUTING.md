@@ -40,7 +40,7 @@ Review guidance for maintainers
 Coding standards
 ----------------
 - Follow project ESLint rules for JavaScript/JSX. Run `npm run lint` and `npm run lint:fix`.
-- CSS is checked with stylelint; see `docs/guides/LINTING.md` for Tailwind-aware rules and how to run `npm run lint:css`.
+ - CSS is checked with stylelint; see `../guides/LINTING.md` for Tailwind-aware rules and how to run `npm run lint:css`.
 
 Branching and releases
 ----------------------

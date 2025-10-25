@@ -40,15 +40,15 @@ Complete restaurant management system with public website and admin panel.
 - Backend: Node.js, Express
 - Database: MySQL
 
-## Documentation
+## Documentation (canonical)
 
-- Developer guide: `DEVELOPERS.md` — onboarding, architecture notes, and tips for making changes to the frontend and admin modules.
-- Developer notes: `DEVELOPER_NOTES.md` — repository housekeeping and special-case notes about nested package folders.
-- Testing: `TESTING.md` — how to run frontend unit tests and the backend integration script, plus aggregated logs in `test-logs/`.
-- Styling: `STYLING.md` — design-token philosophy, migration checklist, verification commands, and CI recommendations (self-contained).
- - Contributor docs: `CONTRIBUTING.md` — how to contribute, commit message style, and PR checklist.
- - Frontend developer guide: `FRONTEND-DEVELOPER-GUIDE.md` — quick-start, linting, tests, and Tailwind notes.
- - Linting guidance: `LINTING.md` — ESLint and Stylelint instructions and Tailwind handling.
+- Developer guide: `docs/notes/DEVELOPERS.md` — onboarding, architecture notes, and tips for making changes to the frontend and admin modules.
+- Developer notes: `docs/notes/DEVELOPER_NOTES.md` — repository housekeeping and special-case notes about nested package folders.
+- Testing: `docs/guides/TESTING.md` — how to run frontend unit tests and the backend integration script, plus aggregated logs in `test-logs/`.
+- Styling: `docs/guides/STYLING.md` — design-token philosophy, migration checklist, verification commands, and CI recommendations (self-contained).
+- Contributor docs: `docs/contributing/CONTRIBUTING.md` — how to contribute, commit message style, and PR checklist.
+- Frontend developer guide: `docs/frontend/DEVELOPER-GUIDE.md` — quick-start, linting, tests, and Tailwind notes.
+- Linting guidance: `docs/guides/LINTING.md` — ESLint and Stylelint instructions and Tailwind handling.
 
 ## Setup Instructions
 
@@ -133,7 +133,7 @@ npm start           # start dev server
 CI=true npm test -- --watchAll=false --runInBand
 ```
 
-If you plan to contribute, see `CONTRIBUTING.md` for the PR checklist and commit message conventions.
+If you plan to contribute, see `docs/contributing/CONTRIBUTING.md` for the PR checklist and commit message conventions.
 
 ## API Endpoints
 

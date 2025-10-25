@@ -6,7 +6,7 @@ Purpose:
 Unreleased (docs & minor robustness) - 2025-10-14
 
 Added
-- `DEVELOPERS.md` — concise developer onboarding and reference for the frontend
+	- `../notes/DEVELOPERS.md` — concise developer onboarding and reference for the frontend
 	(theme tokens, ToastContext, AdminModule contract, API endpoints, testing notes).
 
 Changed

@@ -19,7 +19,7 @@ improvements, and small defensive fixes.
 
 Highlights
 ---------
-- Added `DEVELOPERS.md` at the repo root with a concise developer onboarding
+ - Added `../notes/DEVELOPERS.md` with a concise developer onboarding
 	guide (theme tokens, ThemeContext, ToastContext, admin module contract,
 	common API endpoints, testing commands, and a Tailwind tokenization checklist).
 - Annotated many frontend files with human-friendly comments to help future

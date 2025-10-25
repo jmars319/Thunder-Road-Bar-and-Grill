@@ -13,14 +13,14 @@ simple human-readable format. Keep entries concise and place new changes under
 ## Unreleased - 2025-10-14
 
 ### Added
-- `DEVELOPERS.md` — developer onboarding and reference for the frontend. Covers:
+ - `../notes/DEVELOPERS.md` — developer onboarding and reference for the frontend. Covers:
 	- Theme tokens and runtime theming (ThemeContext)
 	- Toast API (ToastContext)
 	- Admin module registry/contract
 	- Common API endpoints and testing instructions
 	- Tailwind tokenization checklist
 
-- `RELEASE_NOTES.md` — release note for this documentation-focused update.
+ - `RELEASE_NOTES.md` — release note for this documentation-focused update.
 - `CHANGELOG-RELEASE-ENTRY.md` — per-release entry file (for machine-assisted workflows).
 
 ### Changed
@@ -38,7 +38,7 @@ simple human-readable format. Keep entries concise and place new changes under
 	in try/catch and delete failures log to console for easier debugging.
 
 ### Maintenance
-- `DEVELOPERS.md` was added to consolidate onboarding information and common
+- `../notes/DEVELOPERS.md` was added to consolidate onboarding information and common
 	development commands.
 - Tests run: `cd frontend && npm test -- --watchAll=false` — PASS (representative test).
 

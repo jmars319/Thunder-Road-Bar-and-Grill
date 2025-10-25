@@ -94,7 +94,7 @@ This project centralizes developer docs in `docs/`. See `docs/INDEX.md` for addi
 
 Contributing
 ------------
-Follow the repository `CONTRIBUTING.md` for PR workflow and code style. Keep `server.js` as the thin wiring layer and put complex logic in `routes/` or helper modules.
+Follow `../contributing/CONTRIBUTING.md` for PR workflow and code style. Keep `server.js` as the thin wiring layer and put complex logic in `routes/` or helper modules.
 
 If you'd like, I can extend this README by auto-extracting available endpoints from `backend/routes/` and include an example `.env.example`.
 
