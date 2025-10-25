@@ -38,6 +38,8 @@ frontend/.stylelintrc.json
 # ignore backup files
 *.backup
 
+# Ignore favicon backup folders created during asset updates
+/frontend/public/favicon-backup*
 # Runtime logs
 backend.log
 backend/*.log
