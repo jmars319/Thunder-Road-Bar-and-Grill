@@ -1,0 +1,15 @@
+{
+  // Disable built-in CSS/SCSS/LESS validation at the repository root so
+  // editors that open the repository (not the frontend folder) don't show
+  // "Unknown at rule @tailwind" or similar warnings. The frontend has its
+  // own .vscode/settings.json for per-folder settings but many editors only
+  // read the workspace/root settings when the repo root is opened.
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+
+  // Prefer the Stylelint extension to provide linting. Ensure the extension
+  // is installed and set to use workspace configuration so stylelint rules
+  // in `.stylelintrc.json` are honored.
+  "stylelint.enable": true
+}
