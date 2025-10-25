@@ -63,7 +63,7 @@ export default function HeroSection() {
   }, [images]);
 
   return (
-    <div className="hero-gradient text-text-inverse py-32 relative overflow-hidden">
+    <div className="hero-gradient text-text-inverse py-20 relative overflow-hidden">
       {/* background slideshow: always render container so z-index layering is consistent */}
   <div className="absolute inset-0 z-0" aria-hidden={images.length === 0}>
         {images.length > 0 && (
@@ -87,10 +87,10 @@ export default function HeroSection() {
         {images[index] && (
           <img src={images[index].src} alt={images[index].alt || ''} className="sr-only" />
         )}
-        <h1 className="hero-title text-5xl md:text-6xl font-heading font-extrabold mb-6">
+        <h1 className="hero-title text-4xl md:text-5xl font-heading font-extrabold mb-4">
           Welcome to Thunder Road
         </h1>
-        <p className="hero-subtitle text-xl md:text-2xl opacity-90 mb-8 max-w-2xl mx-auto">
+        <p className="hero-subtitle text-lg md:text-xl opacity-90 mb-6 max-w-2xl mx-auto">
           Great Food. Cold Drinks. Good Times.
         </p>
         <div className="flex gap-4 justify-center flex-wrap">
@@ -98,7 +98,7 @@ export default function HeroSection() {
             href="#menu"
             role="button"
             aria-label="View menu"
-            className="bg-primary text-text-inverse px-8 py-3 rounded-lg hover:bg-primary-dark transition font-bold shadow-lg"
+            className="bg-primary text-text-inverse px-6 py-2 rounded-lg hover:bg-primary-dark transition font-bold shadow-sm"
           >
             View Menu
           </a>
@@ -106,7 +106,7 @@ export default function HeroSection() {
             href="#reservations"
             role="button"
             aria-label="Make a reservation"
-            className="bg-surface text-text-primary px-8 py-3 rounded-lg hover:bg-surface-warm transition font-bold shadow-lg"
+            className="bg-surface text-text-primary px-6 py-2 rounded-lg hover:bg-surface-warm transition font-bold shadow-sm"
           >
             Make a Reservation
           </a>

@@ -260,12 +260,12 @@ export default function JobSection() {
   }, []);
 
   return (
-    <section id="jobs" className="px-4 py-12 md:py-20 bg-surface">
+    <section id="jobs" className="px-4 py-8 md:py-12 bg-surface">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-semibold mb-4">Join our team</h2>
-        <p className="mb-6 text-muted">We're hiring friendly, reliable people. Fill out the short form below to apply.</p>
+        <h2 className="text-xl font-semibold mb-3">Join our team</h2>
+        <p className="mb-4 text-muted">We're hiring friendly, reliable people. Fill out the short form below to apply.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4 bg-background p-6 rounded shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-3 bg-background p-4 rounded shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="flex flex-col">
               <span className="text-sm mb-1">Full name</span>
@@ -299,7 +299,7 @@ export default function JobSection() {
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="flex flex-col">
               <span className="text-sm mb-1">Availability / desired start</span>
               <input name="availability" value={form.availability} onChange={handleChange} className="form-input" />
@@ -360,7 +360,7 @@ export default function JobSection() {
           )}
 
           <div className="flex items-center justify-end">
-            <button type="submit" className="w-full bg-primary text-text-inverse py-3 px-6 rounded-lg hover:bg-primary-dark transition font-bold text-lg shadow-lg" disabled={submitting}>
+            <button type="submit" className="w-full bg-primary text-text-inverse py-2 px-4 rounded-lg hover:bg-primary-dark transition font-bold text-base shadow-sm" disabled={submitting}>
               {submitting ? 'Submitting…' : 'Submit application'}
             </button>
           </div>

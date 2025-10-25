@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 
 import { icons } from '../../icons';
 import ThemeToggle from '../ThemeToggle';
-import OrderModal from './OrderModal';
+import Spinner from '../ui/Spinner';
+// Lazy-load the OrderModal so it's only fetched when a user opens the modal.
+const OrderModal = React.lazy(() => import('./OrderModal'));
 
 /*
   PublicNavbar
@@ -302,5 +304,5 @@ export default function PublicNavbar({ onGoToAdmin }) {
 // Some editor/lint setups don't detect JSX uses of member-expressions like
 // `<icons.X />`. Provide a small used-symbol object so those tools don't
 // incorrectly report `icons` or `ThemeToggle` as unused.
-const __usedNavbar = { icons, ThemeToggle };
+const __usedNavbar = { icons, ThemeToggle, Spinner, OrderModal };
 void __usedNavbar;

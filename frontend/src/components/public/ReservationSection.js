@@ -76,26 +76,26 @@ export default function ReservationSection() {
   };
 
   return (
-    <div id="reservations" className="py-16 bg-background">
+    <div id="reservations" className="py-10 bg-background">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-heading font-bold text-center mb-12">Make a Reservation</h2>
+        <h2 className="text-2xl font-heading font-bold text-center mb-6">Make a Reservation</h2>
 
         {submitted && (
-          <div className="bg-success/10 border border-success rounded-lg p-4 mb-6 flex items-center gap-3">
+          <div className="bg-success/10 border border-success rounded-lg p-3 mb-4 flex items-center gap-3">
             {React.createElement(icons.CheckCircle, { size: 20, className: 'text-success' })}
             <p className="text-success">Reservation submitted! We'll contact you to confirm.</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-error/10 border border-error rounded-lg p-4 mb-6 flex items-center gap-3">
+          <div className="bg-error/10 border border-error rounded-lg p-3 mb-4 flex items-center gap-3">
             {React.createElement(icons.AlertCircle, { size: 20, className: 'text-error' })}
             <p className="text-error">{error}</p>
           </div>
         )}
 
-        <div className="bg-surface-warm rounded-lg shadow-lg p-8 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-surface-warm rounded-lg shadow-lg p-6 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label htmlFor="res-name" className="block text-sm font-medium text-text-primary mb-2">Name *</label>
               <input
@@ -104,7 +104,7 @@ export default function ReservationSection() {
                 aria-required="true"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="form-input w-full px-4 py-2 border border-border rounded-lg focus:outline-none transition"
+                className="form-input w-full px-3 py-2 border border-border rounded-lg focus:outline-none transition"
               />
             </div>
             <div>
@@ -115,7 +115,7 @@ export default function ReservationSection() {
                 aria-required="true"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                className="form-input w-full px-4 py-2 border border-border rounded-lg focus:outline-none transition"
+                className="form-input w-full px-3 py-2 border border-border rounded-lg focus:outline-none transition"
               />
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function ReservationSection() {
 
           <button
             onClick={handleSubmit}
-            className="w-full bg-primary text-text-inverse py-3 px-6 rounded-lg hover:bg-primary-dark transition font-bold text-lg shadow-lg"
+            className="w-full bg-primary text-text-inverse py-2 px-4 rounded-lg hover:bg-primary-dark transition font-bold text-base shadow-sm"
           >
             Submit Reservation
           </button>

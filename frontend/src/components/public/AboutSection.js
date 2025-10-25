@@ -59,14 +59,14 @@ export default function AboutSection() {
   }, []);
 
   return (
-  <div id="about" className="py-16 bg-surface-warm">
+  <div id="about" className="py-12 bg-surface-warm">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-heading font-bold text-center mb-6">About Us</h2>
-        <div className="bg-surface rounded-lg shadow-lg p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <h2 className="text-3xl font-heading font-bold text-center mb-4">About Us</h2>
+        <div className="bg-surface rounded-lg shadow-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
             <div className="h-full">
-              <h3 className="text-2xl font-heading font-semibold mb-4 text-text-primary">{about?.header}</h3>
-              <p className="text-text-secondary mb-4">{about?.paragraph}</p>
+              <h3 className="text-xl font-heading font-semibold mb-3 text-text-primary">{about?.header}</h3>
+              <p className="text-text-secondary mb-3">{about?.paragraph}</p>
             </div>
 
             <div className="h-full">

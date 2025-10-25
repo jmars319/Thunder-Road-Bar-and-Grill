@@ -32,9 +32,9 @@ export default function HoursModal({ onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative bg-surface text-text-primary rounded-lg shadow-lg max-w-md w-full p-6">
-        <div className="flex items-start justify-between mb-4">
-          <h3 className="text-xl font-heading font-semibold">Hours</h3>
+      <div className="relative bg-surface text-text-primary rounded-lg shadow-lg max-w-md w-full p-4">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="text-lg font-heading font-semibold">Hours</h3>
           <button onClick={onClose} aria-label="Close" className="text-text-muted hover:text-text-primary">✕</button>
         </div>
 
@@ -43,7 +43,7 @@ export default function HoursModal({ onClose }) {
           {error && <div className="text-red-500">{error}</div>}
 
           {!loading && !error && (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {hours.length === 0 && <li className="text-text-muted">No hours available</li>}
               {hours.map(h => (
                 <li key={h.id} className="flex justify-between">

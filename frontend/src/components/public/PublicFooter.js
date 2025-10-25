@@ -62,11 +62,11 @@ export default function PublicFooter({ onGoToAdmin }) {
   }, []);
 
   return (
-    <footer className="bg-surface-dark text-text-inverse py-8" role="contentinfo" aria-label="Site footer">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+    <footer className="bg-surface-dark text-text-inverse py-6" role="contentinfo" aria-label="Site footer">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
         {/* Left group: API columns + compact contact */}
-  <div className="flex flex-col md:flex-row md:items-start md:gap-8 w-full md:w-auto md:-ml-6 lg:-ml-12 xl:-ml-16">
-          <div className="flex gap-8">
+  <div className="flex flex-col md:flex-row md:items-start md:gap-6 w-full md:w-auto md:-ml-6 lg:-ml-12 xl:-ml-16">
+          <div className="flex gap-6">
             {columns
               .filter(col => !/(quick links|legal)/i.test(String(col.column_title || '')))
               .slice(0, 2)
@@ -103,7 +103,7 @@ export default function PublicFooter({ onGoToAdmin }) {
           </div>
 
           {/* compact center contact - stays to left group so right group stays flush right */}
-          <div className="flex flex-col items-start md:items-start ml-4">
+            <div className="flex flex-col items-start md:items-start ml-3">
             <div className="mb-1 text-xs text-text-secondary">© {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'}</div>
             <div className="flex flex-col items-start gap-1">
               {siteSettings?.phone && (
@@ -142,7 +142,7 @@ export default function PublicFooter({ onGoToAdmin }) {
         </div>
 
         {/* Right group: Quick Links + Legal/Admin as two columns on md+ */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-end gap-6 md:gap-12">
+  <div className="flex flex-col md:flex-row md:items-start md:justify-end gap-4 md:gap-8">
           {/* Quick Links column */}
           <div className="md:text-left">
             <h4 className="text-sm font-heading font-semibold mb-1 text-text-primary">Quick Links</h4>
