@@ -190,17 +190,12 @@ export default function MenuSection() {
                           <p className="text-text-secondary text-sm mt-1">{item.description}</p>
                         </div>
                         <div className="ml-4 flex flex-col items-end">
-                          <span className="price-badge" aria-label={typeof item.price === 'number' ? `Price ${item.price}` : 'Price not available'}>
-                            {typeof item.price === 'number'
-                              ? (
-                                item.primary_quantity
-                                  ? `${item.primary_quantity} · $${item.price.toFixed(2)}`
-                                  : `$${item.price.toFixed(2)}`
-                              )
-                              : '\u2014'
-                            }
-                          </span>
-                          {typeof item.secondary_price === 'number' && (
+                          {(typeof item.price === 'number' && Number(item.price) !== 0) ? (
+                            <span className="price-badge" aria-label={`Price ${item.price}`}>
+                              {item.primary_quantity ? `${item.primary_quantity} · $${item.price.toFixed(2)}` : `$${item.price.toFixed(2)}`}
+                            </span>
+                          ) : null}
+                          {typeof item.secondary_price === 'number' && Number(item.secondary_price) !== 0 && (
                             <span className="price-badge mt-2" aria-label={`Alternate price ${item.secondary_price}`}>
                               {item.secondary_quantity ? `${item.secondary_quantity} · ` : ''}{`$${item.secondary_price.toFixed(2)}`}
                             </span>
