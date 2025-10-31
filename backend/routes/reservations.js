@@ -42,10 +42,38 @@ router.get('/reservations', (req, res) => {
 // Create reservation
 router.post('/reservations', (req, res) => {
   const { name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests } = req.body;
-  
+
+  // Collect validation errors so we can return all issues at once
+  const validationErrors = [];
+  if (!name) validationErrors.push({ field: 'name', error: 'Name is required' });
+  if (!phone) validationErrors.push({ field: 'phone', error: 'Phone is required' });
+  if (!reservation_date) validationErrors.push({ field: 'reservation_date', error: 'Reservation date is required' });
+  if (!reservation_time) validationErrors.push({ field: 'reservation_time', error: 'Reservation time is required' });
+  if (number_of_guests == null) validationErrors.push({ field: 'number_of_guests', error: 'Number of guests is required' });
+
+  // Validate date format YYYY-MM-DD if provided
+  if (reservation_date && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(reservation_date))) {
+    validationErrors.push({ field: 'reservation_date', error: 'Reservation date must be in YYYY-MM-DD format' });
+  }
+
+  // Validate time format HH:MM (24-hour) if provided
+  if (reservation_time && (!/^[0-9]{2}:[0-9]{2}$/.test(String(reservation_time)) || !/^([01][0-9]|2[0-3]):([0-5][0-9])$/.test(String(reservation_time)))) {
+    validationErrors.push({ field: 'reservation_time', error: 'Reservation time must be in HH:MM 24-hour format' });
+  }
+
+  // Validate number_of_guests is a positive integer if provided
+  const guests = number_of_guests != null ? Number(number_of_guests) : null;
+  if (guests != null && (!Number.isInteger(guests) || guests <= 0)) {
+    validationErrors.push({ field: 'number_of_guests', error: 'Number of guests must be a positive integer' });
+  }
+
+  if (validationErrors.length) {
+    return res.status(400).json({ errors: validationErrors });
+  }
+
   req.db.query(
-    'INSERT INTO reservations (name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests],
+  'INSERT INTO reservations (name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  [name, email, phone, reservation_date, reservation_time, guests, special_requests],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: result.insertId, message: 'Reservation created' });

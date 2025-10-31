@@ -113,12 +113,23 @@ const storage = multer.diskStorage({
   }
 });
 
-// Limit uploads to 5MB and allow only common image/video types
+// Limit uploads to 10MB and allow common image/video/document types
+// NOTE: allowing documents (PDF/DOC/DOCX) is necessary for resume uploads.
+// Keep size reasonable to avoid abuse; scan or validate files further if needed.
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4'];
+    const allowed = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'video/mp4',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
     if (allowed.includes(file.mimetype)) return cb(null, true);
     const err = new Error('Invalid file type');
     err.status = 400;

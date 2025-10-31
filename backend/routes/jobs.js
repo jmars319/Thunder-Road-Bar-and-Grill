@@ -45,6 +45,22 @@ router.get('/jobs', (req, res) => {
 router.post('/jobs', (req, res) => {
   const { name, email, phone, position, experience, cover_letter, resume_url } = req.body;
   
+  // Validation: require all fields except cover_letter and resume_url
+  const errors = [];
+  if (!name || !String(name).trim()) errors.push({ field: 'name', error: 'Name is required' });
+  if (!email || !String(email).trim()) errors.push({ field: 'email', error: 'Email is required' });
+  else {
+    // basic email format check
+    const eRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!eRe.test(String(email))) errors.push({ field: 'email', error: 'Email must be a valid email address' });
+  }
+  if (!phone || !String(phone).trim()) errors.push({ field: 'phone', error: 'Phone is required' });
+  if (!position || !String(position).trim()) errors.push({ field: 'position', error: 'Position is required' });
+  if (!('experience' in req.body) || !String(experience).trim()) errors.push({ field: 'experience', error: 'Experience is required' });
+  if (!('availability' in req.body) || !String(req.body.availability || '').trim()) errors.push({ field: 'availability', error: 'Availability is required' });
+
+  if (errors.length) return res.status(400).json({ errors });
+
   req.db.query(
     'INSERT INTO job_applications (name, email, phone, position, experience, cover_letter, resume_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [name, email, phone, position, experience, cover_letter, resume_url],
