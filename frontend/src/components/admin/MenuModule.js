@@ -55,6 +55,8 @@ function MenuModule() {
   const { items: pagedMedia, loading: pagedLoading, total: pagedTotal, sentinelRef, fetchPage, reset } = usePaginatedResource(`${API_BASE}/media?category=gallery`, { limit: MEDIA_LIMIT_MENU });
   const [selectedMediaId, setSelectedMediaId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [showZeroPriceConfirm, setShowZeroPriceConfirm] = useState(false);
+  const [pendingSavePayload, setPendingSavePayload] = useState(null);
 
     /*
       MenuModule
@@ -209,14 +211,11 @@ function MenuModule() {
     }
   };
 
-  const saveItem = () => {
-    const method = editingItem.id ? 'PUT' : 'POST';
-    const url = editingItem.id
-      ? `${API_BASE}/menu/items/${editingItem.id}`
-      : `${API_BASE}/menu/items`;
-
-    // Ensure is_available is explicit so backend update doesn't set it to NULL
-    const payload = { ...editingItem, is_available: typeof editingItem.is_available !== 'undefined' ? editingItem.is_available : 1 };
+  // When saving an item, if any price equals 0.00 we require an explicit
+  // confirmation from the admin because public menus hide $0.00 prices.
+  const doSaveItem = (payload) => {
+    const method = payload.id ? 'PUT' : 'POST';
+    const url = payload.id ? `${API_BASE}/menu/items/${payload.id}` : `${API_BASE}/menu/items`;
 
     fetch(url, {
       method,
@@ -225,11 +224,32 @@ function MenuModule() {
     }).then(() => {
       fetchCategories();
       setEditingItem(null);
+      setPendingSavePayload(null);
+      setShowZeroPriceConfirm(false);
     }).catch(() => {
       // still refetch to keep UI consistent
       fetchCategories();
       setEditingItem(null);
+      setPendingSavePayload(null);
+      setShowZeroPriceConfirm(false);
     });
+  };
+
+  const attemptSaveItem = () => {
+    // Ensure is_available is explicit so backend update doesn't set it to NULL
+    const payload = { ...editingItem, is_available: typeof editingItem.is_available !== 'undefined' ? editingItem.is_available : 1 };
+
+    const primaryZero = typeof payload.price === 'number' && payload.price === 0;
+    const secondaryZero = typeof payload.secondary_price === 'number' && payload.secondary_price === 0;
+
+    if (primaryZero || secondaryZero) {
+      // Ask for confirmation: admin intends to save a 0.00 price which will be hidden publicly
+      setPendingSavePayload(payload);
+      setShowZeroPriceConfirm(true);
+      return;
+    }
+
+    doSaveItem(payload);
   };
 
   const deleteItem = (id) => {
@@ -632,7 +652,7 @@ function MenuModule() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={saveItem}
+                  onClick={attemptSaveItem}
                   className="flex-1 bg-primary text-text-inverse py-2 rounded-lg hover:bg-primary-dark"
                 >
                   Save
@@ -645,6 +665,34 @@ function MenuModule() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation modal when saving items with a $0.00 price */}
+      {showZeroPriceConfirm && (
+        <div className="modal-backdrop flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-2 text-text-primary">Confirm zero price</h3>
+            <p className="text-sm text-text-secondary mb-4">One or more prices for this item are set to <strong>$0.00</strong>. Items with a $0.00 price are hidden on the public menu. Do you want to save anyway?</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (pendingSavePayload) doSaveItem(pendingSavePayload);
+                }}
+                className="flex-1 bg-primary text-text-inverse py-2 rounded-lg hover:bg-primary-dark"
+              >
+                Save anyway
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowZeroPriceConfirm(false); setPendingSavePayload(null); }}
+                className="flex-1 bg-surface-warm text-text-secondary py-2 rounded-lg hover:bg-surface"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

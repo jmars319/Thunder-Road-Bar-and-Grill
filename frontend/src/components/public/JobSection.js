@@ -212,6 +212,21 @@ export default function JobSection() {
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
+        // If backend returned validation errors array, map to fieldErrors and focus
+        if (errBody && Array.isArray(errBody.errors)) {
+          const map = {};
+          errBody.errors.forEach((it) => {
+            if (it.field) map[it.field] = it.error || 'Invalid value';
+          });
+          setFieldErrors(map);
+          const first = Object.keys(map)[0];
+          if (first) {
+            const el = inputRefs.current[first];
+            if (el && typeof el.focus === 'function') el.focus();
+          }
+          throw new Error('Please fix the highlighted fields');
+        }
+
         throw new Error(errBody.error || 'Submission failed');
       }
 
@@ -283,24 +298,24 @@ export default function JobSection() {
         <form onSubmit={handleSubmit} className="space-y-3 bg-background p-4 rounded shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Full name</span>
-              <input ref={el => inputRefs.current.name = el} name="name" value={form.name} onChange={handleChange} required className="form-input" aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'err-name' : undefined} />
+              <span className="text-sm mb-1">Full name *</span>
+              <input id="name" ref={el => inputRefs.current.name = el} name="name" value={form.name} onChange={handleChange} required aria-required="true" className="form-input" aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'err-name' : undefined} />
               {fieldErrors.name && <div id="err-name" className="text-sm text-red-600 mt-1">{fieldErrors.name}</div>}
             </label>
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Email</span>
-              <input ref={el => inputRefs.current.email = el} name="email" type="email" value={form.email} onChange={handleChange} required className="form-input" aria-invalid={!!fieldErrors.email} aria-describedby={fieldErrors.email ? 'err-email' : undefined} />
+              <span className="text-sm mb-1">Email *</span>
+              <input id="email" ref={el => inputRefs.current.email = el} name="email" type="email" value={form.email} onChange={handleChange} required aria-required="true" className="form-input" aria-invalid={!!fieldErrors.email} aria-describedby={fieldErrors.email ? 'err-email' : undefined} />
               {fieldErrors.email && <div id="err-email" className="text-sm text-red-600 mt-1">{fieldErrors.email}</div>}
             </label>
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Phone</span>
-              <input ref={el => inputRefs.current.phone = el} name="phone" value={form.phone} onChange={handleChange} className="form-input" aria-invalid={!!fieldErrors.phone} aria-describedby={fieldErrors.phone ? 'err-phone' : undefined} />
+              <span className="text-sm mb-1">Phone *</span>
+              <input id="phone" ref={el => inputRefs.current.phone = el} name="phone" value={form.phone} onChange={handleChange} required aria-required="true" className="form-input" aria-invalid={!!fieldErrors.phone} aria-describedby={fieldErrors.phone ? 'err-phone' : undefined} />
               {fieldErrors.phone && <div id="err-phone" className="text-sm text-red-600 mt-1">{fieldErrors.phone}</div>}
             </label>
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Position</span>
+              <span className="text-sm mb-1">Position *</span>
               {positions && positions.length > 0 ? (
-                <select ref={el => inputRefs.current.position = el} name="position" value={form.position} onChange={handleChange} className="form-input" aria-invalid={!!fieldErrors.position} aria-describedby={fieldErrors.position ? 'err-position' : undefined}>
+                <select id="position" ref={el => inputRefs.current.position = el} name="position" value={form.position} onChange={handleChange} required aria-required="true" className="form-input" aria-invalid={!!fieldErrors.position} aria-describedby={fieldErrors.position ? 'err-position' : undefined}>
                   {positions.map((p) => (
                     // positions may be objects ({id, name}) or simple strings
                     <option key={p.id || p} value={p.name || p}>{p.name || p}</option>
@@ -308,7 +323,7 @@ export default function JobSection() {
                 </select>
               ) : (
                 // If no positions are available, allow the applicant to type a position.
-                <input ref={el => inputRefs.current.position = el} name="position" value={form.position} onChange={handleChange} className="form-input" placeholder="Position (e.g. Server)" />
+                <input id="position" ref={el => inputRefs.current.position = el} name="position" value={form.position} onChange={handleChange} required aria-required="true" className="form-input" placeholder="Position (e.g. Server)" />
               )}
               {fieldErrors.position && <div id="err-position" className="text-sm text-red-600 mt-1">{fieldErrors.position}</div>}
             </label>
@@ -316,12 +331,14 @@ export default function JobSection() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Availability / desired start</span>
-              <input name="availability" value={form.availability} onChange={handleChange} className="form-input" />
+              <span className="text-sm mb-1">Availability / desired start *</span>
+              <input id="availability" name="availability" value={form.availability} onChange={handleChange} required aria-required="true" ref={el => inputRefs.current.availability = el} className="form-input" aria-invalid={!!fieldErrors.availability} aria-describedby={fieldErrors.availability ? 'err-availability' : undefined} />
+              {fieldErrors.availability && <div id="err-availability" className="text-sm text-red-600 mt-1">{fieldErrors.availability}</div>}
             </label>
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Years of experience</span>
-              <input name="experience" value={form.experience} onChange={handleChange} className="form-input" />
+              <span className="text-sm mb-1">Years of experience *</span>
+              <input id="experience" name="experience" value={form.experience} onChange={handleChange} required aria-required="true" ref={el => inputRefs.current.experience = el} className="form-input" aria-invalid={!!fieldErrors.experience} aria-describedby={fieldErrors.experience ? 'err-experience' : undefined} />
+              {fieldErrors.experience && <div id="err-experience" className="text-sm text-red-600 mt-1">{fieldErrors.experience}</div>}
             </label>
           </div>
 

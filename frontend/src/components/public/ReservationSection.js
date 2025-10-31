@@ -42,9 +42,25 @@ export default function ReservationSection() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = async () => {
     setError('');
+    setErrors({});
+
+    // Client-side presence validation to provide immediate feedback
+    const localErrors = {};
+    if (!formData.name) localErrors.name = 'Name is required';
+    if (!formData.phone) localErrors.phone = 'Phone is required';
+    if (!formData.reservation_date) localErrors.reservation_date = 'Reservation date is required';
+    if (!formData.reservation_time) localErrors.reservation_time = 'Reservation time is required';
+    if (!formData.number_of_guests || Number(formData.number_of_guests) <= 0) localErrors.number_of_guests = 'Number of guests must be at least 1';
+
+    if (Object.keys(localErrors).length) {
+      setErrors(localErrors);
+      setError('Please fix the highlighted fields');
+      return;
+    }
     try {
       // Ensure number_of_guests is a number before sending
       const payload = { ...formData, number_of_guests: Number(formData.number_of_guests) || 1 };
@@ -67,8 +83,36 @@ export default function ReservationSection() {
           number_of_guests: 2,
           special_requests: ''
         });
+        setErrors({});
       } else {
-        setError('Failed to submit reservation');
+        // Attempt to surface validation errors (backend returns { errors: [{field,error}, ...] })
+        let payload;
+        try {
+          payload = await response.json();
+        } catch (e) {
+          setError('Failed to submit reservation');
+          return;
+        }
+
+        if (payload && Array.isArray(payload.errors)) {
+          const map = {};
+          payload.errors.forEach((it) => {
+            if (it.field) map[it.field] = it.error || 'Invalid value';
+          });
+          setErrors(map);
+          setError('Please fix the highlighted fields');
+
+          // focus first invalid field if present in DOM
+          const firstField = Object.keys(map)[0];
+          if (firstField) {
+            const el = document.getElementById(`res-${firstField}`);
+            if (el && typeof el.focus === 'function') el.focus();
+          }
+        } else if (payload && payload.error) {
+          setError(payload.error);
+        } else {
+          setError('Failed to submit reservation');
+        }
       }
     } catch {
       setError('An error occurred');
@@ -106,6 +150,7 @@ export default function ReservationSection() {
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="form-input w-full px-3 py-2 border border-border rounded-lg focus:outline-none transition"
               />
+                  {errors.name && <p className="text-xs text-error mt-1">{errors.name}</p>}
             </div>
             <div>
               <label htmlFor="res-phone" className="block text-sm font-medium text-text-primary mb-2">Phone *</label>
@@ -117,6 +162,7 @@ export default function ReservationSection() {
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 className="form-input w-full px-3 py-2 border border-border rounded-lg focus:outline-none transition"
               />
+                  {errors.phone && <p className="text-xs text-error mt-1">{errors.phone}</p>}
             </div>
           </div>
 
@@ -129,6 +175,7 @@ export default function ReservationSection() {
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               className="form-input w-full px-4 py-2 border border-border rounded-lg focus:outline-none transition"
             />
+              {errors.email && <p className="text-xs text-error mt-1">{errors.email}</p>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -142,6 +189,7 @@ export default function ReservationSection() {
                 onChange={(e) => setFormData({...formData, reservation_date: e.target.value})}
                 className="form-input w-full px-4 py-2 border border-border rounded-lg focus:outline-none transition"
               />
+              {errors.reservation_date && <p className="text-xs text-error mt-1">{errors.reservation_date}</p>}
             </div>
             <div>
               <label htmlFor="res-time" className="block text-sm font-medium text-text-primary mb-2">Time *</label>
@@ -153,6 +201,7 @@ export default function ReservationSection() {
                 onChange={(e) => setFormData({...formData, reservation_time: e.target.value})}
                 className="form-input w-full px-4 py-2 border border-border rounded-lg focus:outline-none transition"
               />
+              {errors.reservation_time && <p className="text-xs text-error mt-1">{errors.reservation_time}</p>}
             </div>
           </div>
 
@@ -167,6 +216,7 @@ export default function ReservationSection() {
               onChange={(e) => setFormData({...formData, number_of_guests: parseInt(e.target.value) || 1})}
               className="form-input w-full px-4 py-2 border border-border rounded-lg focus:outline-none transition"
             />
+              {errors.number_of_guests && <p className="text-xs text-error mt-1">{errors.number_of_guests}</p>}
           </div>
 
           <div>

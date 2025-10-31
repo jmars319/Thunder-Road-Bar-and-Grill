@@ -60,16 +60,16 @@ export default function AboutSection() {
 
   return (
   <div id="about" className="py-12 bg-surface-warm">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl font-heading font-bold text-center mb-4">About Us</h2>
-        <div className="bg-surface rounded-lg shadow-lg p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-            <div className="h-full">
+  <div className="bg-surface rounded-lg shadow-lg px-4 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch">
+            <div className="h-full md:col-span-3 pr-0 md:pr-4 md:pl-0">
               <h3 className="text-xl font-heading font-semibold mb-3 text-text-primary">{about?.header}</h3>
               <p className="text-text-secondary mb-3">{about?.paragraph}</p>
             </div>
 
-            <div className="h-full">
+            <div className="h-full md:col-span-2 pl-0 md:pl-4 flex flex-col">
               {(() => {
                 // Determine the embed src. Priority:
                 // 1) about.map_embed_url if it looks like a URL (starts with http)
@@ -134,13 +134,15 @@ export default function AboutSection() {
 
                 return (
                   <div className="mt-0 md:mt-0 flex flex-col h-full">
-                    <div className="flex-1 h-full">
-                      <iframe
-                        src={embedSrc}
-                        title="Location"
-                        className="w-full h-full border-0 rounded"
-                        allowFullScreen
-                      />
+                    <div className="flex-1 h-52 md:h-80">
+                      <div className="w-full h-full bg-white border border-divider rounded shadow-sm overflow-hidden">
+                        <iframe
+                          src={embedSrc}
+                          title="Location"
+                          className="w-full h-full border-0"
+                          allowFullScreen
+                        />
+                      </div>
                     </div>
 
                     <div className="mt-4 flex gap-2">
