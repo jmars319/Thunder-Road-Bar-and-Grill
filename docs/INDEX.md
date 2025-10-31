@@ -16,13 +16,10 @@ Primary docs
 
 Frontend-specific docs
 ----------------------
-- `frontend/README.md` — create-react-app frontend quick start and stylelint notes.
-- `frontend/scripts/README.md` — helper scripts for asset generation and checks.
-- `frontend/.stylelintrc.json` — local stylelint config (ignores Tailwind at-rules and includes targeted overrides).
- - `frontend/DEVELOPER-GUIDE.md` — developer guide with common commands and tips.
- - `frontend/README.md` — create-react-app quick start and stylelint notes.
- - `frontend/scripts/README.md` — helper scripts for asset generation and checks.
+ - `docs/frontend/README.md` — create-react-app frontend quick start and stylelint notes.
+ - `docs/frontend/scripts/README.md` — helper scripts for asset generation and checks.
  - `frontend/.stylelintrc.json` — local stylelint config (ignores Tailwind at-rules and includes targeted overrides).
+ - `docs/frontend/DEVELOPER-GUIDE.md` — developer guide with common commands and tips.
 
 Backend-specific docs
 ---------------------
