@@ -145,6 +145,7 @@ function SettingsModule() {
     }
   };
 
+  // Update a single day's hours. Returns the fetch Response so callers can handle errors.
   const saveBusinessHours = async (id, data) => {
     try {
       const res = await fetch(`${API_BASE}/business-hours/${id}`, {
@@ -152,12 +153,50 @@ function SettingsModule() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
-        setSaved(true);
+      return res;
+    } catch (err) {
+      // bubble up so caller can surface an error
+      throw err;
+    }
+  };
+
+  // Save all business hours in one action. This calls the single-day PUT for
+  // each entry and then refetches the hours to ensure the UI matches server state.
+  const saveAllBusinessHours = async () => {
+    try {
+      const saves = businessHours.map((d) => saveBusinessHours(d.id, d));
+      const results = await Promise.allSettled(saves);
+
+      const rejected = results.filter(r => r.status === 'rejected');
+      const failed = results.filter(r => r.status === 'fulfilled' && !r.value.ok);
+
+      if (rejected.length || failed.length) {
+        // Surface a generic error message; for more granularity we could
+        // examine individual responses and show per-day messages.
+        setSaved(false);
         setTimeout(() => setSaved(false), 2000);
+        // throw to allow downstream handling (e.g., toasts)
+        throw new Error('One or more days failed to save');
       }
-  } catch {
-    // swallow for now
+
+      // All saved successfully — refetch hours to ensure canonical state
+      try {
+        const hr = await fetch(`${API_BASE}/business-hours`);
+        if (hr.ok) {
+          const data = await hr.json();
+          setBusinessHours(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        // ignore refetch errors — we still mark saved
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      // TODO: show a toast with err.message; currently we just setSaved false
+      console.error('Failed to save business hours:', err && err.message);
+      setSaved(false);
+      // Consider exposing the error with a toast in future
     }
   };
 
@@ -334,14 +373,18 @@ function SettingsModule() {
                 />
                 <span className="text-sm text-text-secondary">Closed</span>
               </label>
-              <button
-                onClick={() => saveBusinessHours(day.id, day)}
-                className="bg-primary text-text-inverse px-3 py-2 rounded-lg hover:bg-primary-dark text-sm"
-              >
-                Save
-              </button>
+              {/* Per-day save removed in favor of a single 'Save All Hours' action below */}
             </div>
           ))}
+        </div>
+        <div className="mt-4">
+          <button
+            onClick={saveAllBusinessHours}
+            className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
+          >
+            <icons.Save size={16} />
+            Save All Hours
+          </button>
         </div>
       </div>
     </div>
