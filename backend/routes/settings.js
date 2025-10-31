@@ -61,54 +61,66 @@ router.put('/site-settings', (req, res) => {
 
   const heroImagesJson = Array.isArray(hero_images) ? JSON.stringify(hero_images) : null;
 
-  // Ensure hero_images and menu_description columns exist (migration may not have been applied on some environments).
-  // Some MySQL/MariaDB versions do not support ADD COLUMN IF NOT EXISTS; use information_schema checks and fall back
-  req.db.query('ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_images TEXT NULL DEFAULT NULL', (alterErr) => {
-    if (alterErr) {
-      console.error('Failed to ensure hero_images column exists (IF NOT EXISTS may be unsupported):', alterErr.message);
-      // try creating it directly if needed
-      req.db.query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_settings' AND COLUMN_NAME = 'hero_images'", (cErr, cRows) => {
-        const hasHero = !cErr && cRows && cRows[0] && cRows[0].cnt > 0;
-        if (!hasHero) {
-          req.db.query('ALTER TABLE site_settings ADD COLUMN hero_images TEXT NULL DEFAULT NULL', (aErr) => {
-            if (aErr) console.error('Failed to add hero_images column:', aErr.message);
-          });
-        }
-      });
-    }
-
-    // Now ensure menu_description exists using information_schema check to support older servers
-    req.db.query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_settings' AND COLUMN_NAME = 'menu_description'", (checkErr, checkRows) => {
-      if (checkErr) {
-        console.error('Failed to check information_schema for menu_description:', checkErr.message);
+  // Ensure `hero_images` and `menu_description` columns exist (migration may not have been applied on some environments).
+  // Rather than using "ADD COLUMN IF NOT EXISTS" (not supported by older MySQL/MariaDB),
+  // query information_schema first and then run a plain ALTER TABLE ADD COLUMN when needed.
+  const checkColumn = (columnName, cb) => {
+    const sql = "SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_settings' AND COLUMN_NAME = ?";
+    req.db.query(sql, [columnName], (err, rows) => {
+      if (err) {
+        console.error(`Failed to check information_schema for ${columnName}:`, err.message);
+        return cb(err);
       }
-      const hasMenuDesc = !checkErr && checkRows && checkRows[0] && checkRows[0].cnt > 0;
-      const ensureMenuDesc = (cb) => {
-        if (hasMenuDesc) return cb();
-        req.db.query('ALTER TABLE site_settings ADD COLUMN menu_description TEXT NULL DEFAULT NULL', (addErr) => {
-          if (addErr) console.error('Failed to add menu_description column:', addErr.message);
-          return cb();
-        });
-      };
+      const exists = rows && rows[0] && rows[0].cnt > 0;
+      return cb(null, exists);
+    });
+  };
 
-      ensureMenuDesc(() => {
-        req.db.query(
-          'UPDATE site_settings SET business_name = ?, tagline = ?, logo_url = ?, phone = ?, email = ?, address = ?, hero_images = ?, menu_description = ? WHERE id = 1',
-          [business_name, tagline, logo_url, phone, email, address, heroImagesJson, menu_description || null],
-          (err) => {
-            if (err) {
-              console.error('Failed to update site_settings:', err.message);
-              return res.status(500).json({ error: err.message });
+  checkColumn('hero_images', (heroErr, hasHero) => {
+    if (heroErr) {
+      // proceed but log — update attempt will still run below
+      console.error('Error checking hero_images column:', heroErr.message);
+    }
+    const addHeroIfMissing = (next) => {
+      if (hasHero) return next();
+      req.db.query('ALTER TABLE site_settings ADD COLUMN hero_images TEXT NULL DEFAULT NULL', (aErr) => {
+        if (aErr) console.error('Failed to add hero_images column:', aErr.message);
+        return next();
+      });
+    };
+
+  addHeroIfMissing(() => {
+      // Ensure menu_description column exists before updating
+      checkColumn('menu_description', (menuErr, hasMenuDesc) => {
+        if (menuErr) console.error('Error checking menu_description column:', menuErr.message);
+
+        const addMenuIfMissing = (next) => {
+          if (hasMenuDesc) return next();
+          req.db.query('ALTER TABLE site_settings ADD COLUMN menu_description TEXT NULL DEFAULT NULL', (mErr) => {
+            if (mErr) console.error('Failed to add menu_description column:', mErr.message);
+            return next();
+          });
+        };
+
+        addMenuIfMissing(() => {
+          req.db.query(
+            'UPDATE site_settings SET business_name = ?, tagline = ?, logo_url = ?, phone = ?, email = ?, address = ?, hero_images = ?, menu_description = ? WHERE id = 1',
+            [business_name, tagline, logo_url, phone, email, address, heroImagesJson, menu_description || null],
+            (err) => {
+              if (err) {
+                console.error('Failed to update site_settings:', err.message);
+                return res.status(500).json({ error: err.message });
+              }
+
+              // Log current DB value for easier verification
+              req.db.query('SELECT hero_images, menu_description FROM site_settings WHERE id = 1', (selErr, rows) => {
+                if (selErr) console.error('Failed to read back site_settings fields:', selErr.message);
+                else console.log('site_settings after update:', rows[0]);
+                res.json({ message: 'Settings updated' });
+              });
             }
-
-            // Log current DB value for easier verification
-            req.db.query('SELECT hero_images, menu_description FROM site_settings WHERE id = 1', (selErr, rows) => {
-              if (selErr) console.error('Failed to read back site_settings fields:', selErr.message);
-              else console.log('site_settings after update:', rows[0]);
-              res.json({ message: 'Settings updated' });
-            });
-          }
-        );
+          );
+        });
       });
     });
   });
