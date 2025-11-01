@@ -39,47 +39,36 @@ router.get('/reservations', (req, res) => {
   );
 });
 
-// Create reservation
-router.post('/reservations', (req, res) => {
-  const { name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests } = req.body;
+const { body } = require('express-validator');
+const validateRequest = require('../middleware/validateRequest');
 
-  // Collect validation errors so we can return all issues at once
-  const validationErrors = [];
-  if (!name) validationErrors.push({ field: 'name', error: 'Name is required' });
-  if (!phone) validationErrors.push({ field: 'phone', error: 'Phone is required' });
-  if (!reservation_date) validationErrors.push({ field: 'reservation_date', error: 'Reservation date is required' });
-  if (!reservation_time) validationErrors.push({ field: 'reservation_time', error: 'Reservation time is required' });
-  if (number_of_guests == null) validationErrors.push({ field: 'number_of_guests', error: 'Number of guests is required' });
+// Create reservation (with express-validator + async/await)
+router.post('/reservations',
+  // Validation chain
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('phone').trim().notEmpty().withMessage('Phone is required'),
+  body('reservation_date').trim().notEmpty().withMessage('Reservation date is required').matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/).withMessage('Reservation date must be in YYYY-MM-DD format'),
+  body('reservation_time').trim().notEmpty().withMessage('Reservation time is required').matches(/^([01][0-9]|2[0-3]):([0-5][0-9])$/).withMessage('Reservation time must be in HH:MM 24-hour format'),
+  body('number_of_guests').notEmpty().withMessage('Number of guests is required').bail().isInt({ min: 1 }).withMessage('Number of guests must be a positive integer'),
+  validateRequest,
+  async (req, res, next) => {
+    try {
+      const { name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests } = req.body;
+      const guests = Number(number_of_guests);
 
-  // Validate date format YYYY-MM-DD if provided
-  if (reservation_date && !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(reservation_date))) {
-    validationErrors.push({ field: 'reservation_date', error: 'Reservation date must be in YYYY-MM-DD format' });
-  }
+      if (!req.dbPromise) return res.status(500).json({ error: 'Database not available' });
 
-  // Validate time format HH:MM (24-hour) if provided
-  if (reservation_time && (!/^[0-9]{2}:[0-9]{2}$/.test(String(reservation_time)) || !/^([01][0-9]|2[0-3]):([0-5][0-9])$/.test(String(reservation_time)))) {
-    validationErrors.push({ field: 'reservation_time', error: 'Reservation time must be in HH:MM 24-hour format' });
-  }
+      const [result] = await req.dbPromise.query(
+        'INSERT INTO reservations (name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, email, phone, reservation_date, reservation_time, guests, special_requests]
+      );
 
-  // Validate number_of_guests is a positive integer if provided
-  const guests = number_of_guests != null ? Number(number_of_guests) : null;
-  if (guests != null && (!Number.isInteger(guests) || guests <= 0)) {
-    validationErrors.push({ field: 'number_of_guests', error: 'Number of guests must be a positive integer' });
-  }
-
-  if (validationErrors.length) {
-    return res.status(400).json({ errors: validationErrors });
-  }
-
-  req.db.query(
-  'INSERT INTO reservations (name, email, phone, reservation_date, reservation_time, number_of_guests, special_requests) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  [name, email, phone, reservation_date, reservation_time, guests, special_requests],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: result.insertId, message: 'Reservation created' });
+      return res.json({ id: result.insertId, message: 'Reservation created' });
+    } catch (err) {
+      return next(err);
     }
-  );
-});
+  }
+);
 
 // Update reservation status
 router.put('/reservations/:id', (req, res) => {

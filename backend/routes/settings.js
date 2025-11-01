@@ -1,4 +1,6 @@
 const express = require('express');
+const { body, param } = require('express-validator');
+const validateRequest = require('../middleware/validateRequest');
 const router = express.Router();
 
 /*
@@ -36,10 +38,10 @@ const router = express.Router();
 */
 
 // Get site settings
-router.get('/site-settings', (req, res) => {
-  req.db.query('SELECT * FROM site_settings WHERE id = 1', (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    const row = results[0] || {};
+router.get('/site-settings', async (req, res, next) => {
+  try {
+    const [rows] = await req.dbPromise.query('SELECT * FROM site_settings WHERE id = 1');
+    const row = rows[0] || {};
     // parse hero_images JSON if present
     try {
       row.hero_images = row.hero_images ? JSON.parse(row.hero_images) : [];
@@ -48,143 +50,138 @@ router.get('/site-settings', (req, res) => {
     }
     // cache short-lived public responses to reduce repeat load on the server
     res.set('Cache-Control', 'public, max-age=300');
-    res.json(row);
-  });
+    return res.json(row);
+  } catch (err) {
+    // If the schema/table is missing in this environment, return a safe
+    // default rather than a 500 so the public site remains functional.
+    if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
+      console.warn('Missing site_settings table; returning empty settings for public site');
+      return res.json({});
+    }
+    return next(err);
+  }
 });
 
 // Update site settings
-router.put('/site-settings', (req, res) => {
-  const { business_name, tagline, logo_url, phone, email, address, hero_images, menu_description } = req.body;
-  
-  // Debug: log incoming hero_images so we can trace admin saves
-  console.log('PUT /site-settings received hero_images:', Array.isArray(hero_images) ? hero_images.length : typeof hero_images);
+router.put('/site-settings',
+  // Basic validation and sanitization
+  body('business_name').optional().isLength({ max: 255 }).trim().escape(),
+  body('tagline').optional().isLength({ max: 512 }).trim().escape(),
+  body('logo_url').optional().isURL().trim(),
+  body('phone').optional().isLength({ max: 64 }).trim().escape(),
+  body('email').optional().isEmail().normalizeEmail(),
+  body('address').optional().isLength({ max: 1024 }).trim().escape(),
+  body('menu_description').optional().isLength({ max: 2000 }).trim(),
+  validateRequest,
+  async (req, res, next) => {
+    try {
+      const { business_name, tagline, logo_url, phone, email, address, hero_images, menu_description } = req.body;
+      const heroImagesJson = Array.isArray(hero_images) ? JSON.stringify(hero_images) : null;
 
-  const heroImagesJson = Array.isArray(hero_images) ? JSON.stringify(hero_images) : null;
+      await req.dbPromise.query(
+        'UPDATE site_settings SET business_name = ?, tagline = ?, logo_url = ?, phone = ?, email = ?, address = ?, hero_images = ?, menu_description = ? WHERE id = 1',
+        [business_name, tagline, logo_url, phone, email, address, heroImagesJson, menu_description || null]
+      );
 
-  // Ensure `hero_images` and `menu_description` columns exist (migration may not have been applied on some environments).
-  // Rather than using "ADD COLUMN IF NOT EXISTS" (not supported by older MySQL/MariaDB),
-  // query information_schema first and then run a plain ALTER TABLE ADD COLUMN when needed.
-  const checkColumn = (columnName, cb) => {
-    const sql = "SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_settings' AND COLUMN_NAME = ?";
-    req.db.query(sql, [columnName], (err, rows) => {
-      if (err) {
-        console.error(`Failed to check information_schema for ${columnName}:`, err.message);
-        return cb(err);
-      }
-      const exists = rows && rows[0] && rows[0].cnt > 0;
-      return cb(null, exists);
-    });
-  };
-
-  checkColumn('hero_images', (heroErr, hasHero) => {
-    if (heroErr) {
-      // proceed but log — update attempt will still run below
-      console.error('Error checking hero_images column:', heroErr.message);
+      return res.json({ message: 'Settings updated' });
+    } catch (err) {
+      console.error('Failed to update site_settings:', err && err.message ? err.message : err);
+      return next(err);
     }
-    const addHeroIfMissing = (next) => {
-      if (hasHero) return next();
-      req.db.query('ALTER TABLE site_settings ADD COLUMN hero_images TEXT NULL DEFAULT NULL', (aErr) => {
-        if (aErr) console.error('Failed to add hero_images column:', aErr.message);
-        return next();
-      });
-    };
-
-  addHeroIfMissing(() => {
-      // Ensure menu_description column exists before updating
-      checkColumn('menu_description', (menuErr, hasMenuDesc) => {
-        if (menuErr) console.error('Error checking menu_description column:', menuErr.message);
-
-        const addMenuIfMissing = (next) => {
-          if (hasMenuDesc) return next();
-          req.db.query('ALTER TABLE site_settings ADD COLUMN menu_description TEXT NULL DEFAULT NULL', (mErr) => {
-            if (mErr) console.error('Failed to add menu_description column:', mErr.message);
-            return next();
-          });
-        };
-
-        addMenuIfMissing(() => {
-          req.db.query(
-            'UPDATE site_settings SET business_name = ?, tagline = ?, logo_url = ?, phone = ?, email = ?, address = ?, hero_images = ?, menu_description = ? WHERE id = 1',
-            [business_name, tagline, logo_url, phone, email, address, heroImagesJson, menu_description || null],
-            (err) => {
-              if (err) {
-                console.error('Failed to update site_settings:', err.message);
-                return res.status(500).json({ error: err.message });
-              }
-
-              // Log current DB value for easier verification
-              req.db.query('SELECT hero_images, menu_description FROM site_settings WHERE id = 1', (selErr, rows) => {
-                if (selErr) console.error('Failed to read back site_settings fields:', selErr.message);
-                else console.log('site_settings after update:', rows[0]);
-                res.json({ message: 'Settings updated' });
-              });
-            }
-          );
-        });
-      });
-    });
-  });
-});
+  }
+);
 
 // Get navigation links
-router.get('/navigation', (req, res) => {
-  req.db.query(
-    'SELECT * FROM navigation_links ORDER BY display_order',
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(results);
+router.get('/navigation', async (req, res, next) => {
+  try {
+    const [results] = await req.dbPromise.query('SELECT * FROM navigation_links ORDER BY display_order');
+    return res.json(results);
+  } catch (err) {
+    if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
+      console.warn('Missing navigation_links table; returning empty list for public site');
+      return res.json([]);
     }
-  );
+    return next(err);
+  }
 });
 
 // Get business hours
-router.get('/business-hours', (req, res) => {
-  req.db.query('SELECT * FROM business_hours ORDER BY id', (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+router.get('/business-hours', async (req, res, next) => {
+  try {
+    const [results] = await req.dbPromise.query('SELECT * FROM business_hours ORDER BY id');
     res.set('Cache-Control', 'public, max-age=300');
-    res.json(results);
-  });
+    return res.json(results);
+  } catch (err) {
+    if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
+      console.warn('Missing business_hours table; returning empty hours for public site');
+      res.set('Cache-Control', 'public, max-age=300');
+      return res.json([]);
+    }
+    return next(err);
+  }
 });
 
 // Update business hours
-router.put('/business-hours/:id', (req, res) => {
-  const { id } = req.params;
-  const { opening_time, closing_time, is_closed } = req.body;
-  
-  req.db.query(
-    'UPDATE business_hours SET opening_time = ?, closing_time = ?, is_closed = ? WHERE id = ?',
-    [opening_time, closing_time, is_closed, id],
-    (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'Hours updated' });
+router.put('/business-hours/:id',
+  param('id').isInt().toInt(),
+  body('opening_time').optional().isString().trim(),
+  body('closing_time').optional().isString().trim(),
+  body('is_closed').optional().isBoolean(),
+  validateRequest,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { opening_time, closing_time, is_closed } = req.body;
+      await req.dbPromise.query(
+        'UPDATE business_hours SET opening_time = ?, closing_time = ?, is_closed = ? WHERE id = ?',
+        [opening_time, closing_time, is_closed, id]
+      );
+      return res.json({ message: 'Hours updated' });
+    } catch (err) {
+      return next(err);
     }
-  );
-});
+  }
+);
 
 // Get about content
-router.get('/about', (req, res) => {
-  req.db.query('SELECT * FROM about_content WHERE id = 1', (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results[0] || {});
-  });
+router.get('/about', async (req, res, next) => {
+  try {
+    const [results] = await req.dbPromise.query('SELECT * FROM about_content WHERE id = 1');
+    return res.json(results[0] || {});
+  } catch (err) {
+    if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
+      console.warn('Missing about_content table; returning empty about content');
+      return res.json({});
+    }
+    return next(err);
+  }
 });
 
 // Update about content
-router.put('/about', (req, res) => {
-  const { header, paragraph, phone, email, address, map_embed_url } = req.body;
-  
-  req.db.query(
-    'UPDATE about_content SET header = ?, paragraph = ?, phone = ?, email = ?, address = ?, map_embed_url = ? WHERE id = 1',
-    [header, paragraph, phone, email, address, map_embed_url],
-    (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'About content updated' });
+router.put('/about',
+  body('header').optional().isLength({ max: 255 }).trim(),
+  body('paragraph').optional().isLength({ max: 5000 }).trim(),
+  body('phone').optional().isLength({ max: 64 }).trim(),
+  body('email').optional().isEmail().normalizeEmail(),
+  body('address').optional().isLength({ max: 1024 }).trim(),
+  body('map_embed_url').optional().isURL().trim(),
+  validateRequest,
+  async (req, res, next) => {
+    try {
+      const { header, paragraph, phone, email, address, map_embed_url } = req.body;
+      await req.dbPromise.query(
+        'UPDATE about_content SET header = ?, paragraph = ?, phone = ?, email = ?, address = ?, map_embed_url = ? WHERE id = 1',
+        [header, paragraph, phone, email, address, map_embed_url]
+      );
+      return res.json({ message: 'About content updated' });
+    } catch (err) {
+      return next(err);
     }
-  );
-});
+  }
+);
 
 // Get footer columns
-router.get('/footer-columns', (req, res) => {
+router.get('/footer-columns', async (req, res, next) => {
   const query = `
     SELECT 
       fc.id as column_id,
@@ -199,8 +196,8 @@ router.get('/footer-columns', (req, res) => {
     ORDER BY fc.display_order, fl.display_order
   `;
 
-  req.db.query(query, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const [results] = await req.dbPromise.query(query);
 
     const columns = {};
     results.forEach(row => {
@@ -224,8 +221,15 @@ router.get('/footer-columns', (req, res) => {
     });
 
     res.set('Cache-Control', 'public, max-age=300');
-    res.json(Object.values(columns));
-  });
+    return res.json(Object.values(columns));
+  } catch (err) {
+    if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
+      console.warn('Missing footer_columns/footer_links tables; returning empty columns');
+      res.set('Cache-Control', 'public, max-age=300');
+      return res.json([]);
+    }
+    return next(err);
+  }
 });
 
 module.exports = router;

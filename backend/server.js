@@ -16,11 +16,45 @@ const compression = require('compression');
 const multer = require('multer');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+// Optional security middlewares. Use try/catch so server still starts if
+// packages are missing in some environments.
+let helmet;
+let rateLimit;
+try {
+  helmet = require('helmet');
+} catch (e) {
+  helmet = null;
+}
+try {
+  rateLimit = require('express-rate-limit');
+} catch (e) {
+  rateLimit = null;
+}
 require('dotenv').config();
 
 const app = express();
 // Default to 5001 to match the frontend's default API_BASE (http://localhost:5001/api)
 const PORT = process.env.PORT || 5001;
+
+// Hide implementation details
+app.disable('x-powered-by');
+
+// If running behind a trusted proxy (e.g., Heroku, Cloudflare), enable trust proxy
+if (process.env.TRUST_PROXY === '1') {
+  app.set('trust proxy', 1);
+}
+
+// Redirect HTTP -> HTTPS when FORCE_HTTPS=1 (useful behind a proxy that terminates SSL)
+if (process.env.FORCE_HTTPS === '1') {
+  app.use((req, res, next) => {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol;
+    if (proto && proto.toLowerCase() === 'http') {
+      const host = req.headers.host || '';
+      return res.redirect(301, `https://${host}${req.originalUrl}`);
+    }
+    return next();
+  });
+}
 
 /*
   server.js - Express app bootstrap
@@ -46,7 +80,38 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 // Enable gzip/brotli compression for responses to improve network efficiency
 app.use(compression());
 
-app.use(cors({ origin: FRONTEND_URL }));
+// Use Helmet if available for a sensible default of security headers.
+if (helmet) {
+  try {
+    app.use(helmet({
+      // Keep CSP small and permit the frontend origin and data: for images
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", FRONTEND_URL],
+          styleSrc: ["'self'", "'unsafe-inline'", FRONTEND_URL],
+          imgSrc: ["'self'", 'data:', FRONTEND_URL],
+          connectSrc: ["'self'", FRONTEND_URL],
+          frameAncestors: ["'none'"]
+        }
+      }
+    }));
+  } catch (e) {
+    // If helmet fails for any reason, continue with our minimal headers below.
+    console.warn('helmet middleware failed to initialize:', e && e.message);
+  }
+}
+
+// CORS: allow only configured origins. FRONTEND_URL may be a comma-separated list.
+const allowedOrigins = (process.env.FRONTEND_URL || FRONTEND_URL).split(',').map(s => s.trim()).filter(Boolean);
+app.use(cors({
+  origin: function (origin, cb) {
+    // allow non-browser tools like Postman (no origin) in dev
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) return cb(null, true);
+    return cb(new Error('CORS policy: Origin not allowed'), false);
+  }
+}));
 
 // Limit JSON body size to avoid large payload abuse
 app.use(express.json({ limit: '1mb' }));
@@ -54,7 +119,32 @@ app.use(express.json({ limit: '1mb' }));
 // Serve uploaded files from absolute path (uploads/). Add caching for static
 // assets (images) to reduce repeated transfer; the admin UI can invalidate
 // caches by emitting events or bumping file URLs on update.
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+// Ensure uploaded media responses include Cross-Origin-Resource-Policy so they
+// can be embedded by the frontend when served from a different origin.
+app.use('/uploads', (req, res, next) => {
+  // Set CORP so the frontend can embed images from this origin.
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  // Small caching policy for uploaded assets
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+
+  // If the request includes an Origin header and it matches our allowed
+  // frontend origins, echo it back so cross-origin requests with
+  // credentials or crossorigin attributes succeed.
+  try {
+    const origin = req.headers.origin;
+    if (origin && Array.isArray(allowedOrigins) && allowedOrigins.indexOf(origin) !== -1) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      // If you need credentialed requests for uploads, set this to true and ensure
+      // the frontend uses `withCredentials`/`crossorigin` appropriately.
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
+    }
+  } catch (e) {
+    // swallow - header setting shouldn't block serving static files
+  }
+
+  next();
+}, express.static(path.join(__dirname, 'uploads'), {
   etag: true,
   maxAge: '1h'
 }));
@@ -64,10 +154,31 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
-  // Cross-Origin-Resource-Policy helps mitigate some mixed-content/resource attacks
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  // Cross-Origin-Resource-Policy: allow uploaded media to be embedded by the
+  // frontend (which may be served from a different origin in dev). For
+  // uploaded assets served from /uploads, use 'cross-origin'. For other
+  // responses keep a stricter policy.
+  if (req.path && req.path.startsWith('/uploads')) {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  } else {
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  }
   next();
 });
+
+// Rate limiting: apply a conservative global limit and stricter limits for write endpoints
+if (rateLimit) {
+  const globalLimiter = rateLimit({ windowMs: 60 * 1000, max: 300 }); // 300 requests per minute per IP
+  const strictPostLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: 'Too many requests, please try again later.' }); // 20 posts/min
+
+  // Apply global limiter to all /api routes
+  app.use('/api', globalLimiter);
+
+  // Apply stricter limiter to common write endpoints
+  app.use('/api/jobs', strictPostLimiter);
+  app.use('/api/reservations', strictPostLimiter);
+  app.use('/api/auth', strictPostLimiter);
+}
 
 // MySQL Connection - use a pool for better concurrency and resiliency
 // Note: pool.query uses the same API as connection.query. For transaction
@@ -95,6 +206,10 @@ dbPool.getConnection((err, conn) => {
 // existing code that calls req.db.query(sql, params, cb).
 app.use((req, res, next) => {
   req.db = dbPool;
+  // provide a promise-based API for routes that opt in
+  if (dbPool && typeof dbPool.promise === 'function') {
+    req.dbPromise = dbPool.promise();
+  }
   next();
 });
 
@@ -113,29 +228,47 @@ const storage = multer.diskStorage({
   }
 });
 
-// Limit uploads to 10MB and allow common image/video/document types
-// NOTE: allowing documents (PDF/DOC/DOCX) is necessary for resume uploads.
-// Keep size reasonable to avoid abuse; scan or validate files further if needed.
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'video/mp4',
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
-    if (allowed.includes(file.mimetype)) return cb(null, true);
-    const err = new Error('Invalid file type');
-    err.status = 400;
-    return cb(err);
-  }
-});
+// Load upload configuration from the shared config file. This keeps server/client
+// limits aligned and makes adjustments easier.
+let upload;
+try {
+  const uploadConfig = require('../config/upload.json');
+  const allowed = Array.isArray(uploadConfig.general && uploadConfig.general.types) ? uploadConfig.general.types : [];
+  const max = (uploadConfig.general && uploadConfig.general.maxBytes) ? uploadConfig.general.maxBytes : (10 * 1024 * 1024);
+
+  upload = multer({
+    storage,
+    limits: { fileSize: max },
+    fileFilter: (req, file, cb) => {
+      if (allowed.includes(file.mimetype)) return cb(null, true);
+      const err = new Error('Invalid file type');
+      err.status = 400;
+      return cb(err);
+    }
+  });
+} catch (e) {
+  // Fallback to previous defaults if config isn't available.
+  upload = multer({ 
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowed = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'video/mp4',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+      if (allowed.includes(file.mimetype)) return cb(null, true);
+      const err = new Error('Invalid file type');
+      err.status = 400;
+      return cb(err);
+    }
+  });
+}
 // expose configured upload instance to routes via app.get('upload') or app.set
 app.set('upload', upload);
 
@@ -169,7 +302,34 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Thunder Road API is running' });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`\ud83d\ude80 Server running on http://localhost:${PORT}`);
-});
+// Centralized error handler (must be registered after routes)
+try {
+  const errorHandler = require('./middleware/errorHandler');
+  app.use(errorHandler);
+} catch (e) {
+  console.warn('Error handler not found:', e && e.message);
+}
+
+// Run any pending migrations (if knex is present) then start the server.
+// Using programmatic migrations keeps deployments consistent and avoids
+// applying schema changes inside request handlers.
+try {
+  const Knex = require('knex');
+  const knexConfig = require('./knexfile');
+  const knex = Knex(knexConfig);
+
+  knex.migrate.latest()
+    .then(() => console.log('\u2705 Database migrations applied'))
+    .catch((err) => console.error('Database migrations failed:', err))
+    .finally(() => {
+      app.listen(PORT, () => {
+        console.log(`\ud83d\ude80 Server running on http://localhost:${PORT}`);
+      });
+    });
+} catch (e) {
+  // If knex isn't available for some reason, still start the server but warn.
+  console.warn('Knex not available; skipping programmatic migrations. Start server anyway.');
+  app.listen(PORT, () => {
+    console.log(`\ud83d\ude80 Server running on http://localhost:${PORT}`);
+  });
+}

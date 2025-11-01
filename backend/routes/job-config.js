@@ -15,7 +15,12 @@ router.get('/job-positions', adminAuth, (req, res) => {
 // positions are currently open without exposing admin controls.
 router.get('/job-positions/public', (req, res) => {
   req.db.query('SELECT id, name, description FROM job_positions WHERE is_active = 1 ORDER BY display_order, id', (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
+        return res.json([]);
+      }
+      return res.status(500).json({ error: err.message });
+    }
     res.json(results || []);
   });
 });
@@ -47,11 +52,20 @@ router.put('/job-positions/:id', adminAuth, (req, res) => {
   });
 });
 
-// APPLICATION FIELDS (basic CRUD - admin only intended)
-router.get('/application-fields', adminAuth, (req, res) => {
+// APPLICATION FIELDS
+// Public GET so the public site can render dynamic application fields.
+// Mutating endpoints remain admin-protected.
+router.get('/application-fields', (req, res) => {
   req.db.query('SELECT * FROM application_fields ORDER BY display_order, id', (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
+    if (err) {
+      // If the table doesn't exist (fresh DB), return empty array so the public
+      // site can continue to function instead of failing with 500.
+      if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
+        return res.json([]);
+      }
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results || []);
   });
 });
 

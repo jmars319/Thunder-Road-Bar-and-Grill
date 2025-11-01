@@ -41,35 +41,59 @@ router.get('/jobs', (req, res) => {
   );
 });
 
-// Submit job application
-router.post('/jobs', (req, res) => {
-  const { name, email, phone, position, experience, cover_letter, resume_url } = req.body;
-  
-  // Validation: require all fields except cover_letter and resume_url
-  const errors = [];
-  if (!name || !String(name).trim()) errors.push({ field: 'name', error: 'Name is required' });
-  if (!email || !String(email).trim()) errors.push({ field: 'email', error: 'Email is required' });
-  else {
-    // basic email format check
-    const eRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!eRe.test(String(email))) errors.push({ field: 'email', error: 'Email must be a valid email address' });
-  }
-  if (!phone || !String(phone).trim()) errors.push({ field: 'phone', error: 'Phone is required' });
-  if (!position || !String(position).trim()) errors.push({ field: 'position', error: 'Position is required' });
-  if (!('experience' in req.body) || !String(experience).trim()) errors.push({ field: 'experience', error: 'Experience is required' });
-  if (!('availability' in req.body) || !String(req.body.availability || '').trim()) errors.push({ field: 'availability', error: 'Availability is required' });
+const { body } = require('express-validator');
+const validateRequest = require('../middleware/validateRequest');
 
-  if (errors.length) return res.status(400).json({ errors });
+// Submit job application (validated + async/await)
+router.post('/jobs',
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').trim().notEmpty().withMessage('Email is required').isEmail().withMessage('Email must be a valid email address'),
+  body('phone').trim().notEmpty().withMessage('Phone is required'),
+  body('position').trim().notEmpty().withMessage('Position is required'),
+  body('experience').trim().notEmpty().withMessage('Experience is required'),
+  body('availability').trim().notEmpty().withMessage('Availability is required'),
+  validateRequest,
+  async (req, res, next) => {
+    try {
+      const { name, email, phone, position, experience, availability, cover_letter, resume_url } = req.body;
 
-  req.db.query(
-    'INSERT INTO job_applications (name, email, phone, position, experience, cover_letter, resume_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [name, email, phone, position, experience, cover_letter, resume_url],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: result.insertId, message: 'Application submitted' });
+      if (!req.dbPromise) return res.status(500).json({ error: 'Database not available' });
+
+        // Server-side enforcement: if a resume_url was provided and it points to
+        // our uploads directory, verify that it corresponds to a media_library
+        // entry and that the file's type/size comply with the resume policy.
+        if (resume_url && typeof resume_url === 'string' && resume_url.indexOf('/uploads/') !== -1) {
+          // Normalize to stored form
+          const normalized = resume_url.startsWith('/') ? resume_url : '/' + resume_url;
+          const uploadCfg = (() => { try { return require('../config/upload.json'); } catch (e) { return null; } })();
+          const resumeCfg = (uploadCfg && uploadCfg.resume) || null;
+
+          // Look up the media entry
+          const [[mediaEntry]] = await req.dbPromise.query('SELECT * FROM media_library WHERE file_url = ? LIMIT 1', [normalized]);
+          if (!mediaEntry) return res.status(400).json({ error: 'Resume file not found or not uploaded' });
+
+          if (resumeCfg) {
+            // Validate mime type and size
+            if (Array.isArray(resumeCfg.types) && resumeCfg.types.length && resumeCfg.types.indexOf(mediaEntry.file_type) === -1) {
+              return res.status(400).json({ error: 'Uploaded resume file type is not permitted' });
+            }
+            if (typeof resumeCfg.maxBytes === 'number' && mediaEntry.file_size > resumeCfg.maxBytes) {
+              return res.status(400).json({ error: 'Uploaded resume exceeds allowed size' });
+            }
+          }
+        }
+
+      const [result] = await req.dbPromise.query(
+        'INSERT INTO job_applications (name, email, phone, position, experience, availability, cover_letter, resume_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [name, email, phone, position, experience, availability || null, cover_letter, resume_url]
+      );
+
+      return res.json({ id: result.insertId, message: 'Application submitted' });
+    } catch (err) {
+      return next(err);
     }
-  );
-});
+  }
+);
 
 const adminAuth = require('../middleware/adminAuth');
 
