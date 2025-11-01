@@ -111,6 +111,12 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) return cb(null, true);
     return cb(new Error('CORS policy: Origin not allowed'), false);
   }
+  ,
+  // Allow credentials (cookies) to be sent from the frontend during dev/admin requests.
+  // Admin endpoints rely on a dev cookie (`admin=true`) or developer header — enabling
+  // credentials here ensures the browser will send cookies when fetch uses
+  // `credentials: 'include'` and the origin matches.
+  credentials: true
 }));
 
 // Limit JSON body size to avoid large payload abuse
