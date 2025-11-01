@@ -11,7 +11,9 @@ module.exports = function adminAuth(req, res, next) {
   //   ALLOW_DEV_ADMIN_HEADER=1 (useful for local tooling).
   // - Prefer a cookie named `admin=true` for quick local testing.
 
-  const allowHeader = String(process.env.ALLOW_DEV_ADMIN_HEADER || '0') === '1';
+  // Allow the dev header when explicitly enabled OR when running in non-production
+  // (developer convenience). In production the header is not accepted.
+  const allowHeader = (String(process.env.ALLOW_DEV_ADMIN_HEADER || '0') === '1') || (process.env.NODE_ENV !== 'production');
   const header = req.get('X-Admin-Auth');
 
   if (header && allowHeader && header === 'admin') {

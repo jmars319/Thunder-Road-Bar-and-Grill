@@ -48,4 +48,32 @@ router.post('/login', (req, res) => {
   return res.status(401).json({ success: false, message: 'Invalid credentials' });
 });
 
+// Dev-only: set an admin cookie for local testing. This endpoint is intentionally
+// permissive and MUST NOT be enabled in production. It returns 200 and sets a
+// cookie the browser will include in subsequent requests (when using
+// `fetch(..., { credentials: 'include' })`).
+router.post('/dev-signin', (req, res) => {
+  // Only allow in non-production environments
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ success: false, message: 'Dev signin disabled in production' });
+  }
+
+  // Set a simple admin cookie. Use SameSite=None so the cookie will be sent
+  // from the frontend origin when requests include credentials. Note: modern
+  // browsers require Secure with SameSite=None; we only set Secure when the
+  // server indicates HTTPS via FORCE_HTTPS=1 to avoid rejecting the cookie on
+  // plain HTTP localhost development.
+  const cookieOptions = [];
+  cookieOptions.push('Path=/');
+  cookieOptions.push('HttpOnly'); // prevent JS access
+  cookieOptions.push('SameSite=None');
+  if (String(process.env.FORCE_HTTPS || '0') === '1') {
+    cookieOptions.push('Secure');
+  }
+
+  // Set cookie that adminAuth checks (req.cookies.admin)
+  res.setHeader('Set-Cookie', `admin=true; ${cookieOptions.join('; ')}`);
+  return res.json({ success: true, message: 'Dev admin cookie set' });
+});
+
 module.exports = router;

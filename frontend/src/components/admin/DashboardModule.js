@@ -90,11 +90,18 @@ function DashboardModule() {
       fetch(`${API_BASE}/newsletter/subscribers`).then(r => r.ok ? r.json() : []).catch(() => []),
       fetch(`${API_BASE}/contact/messages`).then(r => r.ok ? r.json() : []).catch(() => [])
     ]).then(([reservations, jobs, subscribers, messages]) => {
+      // Normalize contact messages response: the inbox endpoint returns a
+      // paginated object { total, page, per_page, messages: [...] } while other
+      // endpoints return arrays. Handle both shapes here.
+      let messagesList = [];
+      if (Array.isArray(messages)) messagesList = messages;
+      else if (messages && Array.isArray(messages.messages)) messagesList = messages.messages;
+
       setStats({
         reservations: Array.isArray(reservations) ? reservations.filter(r => r.status === 'pending').length : 0,
         jobs: Array.isArray(jobs) ? jobs.filter(j => j.status === 'new').length : 0,
         subscribers: Array.isArray(subscribers) ? subscribers.filter(s => s.is_active).length : 0,
-        messages: Array.isArray(messages) ? messages.filter(m => !m.is_read).length : 0
+        messages: Array.isArray(messagesList) ? messagesList.filter(m => !m.is_read).length : 0
       });
     }).catch(() => {
       // Keep stats at defaults in case of an unexpected failure.

@@ -365,15 +365,45 @@ function MenuModule() {
     <div className="space-y-6">
         <div className="flex justify-between items-center">
   <h2 className="text-2xl font-bold text-text-inverse">Menu Management</h2>
-        <button
-          type="button"
-    onClick={() => setEditingCategory({ name: '', description: '', display_order: 0, is_active: 1 })}
-          className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
-          aria-label="Add menu category"
-        >
-          <icons.Plus size={18} />
-          Add Category
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditingCategory({ name: '', description: '', display_order: 0, is_active: 1 })}
+            className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
+            aria-label="Add menu category"
+          >
+            <icons.Plus size={18} />
+            Add Category
+          </button>
+          {/* Dev-only: sign in helper to set admin cookie for local testing. */}
+          {process.env.NODE_ENV !== 'production' && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  // Call dev signin endpoint which sets a cookie on the backend origin.
+                  const resp = await fetch(`${API_BASE}/auth/dev-signin`, { method: 'POST' });
+                  if (resp.ok) {
+                    // refresh categories once signed in
+                    await fetchCategories();
+                    setToast({ type: 'success', message: 'Signed in (dev) — admin cookie set' });
+                    setTimeout(() => setToast(null), 2500);
+                  } else {
+                    const body = await resp.json().catch(() => ({}));
+                    setToast({ type: 'error', message: body && body.message ? body.message : 'Dev sign-in failed' });
+                    setTimeout(() => setToast(null), 2500);
+                  }
+                } catch (e) {
+                  setToast({ type: 'error', message: 'Dev sign-in request failed' });
+                  setTimeout(() => setToast(null), 2500);
+                }
+              }}
+              className="px-3 py-2 rounded bg-surface text-sm"
+            >
+              Sign in (dev)
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Category Editor Modal */}
