@@ -205,6 +205,7 @@ export default function JobSection() {
         // position may be an object or string; ensure we submit the string name
         position: form.position && typeof form.position === 'object' ? (form.position.name || '') : (form.position || ''),
         experience: form.experience,
+        availability: form.availability,
         cover_letter: form.cover_letter,
         resume_url
       };
