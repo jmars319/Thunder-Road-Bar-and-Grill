@@ -145,7 +145,7 @@ function MenuModule() {
   };
 
   // Upload helper: XMLHttpRequest-based so we can track progress and cancel
-  const uploadFile = (file) => {
+  const uploadFile = (file, category = 'general') => {
     if (!file) return Promise.resolve(null);
     return new Promise((resolve, reject) => {
       setUploading(true);
@@ -155,6 +155,8 @@ function MenuModule() {
       uploadXhr.current = xhr;
       const fd = new FormData();
       fd.append('file', file);
+      // Allow callers to specify a category (logo, hero, gallery, resume, general)
+      fd.append('category', category);
 
       xhr.open('POST', `${API_BASE}/media/upload`);
 
@@ -418,13 +420,13 @@ function MenuModule() {
                     className="w-full form-input"
                     disabled={uploading}
                   />
-                  <label className={`px-3 py-2 rounded cursor-pointer text-sm ${uploading ? 'opacity-60 pointer-events-none' : 'bg-surface'}`}>
+                    <label className={`px-3 py-2 rounded cursor-pointer text-sm ${uploading ? 'opacity-60 pointer-events-none' : 'bg-surface'}`}>
                     <input type="file" accept="image/*" className="hidden" onChange={async (ev) => {
                       const f = ev.target.files?.[0];
                       if (!f) return;
                       // client-side checks: image type and size <= 5MB
                       const MAX_BYTES = 5 * 1024 * 1024;
-                      if (!f.type.startsWith('image/')) {
+                      if (!f.type.startsWith("image/")) {
                         setUploadError('Please select an image file');
                         return;
                       }
@@ -433,7 +435,9 @@ function MenuModule() {
                         return;
                       }
                       try {
-                        const url = await uploadFile(f);
+                        // Use the 'gallery' category for category images so they are
+                        // discoverable in the gallery listing and treated with gallery rules.
+                        const url = await uploadFile(f, 'gallery');
                         if (url) setEditingCategory(c => ({ ...c, image_url: url }));
                       } catch (err) {
                         // error state is handled by uploadError

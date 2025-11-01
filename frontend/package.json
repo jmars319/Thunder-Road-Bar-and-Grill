@@ -21,7 +21,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+  "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",
     "lint:fix": "eslint \"src/**/*.{js,jsx}\" --fix",

@@ -211,10 +211,10 @@ function MediaModule() {
     formData.append('category', category);
 
     try {
-      await fetch(`${API_BASE}/media/upload`, {
-        method: 'POST',
-        body: formData
-      });
+      await fetch(`${API_BASE}/media/upload?category=${encodeURIComponent(category)}`, {
+          method: 'POST',
+          body: formData
+        });
       // refresh the relevant paginated list (and notify All uploads)
       if (category === 'logo') {
         resetLogo();

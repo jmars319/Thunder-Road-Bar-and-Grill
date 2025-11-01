@@ -15,6 +15,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Toast from '../ui/Toast';
+// Shared upload configuration (synced at build time)
+import uploadConfig from '../../config/uploadConfig.json';
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 void Toast;
 
@@ -44,9 +46,9 @@ export default function JobSection() {
   const uploadXhrRef = useRef(null);
   const [previewWarning, setPreviewWarning] = useState(null);
 
-  // Validation rules
-  const MAX_FILE_BYTES = 3 * 1024 * 1024; // 3 MB
-  const ALLOWED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  // Validation rules (imported from shared config)
+  const MAX_FILE_BYTES = (uploadConfig && uploadConfig.resume && uploadConfig.resume.maxBytes) || 3 * 1024 * 1024; // 3 MB
+  const ALLOWED_TYPES = (uploadConfig && uploadConfig.resume && uploadConfig.resume.types) || ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -104,9 +106,12 @@ export default function JobSection() {
       // keep reference so upload can be cancelled
       uploadXhrRef.current = xhr;
       const fd = new FormData();
-      fd.append('file', file);
+  fd.append('file', file);
+  // Inform the server this is a resume so server-side rules are applied
+  fd.append('category', 'resume');
 
-  xhr.open('POST', `${API_BASE}/media/upload`);
+  // Use a query param so the backend can pick up category before multer runs
+  xhr.open('POST', `${API_BASE}/media/upload?category=resume`);
 
       xhr.upload.onprogress = function (e) {
         if (e.lengthComputable) {
@@ -259,21 +264,12 @@ export default function JobSection() {
           return;
         }
 
-        // No public/open positions — fall back to admin list so we can still
-        // let applicants choose known positions (or provide a free-text fallback)
-  return fetch(`${API_BASE}/job-positions`).then((r) => r.ok ? r.json() : []);
-      })
-      .then((adminPositions) => {
-        if (!adminPositions) return;
-        if (Array.isArray(adminPositions) && adminPositions.length) {
-          // adminPositions may be objects with is_active flags — keep objects
-          setPositions(adminPositions);
-          setForm((s) => ({ ...s, position: adminPositions[0].name }));
-        } else {
-          const fallback = ['Server','Bartender','Line Cook','Prep Cook','Dishwasher','Host','Manager'];
-          setPositions(fallback.map((p, i) => ({ id: `f-${i}`, name: p })));
-          setForm((s) => ({ ...s, position: fallback[0] }));
-        }
+        // No public/open positions — use a static fallback list instead of
+        // calling admin endpoints which are intentionally protected. This
+        // avoids noisy 401 Unauthorized errors in the browser console.
+        const fallback = ['Server','Bartender','Line Cook','Prep Cook','Dishwasher','Host','Manager'];
+        setPositions(fallback.map((p, i) => ({ id: `f-${i}`, name: p })));
+        setForm((s) => ({ ...s, position: fallback[0] }));
       })
       .catch(() => {
         const fallback = ['Server','Bartender','Line Cook','Prep Cook','Dishwasher','Host','Manager'];
