@@ -51,6 +51,10 @@ const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
      bg-surface-warm, text-text-primary, text-text-secondary). Update colors in
      `frontend/src/custom-styles.css` to affect the admin UI globally rather than
      modifying utility classes locally.
+   
+   Security note:
+   - User messages are rendered as plain text (not HTML) to prevent XSS attacks.
+     React automatically escapes text content in JSX, so no manual escaping needed.
 */
 
 function InboxModule() {
@@ -183,7 +187,9 @@ function InboxModule() {
               </button>
             </div>
               <div className="border-t pt-4">
-              <p className="text-text-primary whitespace-pre-wrap">{selectedMessage.message}</p>
+              <p className="text-text-primary whitespace-pre-wrap">
+                {selectedMessage.message}
+              </p>
             </div>
           </div>
         ) : (
