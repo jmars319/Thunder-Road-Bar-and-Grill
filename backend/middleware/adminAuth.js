@@ -1,48 +1,76 @@
-// Lightweight admin auth middleware for dev/admin UI protection
-// Checks for a simple header or cookie to gate admin endpoints. Replace with
-// production-ready authentication (sessions/JWT) before deploying.
+const jwt = require('jsonwebtoken');
+
+/*
+  Admin authentication middleware
+  
+  Purpose:
+  - Verifies JWT tokens for admin endpoints
+  - Supports legacy dev-only simple auth when NODE_ENV !== 'production'
+  
+  Security:
+  - Production: ONLY accepts valid JWT tokens in Authorization header
+  - Development: Falls back to simple header/cookie for local testing
+  - Tokens must include role='admin' and be signed with JWT_SECRET
+  
+  Last updated: 2025-11-05 — Implemented JWT verification
+*/
+
+// JWT secret must match auth.js
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+
 module.exports = function adminAuth(req, res, next) {
-  // Lightweight admin auth middleware used for local/dev admin UI.
-  // Hardening rules:
-  // - In production (NODE_ENV=production) the simple header-based auth
-  //   (X-Admin-Auth: admin) is NOT accepted. Use a real auth mechanism
-  //   (session cookie / JWT) in production deployments.
-  // - Allow the header only when explicitly enabled via
-  //   ALLOW_DEV_ADMIN_HEADER=1 (useful for local tooling).
-  // - Prefer a cookie named `admin=true` for quick local testing.
+  // Extract token from Authorization header (Bearer <token>)
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : null;
 
-  // Allow the dev header when explicitly enabled OR when running in non-production
-  // (developer convenience). In production the header is not accepted.
-  const allowHeader = (String(process.env.ALLOW_DEV_ADMIN_HEADER || '0') === '1') || (process.env.NODE_ENV !== 'production');
-  const header = req.get('X-Admin-Auth');
-
-  if (header && allowHeader && header === 'admin') {
-    // Dev convenience (explicitly enabled)
-    return next();
-  }
-
-  // Prefer cookie-based dev auth only when running locally
-  if (req.cookies && (req.cookies.admin === 'true' || req.cookies.admin === true) && process.env.NODE_ENV !== 'production') {
-    return next();
-  }
-
-  // In production, optionally restrict admin access to requests originating
-  // from the configured FRONTEND_URL(s). This prevents third-party origins
-  // from invoking admin endpoints via the browser.
-  if (process.env.NODE_ENV === 'production') {
+  if (token) {
     try {
-      const FRONTEND = process.env.FRONTEND_URL || '';
-      const allowed = FRONTEND.split(',').map(s => s.trim()).filter(Boolean);
-      const origin = req.headers.origin;
-      if (origin && allowed.indexOf(origin) === -1) {
-        console.warn('Blocked admin access from disallowed origin:', origin);
-        return res.status(401).json({ error: 'Unauthorized - admin only' });
+      // Verify JWT token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      
+      // Check that user has admin role
+      if (decoded.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden - admin access required' });
       }
-    } catch (e) {
-      // If anything goes wrong, fallthrough to reject.
+
+      // Attach user info to request for use by route handlers
+      req.user = {
+        id: decoded.id,
+        username: decoded.username,
+        role: decoded.role
+      };
+
+      return next();
+
+    } catch (err) {
+      // Token invalid or expired
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired' });
+      }
+      return res.status(401).json({ error: 'Invalid token' });
     }
   }
 
-  // Default: reject and return a generic error without leaking details.
-  return res.status(401).json({ error: 'Unauthorized - admin only' });
+  // Development fallback: allow simple header/cookie ONLY in non-production
+  if (process.env.NODE_ENV !== 'production') {
+    const allowHeader = String(process.env.ALLOW_DEV_ADMIN_HEADER || '0') === '1';
+    const header = req.get('X-Admin-Auth');
+
+    if (header && allowHeader && header === 'admin') {
+      // Dev convenience with explicit enable
+      req.user = { id: 1, username: 'admin', role: 'admin' }; // Mock user for dev
+      return next();
+    }
+
+    // Cookie-based dev auth
+    if (req.cookies && (req.cookies.admin === 'true' || req.cookies.admin === true)) {
+      req.user = { id: 1, username: 'admin', role: 'admin' }; // Mock user for dev
+      return next();
+    }
+  }
+
+  // No valid authentication found
+  return res.status(401).json({ error: 'Unauthorized - admin authentication required' });
 };
