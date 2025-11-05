@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 
 /*
   Auth routes
@@ -30,7 +31,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
 
 if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-secret-change-in-production') {
-  console.error('⚠️  CRITICAL: JWT_SECRET not set in production! Set JWT_SECRET environment variable.');
+  logger.error('CRITICAL: JWT_SECRET not set in production! Set JWT_SECRET environment variable.');
 }
 
 // Rate limiter for login endpoint
@@ -122,7 +123,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Login error:', err);
+    logger.error('Login error', { error: err.message, stack: err.stack });
     return res.status(500).json({ 
       success: false, 
       message: 'An error occurred during login' 

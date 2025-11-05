@@ -16,6 +16,7 @@ const compression = require('compression');
 const multer = require('multer');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const logger = require('./utils/logger');
 // Optional security middlewares. Use try/catch so server still starts if
 // packages are missing in some environments.
 let helmet;
@@ -24,11 +25,13 @@ try {
   helmet = require('helmet');
 } catch (e) {
   helmet = null;
+  logger.warn('helmet package not installed');
 }
 try {
   rateLimit = require('express-rate-limit');
 } catch (e) {
   rateLimit = null;
+  logger.warn('express-rate-limit package not installed');
 }
 require('dotenv').config();
 
@@ -98,7 +101,7 @@ if (helmet) {
     }));
   } catch (e) {
     // If helmet fails for any reason, continue with our minimal headers below.
-    console.warn('helmet middleware failed to initialize:', e && e.message);
+    logger.warn('helmet middleware failed to initialize', { error: e && e.message });
   }
 }
 
@@ -214,10 +217,10 @@ const dbPool = mysql.createPool({
 
 dbPool.getConnection((err, conn) => {
   if (err) {
-    console.error('Database connection failed:', err);
+    logger.error('Database connection failed', { error: err.message, code: err.code });
   } else {
     conn.release();
-    console.log('\u2705 Connected to MySQL database (pool)');
+    logger.info('Connected to MySQL database (pool)');
   }
 });
 
@@ -326,7 +329,7 @@ try {
   const errorHandler = require('./middleware/errorHandler');
   app.use(errorHandler);
 } catch (e) {
-  console.warn('Error handler not found:', e && e.message);
+  logger.warn('Error handler not found', { error: e && e.message });
 }
 
 // Run any pending migrations (if knex is present) then start the server.
@@ -338,17 +341,17 @@ try {
   const knex = Knex(knexConfig);
 
   knex.migrate.latest()
-    .then(() => console.log('\u2705 Database migrations applied'))
-    .catch((err) => console.error('Database migrations failed:', err))
+    .then(() => logger.info('Database migrations applied'))
+    .catch((err) => logger.error('Database migrations failed', { error: err.message }))
     .finally(() => {
       app.listen(PORT, () => {
-        console.log(`\ud83d\ude80 Server running on http://localhost:${PORT}`);
+        logger.info('Server started', { port: PORT, env: process.env.NODE_ENV || 'development' });
       });
     });
 } catch (e) {
   // If knex isn't available for some reason, still start the server but warn.
-  console.warn('Knex not available; skipping programmatic migrations. Start server anyway.');
+  logger.warn('Knex not available; skipping programmatic migrations. Starting server anyway.');
   app.listen(PORT, () => {
-    console.log(`\ud83d\ude80 Server running on http://localhost:${PORT}`);
+    logger.info('Server started', { port: PORT, env: process.env.NODE_ENV || 'development' });
   });
 }

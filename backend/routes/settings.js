@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const validateRequest = require('../middleware/validateRequest');
 const router = express.Router();
+const logger = require('../utils/logger');
 const isProduction = process.env.NODE_ENV === 'production';
 const logoUrlValidatorOptions = isProduction ? {} : { require_tld: false };
 
@@ -57,7 +58,7 @@ router.get('/site-settings', async (req, res, next) => {
     // If the schema/table is missing in this environment, return a safe
     // default rather than a 500 so the public site remains functional.
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
-      console.warn('Missing site_settings table; returning empty settings for public site');
+      logger.warn('Missing site_settings table; returning empty settings for public site');
       return res.json({});
     }
     return next(err);
@@ -109,7 +110,7 @@ router.get('/logo/sanitized', async (req, res, next) => {
     
     return res.send(cleanSvg);
   } catch (err) {
-    console.error('Error serving sanitized logo:', err);
+    logger.error('Error serving sanitized logo', { error: err.message });
     return next(err);
   }
 });
