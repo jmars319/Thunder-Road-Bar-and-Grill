@@ -21,3 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Lighthouse reports (local audits)
+lighthouse-report.json
+lighthouse-prod-report.json
+
+# Local generated assets (often used for design assets or temporary builds)
+/src/assets/
