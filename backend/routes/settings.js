@@ -64,6 +64,56 @@ router.get('/site-settings', async (req, res, next) => {
   }
 });
 
+// Get sanitized SVG logo content
+// This endpoint fetches the SVG from logo_url and returns sanitized content
+router.get('/logo/sanitized', async (req, res, next) => {
+  try {
+    const [rows] = await req.dbPromise.query('SELECT logo_url FROM site_settings WHERE id = 1');
+    const logoUrl = rows[0]?.logo_url;
+    
+    if (!logoUrl) {
+      return res.status(404).json({ error: 'No logo configured' });
+    }
+
+    // Only handle SVG files
+    if (!logoUrl.toLowerCase().endsWith('.svg')) {
+      return res.status(400).json({ error: 'Logo is not an SVG file' });
+    }
+
+    const path = require('path');
+    const fs = require('fs');
+    const DOMPurify = require('isomorphic-dompurify');
+
+    // Construct file path (assuming logo_url is like /uploads/filename.svg)
+    const filePath = path.join(__dirname, '..', logoUrl.replace(/^\//, ''));
+
+    // Read SVG file
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Logo file not found' });
+    }
+
+    const svgContent = fs.readFileSync(filePath, 'utf8');
+
+    // Sanitize SVG
+    const cleanSvg = DOMPurify.sanitize(svgContent, {
+      USE_PROFILES: { svg: true, svgFilters: true },
+      ALLOWED_TAGS: ['svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'g', 'text', 'tspan', 'defs', 'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'pattern', 'use', 'symbol', 'title', 'desc'],
+      ALLOWED_ATTR: ['viewBox', 'xmlns', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'd', 'cx', 'cy', 'r', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'id', 'class', 'style', 'offset', 'stop-color', 'stop-opacity', 'gradientUnits', 'gradientTransform', 'href', 'xlink:href'],
+      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button'],
+      FORBID_ATTR: ['onload', 'onerror', 'onclick', 'onmouseover', 'onmouseout'],
+    });
+
+    // Set proper content type and cache headers
+    res.set('Content-Type', 'image/svg+xml');
+    res.set('Cache-Control', 'public, max-age=3600');
+    
+    return res.send(cleanSvg);
+  } catch (err) {
+    console.error('Error serving sanitized logo:', err);
+    return next(err);
+  }
+});
+
 // Normalization helpers shared by multiple handlers.
 // Keep them near the top so other routes (including preview) can reuse them.
 const normalizeSocial = (val) => {

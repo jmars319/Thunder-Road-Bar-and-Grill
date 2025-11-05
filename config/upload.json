@@ -16,6 +16,16 @@
       "image/webp"
     ]
   },
+  "logo": {
+    "maxBytes": 2097152,
+    "types": [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/svg+xml"
+    ]
+  },
   "general": {
     "maxBytes": 10485760,
     "types": [

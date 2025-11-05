@@ -198,6 +198,30 @@ router.post('/media/upload', (req, res) => {
           return res.status(400).json({ error: 'Uploaded file type could not be verified' });
         }
 
+        // Sanitize SVG files to prevent XSS attacks
+        if (mimetype === 'image/svg+xml' || (detectedMime === 'image/svg+xml')) {
+          try {
+            const DOMPurify = require('isomorphic-dompurify');
+            const svgContent = fs.readFileSync(filePath, 'utf8');
+            
+            // Sanitize SVG with strict config
+            const cleanSvg = DOMPurify.sanitize(svgContent, {
+              USE_PROFILES: { svg: true, svgFilters: true },
+              ALLOWED_TAGS: ['svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'g', 'text', 'tspan', 'defs', 'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'pattern', 'use', 'symbol', 'title', 'desc'],
+              ALLOWED_ATTR: ['viewBox', 'xmlns', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'd', 'cx', 'cy', 'r', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'id', 'class', 'style', 'offset', 'stop-color', 'stop-opacity', 'gradientUnits', 'gradientTransform', 'href', 'xlink:href'],
+              FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button'],
+              FORBID_ATTR: ['onload', 'onerror', 'onclick', 'onmouseover', 'onmouseout'],
+            });
+
+            // Write sanitized SVG back to file
+            fs.writeFileSync(filePath, cleanSvg, 'utf8');
+          } catch (sanitizeErr) {
+            // If sanitization fails, remove file and reject upload
+            try { fs.unlinkSync(filePath); } catch (e) {}
+            return res.status(400).json({ error: 'SVG file could not be sanitized' });
+          }
+        }
+
         // All checks passed — record metadata in DB
         req.db.query(
           'INSERT INTO media_library (file_url, file_name, file_type, file_size, title, alt_text, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
