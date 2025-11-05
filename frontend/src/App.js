@@ -17,6 +17,8 @@
 import { useState } from 'react';
  
 import PublicSite from './pages/PublicSite';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
  
 import AdminPanel from './pages/AdminPanel';
  
@@ -29,7 +31,7 @@ export default function App() {
   // Local registry to ensure imports are used in JS by linters that don't
   // follow JSX usage. This is a minimal in-function reference and has no
   // runtime impact.
-  const _routes = { PublicSite, AdminPanel, LoginPage };
+  const _routes = { PublicSite, AdminPanel, LoginPage, PrivacyPage, TermsPage };
   void _routes;
   const [showAdmin, setShowAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -68,6 +70,19 @@ export default function App() {
   }
 
   // Show public website (default)
+  // Simple route handling for a couple of static pages. This keeps the app
+  // free of a router dependency while allowing direct links to /privacy and
+  // /terms to render proper pages (useful for crawlers and direct navigation).
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+
+  if (path === '/privacy') {
+    return <PrivacyPage />;
+  }
+
+  if (path === '/terms') {
+    return <TermsPage />;
+  }
+
   return (
     <PublicSite onGoToAdmin={() => setShowAdmin(true)} />
   );
