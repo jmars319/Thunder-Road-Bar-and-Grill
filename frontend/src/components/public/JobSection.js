@@ -346,9 +346,10 @@ export default function JobSection() {
 
           <label className="flex flex-col">
             <span className="text-sm mb-1">Resume (optional)</span>
-            <div className="flex items-center gap-3">
+            {/* Stack on small screens, inline on sm+ */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <input ref={fileInputRef} type="file" accept="application/pdf,.doc,.docx" onChange={handleFileChange} aria-describedby="resume-help" />
-              <div className="text-sm text-muted" id="resume-help">PDF or Word — max 3 MB</div>
+              <div className="text-sm text-muted mt-1 sm:mt-0" id="resume-help">PDF or Word — max 3 MB</div>
             </div>
             {resumeFile && (
                 <div className="mt-2 text-sm">

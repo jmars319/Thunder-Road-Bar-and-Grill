@@ -10,7 +10,7 @@
   Notes:
   - Changing logos or branding should trigger a `siteSettingsUpdated` event so the public site updates live.
 */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { clearCacheFor } from '../../lib/cachedFetch';
 import { icons } from '../../icons';
 
@@ -41,6 +41,7 @@ function SettingsModule() {
   const [businessHours, setBusinessHours] = useState([]);
   const [saved, setSaved] = useState(false);
   const [menuSaved, setMenuSaved] = useState(false);
+  const originalSettingsRef = useRef({});
 
   useEffect(() => {
     // Load all settings in a single async function with error handling
@@ -55,6 +56,7 @@ function SettingsModule() {
         if (siteRes.ok) {
           const siteData = await siteRes.json();
           setSiteSettings(siteData || {});
+          originalSettingsRef.current = siteData || {};
         }
 
         if (aboutRes.ok) {
@@ -79,10 +81,53 @@ function SettingsModule() {
 
   const saveSiteSettings = async () => {
     try {
+      // Send only fields that changed to avoid overwriting unrelated values
+      const orig = originalSettingsRef.current || {};
+      const payload = {};
+      const keys = ['business_name','tagline','menu_description','phone','email','address','logo_url','hero_images','instagram','facebook','google'];
+      for (const k of keys) {
+        const cur = siteSettings[k];
+        const o = orig[k];
+        if (Array.isArray(cur) || Array.isArray(o)) {
+          const curJson = JSON.stringify(cur || []);
+          const oJson = JSON.stringify(o || []);
+          if (curJson !== oJson) payload[k] = cur;
+        } else if (cur !== o) {
+          payload[k] = cur;
+        }
+      }
+
+      // Debug: log siteSettings, original snapshot, and computed payload so
+      // we can diagnose why saves sometimes do not trigger a network request.
+      try {
+        if (typeof window !== 'undefined' && typeof window.__app_debug === 'function') {
+          window.__app_debug('saveSiteSettings', { siteSettings, original: originalSettingsRef.current, payload });
+        }
+      } catch (e) {}
+
+      // If nothing changed, show a quick saved indicator and return
+      if (Object.keys(payload).length === 0) {
+        try { if (typeof window !== 'undefined' && typeof window.__app_debug === 'function') window.__app_debug('saveSiteSettings', 'no changes, aborting save'); } catch (e) {}
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1200);
+        return;
+      }
+
+      // Ensure google is always sent when present in the UI. Some browsers or
+      // minimal-diff logic can omit fields unexpectedly; force-send google when
+      // the admin filled it so the backend gets the updated value.
+      try {
+        if ((typeof siteSettings.google !== 'undefined') && !Object.prototype.hasOwnProperty.call(payload, 'google')) {
+          payload.google = siteSettings.google;
+        }
+      } catch (e) {}
+
+  try { if (typeof window !== 'undefined' && typeof window.__app_debug === 'function') window.__app_debug('saveSiteSettings:performFetch', payload); } catch (e) {}
+
       const res = await fetch(`${API_BASE}/site-settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(siteSettings)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         // Clear cached entries that depend on site-settings and menu so public UI updates immediately
@@ -99,6 +144,8 @@ function SettingsModule() {
 
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
+        // update original copy to reflect saved state
+        try { originalSettingsRef.current = { ...(originalSettingsRef.current || {}), ...payload }; } catch (e) {}
         // show a small toast if the menu description was part of the save
         if (siteSettings.menu_description && siteSettings.menu_description.length > 0) {
           setMenuSaved(true);
@@ -266,6 +313,60 @@ function SettingsModule() {
               onChange={(e) => setSiteSettings({...siteSettings, address: e.target.value})}
               className="w-full form-input"
               rows="2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1">Instagram URL</label>
+            <input
+              type="url"
+              value={siteSettings.instagram || siteSettings.instagram_url || (siteSettings.social && siteSettings.social.instagram) || ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSiteSettings({
+                  ...siteSettings,
+                  instagram: v,
+                  instagram_url: v,
+                  social: { ...(siteSettings.social || {}), instagram: v }
+                });
+              }}
+              className="w-full form-input"
+              placeholder="https://instagram.com/yourhandle"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1">Facebook URL</label>
+            <input
+              type="url"
+              value={siteSettings.facebook || siteSettings.facebook_url || (siteSettings.social && siteSettings.social.facebook) || ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSiteSettings({
+                  ...siteSettings,
+                  facebook: v,
+                  facebook_url: v,
+                  social: { ...(siteSettings.social || {}), facebook: v }
+                });
+              }}
+              className="w-full form-input"
+              placeholder="https://facebook.com/yourpage"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1">Google Listing URL</label>
+            <input
+              type="url"
+              value={siteSettings.google || siteSettings.google_url || (siteSettings.social && siteSettings.social.google) || ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSiteSettings({
+                  ...siteSettings,
+                  google: v,
+                  google_url: v,
+                  social: { ...(siteSettings.social || {}), google: v }
+                });
+              }}
+              className="w-full form-input"
+              placeholder="https://maps.google.com/... or https://business.google.com/..."
             />
           </div>
           <button
