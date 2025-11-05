@@ -1,5 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Rate limiter for job applications: 2 requests per hour per IP
@@ -45,7 +46,10 @@ router.get('/jobs', (req, res) => {
   req.db.query(
     'SELECT * FROM job_applications ORDER BY submitted_at DESC',
     (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to fetch job applications', { error: err.message, stack: err.stack });
+        return res.status(500).json({ error: err.message });
+      }
       res.json(results);
     }
   );
@@ -99,6 +103,7 @@ router.post('/jobs',
         [name, email, phone, position, experience, availability || null, cover_letter, resume_url]
       );
 
+      logger.info('Job application submitted', { id: result.insertId, email, position });
       return res.json({ id: result.insertId, message: 'Application submitted' });
     } catch (err) {
       return next(err);
@@ -117,7 +122,10 @@ router.put('/jobs/:id', adminAuth, (req, res) => {
     'UPDATE job_applications SET status = ? WHERE id = ?',
     [status, id],
     (err) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to update job application', { error: err.message, stack: err.stack, id, status });
+        return res.status(500).json({ error: err.message });
+      }
       res.json({ message: 'Application updated' });
     }
   );
@@ -127,7 +135,10 @@ router.put('/jobs/:id', adminAuth, (req, res) => {
 router.delete('/jobs/:id', adminAuth, (req, res) => {
   const { id } = req.params;
   req.db.query('DELETE FROM job_applications WHERE id = ?', [id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      logger.error('Failed to delete job application', { error: err.message, stack: err.stack, id });
+      return res.status(500).json({ error: err.message });
+    }
     res.json({ message: 'Application deleted' });
   });
 });

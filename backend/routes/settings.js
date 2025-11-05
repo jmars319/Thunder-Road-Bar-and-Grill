@@ -259,9 +259,7 @@ router.put('/site-settings',
       const sql = `UPDATE site_settings SET ${fields.join(', ')} WHERE id = 1`;
       // Debug: log the dynamic update fields and params to help diagnose why
       // some updates (e.g. google) may not persist in certain environments.
-      try {
-        console.debug && console.debug('DEBUG: site_settings UPDATE', { sql, fields, params });
-      } catch (e) {}
+      logger.debug('site_settings UPDATE', { sql, fields, params });
       const doUpdate = async () => req.dbPromise.query(sql, params);
 
       try {

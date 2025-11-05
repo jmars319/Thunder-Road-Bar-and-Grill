@@ -1,5 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Basic rate limiter for public-facing contact POSTs: 6 requests per hour per IP
@@ -58,13 +59,19 @@ router.get('/contact/messages', (req, res) => {
 
   // Get total count and page slice
   req.db.query('SELECT COUNT(*) AS total FROM contact_messages', (cntErr, cntRows) => {
-    if (cntErr) return res.status(500).json({ error: cntErr.message });
+    if (cntErr) {
+      logger.error('Failed to count contact messages', { error: cntErr.message, stack: cntErr.stack });
+      return res.status(500).json({ error: cntErr.message });
+    }
     const total = (cntRows && cntRows[0] && cntRows[0].total) || 0;
     req.db.query(
       'SELECT * FROM contact_messages ORDER BY submitted_at DESC LIMIT ? OFFSET ?',
       [per_page, offset],
       (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+          logger.error('Failed to fetch contact messages', { error: err.message, stack: err.stack, page, per_page });
+          return res.status(500).json({ error: err.message });
+        }
         res.json({ total, page, per_page, messages: results });
       }
     );
@@ -93,7 +100,11 @@ router.post('/contact', contactLimiter, (req, res) => {
     'INSERT INTO contact_messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)',
     [name, email, phone, subject, message],
     (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to insert contact message', { error: err.message, stack: err.stack, email });
+        return res.status(500).json({ error: err.message });
+      }
+      logger.info('Contact message submitted', { id: result.insertId, email });
       res.json({ id: result.insertId, message: 'Message sent successfully' });
     }
   );
@@ -108,7 +119,10 @@ router.put('/contact/messages/:id', (req, res) => {
     'UPDATE contact_messages SET is_read = ? WHERE id = ?',
     [is_read, id],
     (err) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to update contact message', { error: err.message, stack: err.stack, id });
+        return res.status(500).json({ error: err.message });
+      }
       res.json({ message: 'Message updated' });
     }
   );
@@ -118,7 +132,10 @@ router.put('/contact/messages/:id', (req, res) => {
 router.delete('/contact/messages/:id', (req, res) => {
   const { id } = req.params;
   req.db.query('DELETE FROM contact_messages WHERE id = ?', [id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      logger.error('Failed to delete contact message', { error: err.message, stack: err.stack, id });
+      return res.status(500).json({ error: err.message });
+    }
     res.json({ message: 'Message deleted' });
   });
 });

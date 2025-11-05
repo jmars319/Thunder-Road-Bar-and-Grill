@@ -1,5 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Rate limiter for newsletter actions: 5 requests per hour per IP
@@ -43,7 +44,10 @@ router.get('/newsletter/subscribers', (req, res) => {
   req.db.query(
     'SELECT * FROM newsletter_subscribers ORDER BY subscribed_at DESC',
     (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to fetch newsletter subscribers', { error: err.message, stack: err.stack });
+        return res.status(500).json({ error: err.message });
+      }
       res.json(results);
     }
   );
@@ -59,10 +63,13 @@ router.post('/newsletter/subscribe', newsletterLimiter, (req, res) => {
     (err, result) => {
       if (err) {
         if (err.code === 'ER_DUP_ENTRY') {
+          logger.info('Newsletter subscription attempted for existing email', { email });
           return res.status(400).json({ error: 'Email already subscribed' });
         }
+        logger.error('Failed to subscribe to newsletter', { error: err.message, stack: err.stack, email });
         return res.status(500).json({ error: err.message });
       }
+      logger.info('Newsletter subscription created', { id: result.insertId, email });
       res.json({ id: result.insertId, message: 'Subscribed successfully' });
     }
   );
@@ -76,7 +83,11 @@ router.post('/newsletter/unsubscribe', newsletterLimiter, (req, res) => {
     'UPDATE newsletter_subscribers SET is_active = 0 WHERE email = ?',
     [email],
     (err) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to unsubscribe from newsletter', { error: err.message, stack: err.stack, email });
+        return res.status(500).json({ error: err.message });
+      }
+      logger.info('Newsletter unsubscribe', { email });
       res.json({ message: 'Unsubscribed successfully' });
     }
   );
@@ -86,7 +97,10 @@ router.post('/newsletter/unsubscribe', newsletterLimiter, (req, res) => {
 router.delete('/newsletter/subscribers/:id', (req, res) => {
   const { id } = req.params;
   req.db.query('DELETE FROM newsletter_subscribers WHERE id = ?', [id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      logger.error('Failed to delete newsletter subscriber', { error: err.message, stack: err.stack, id });
+      return res.status(500).json({ error: err.message });
+    }
     res.json({ message: 'Subscriber deleted' });
   });
 });

@@ -1,5 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Rate limiter for reservation submissions: 3 requests per hour per IP
@@ -43,7 +44,10 @@ router.get('/reservations', (req, res) => {
   req.db.query(
     'SELECT * FROM reservations ORDER BY reservation_date DESC, reservation_time DESC',
     (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to fetch reservations', { error: err.message, stack: err.stack });
+        return res.status(500).json({ error: err.message });
+      }
       res.json(results);
     }
   );
@@ -74,6 +78,7 @@ router.post('/reservations',
         [name, email, phone, reservation_date, reservation_time, guests, special_requests]
       );
 
+      logger.info('Reservation created', { id: result.insertId, email, reservation_date, reservation_time });
       return res.json({ id: result.insertId, message: 'Reservation created' });
     } catch (err) {
       return next(err);
@@ -90,7 +95,10 @@ router.put('/reservations/:id', (req, res) => {
     'UPDATE reservations SET status = ? WHERE id = ?',
     [status, id],
     (err) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        logger.error('Failed to update reservation', { error: err.message, stack: err.stack, id, status });
+        return res.status(500).json({ error: err.message });
+      }
       res.json({ message: 'Reservation updated' });
     }
   );
@@ -100,7 +108,10 @@ router.put('/reservations/:id', (req, res) => {
 router.delete('/reservations/:id', (req, res) => {
   const { id } = req.params;
   req.db.query('DELETE FROM reservations WHERE id = ?', [id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      logger.error('Failed to delete reservation', { error: err.message, stack: err.stack, id });
+      return res.status(500).json({ error: err.message });
+    }
     res.json({ message: 'Reservation deleted' });
   });
 });
