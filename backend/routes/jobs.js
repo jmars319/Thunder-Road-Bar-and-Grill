@@ -1,5 +1,15 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
+
+// Rate limiter for job applications: 2 requests per hour per IP
+const jobApplicationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 2,
+  message: { error: 'Too many job application requests from this IP, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /*
   Jobs routes
@@ -44,8 +54,9 @@ router.get('/jobs', (req, res) => {
 const { body } = require('express-validator');
 const validateRequest = require('../middleware/validateRequest');
 
-// Submit job application (validated + async/await)
+// Submit job application (validated + async/await + rate-limited)
 router.post('/jobs',
+  jobApplicationLimiter,
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').trim().notEmpty().withMessage('Email is required').isEmail().withMessage('Email must be a valid email address'),
   body('phone').trim().notEmpty().withMessage('Phone is required'),

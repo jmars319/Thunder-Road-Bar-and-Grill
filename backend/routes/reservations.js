@@ -1,5 +1,15 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
+
+// Rate limiter for reservation submissions: 3 requests per hour per IP
+const reservationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  message: { error: 'Too many reservation requests from this IP, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /*
   Reservations routes
@@ -42,8 +52,9 @@ router.get('/reservations', (req, res) => {
 const { body } = require('express-validator');
 const validateRequest = require('../middleware/validateRequest');
 
-// Create reservation (with express-validator + async/await)
+// Create reservation (with express-validator + async/await + rate limiting)
 router.post('/reservations',
+  reservationLimiter,
   // Validation chain
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('phone').trim().notEmpty().withMessage('Phone is required'),

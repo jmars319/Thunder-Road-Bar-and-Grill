@@ -1,5 +1,15 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
+
+// Rate limiter for newsletter actions: 5 requests per hour per IP
+const newsletterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many newsletter requests from this IP, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /*
   Newsletter routes
@@ -39,8 +49,8 @@ router.get('/newsletter/subscribers', (req, res) => {
   );
 });
 
-// Subscribe to newsletter
-router.post('/newsletter/subscribe', (req, res) => {
+// Subscribe to newsletter (rate-limited)
+router.post('/newsletter/subscribe', newsletterLimiter, (req, res) => {
   const { email, name } = req.body;
   
   req.db.query(
@@ -58,8 +68,8 @@ router.post('/newsletter/subscribe', (req, res) => {
   );
 });
 
-// Unsubscribe
-router.post('/newsletter/unsubscribe', (req, res) => {
+// Unsubscribe (rate-limited)
+router.post('/newsletter/unsubscribe', newsletterLimiter, (req, res) => {
   const { email } = req.body;
   
   req.db.query(
