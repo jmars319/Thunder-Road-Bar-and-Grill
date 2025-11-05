@@ -11,14 +11,18 @@
 */
 
 import React, { useEffect, useState } from 'react';
+import { ReactComponent as GoogleIcon } from '../../assets/google-g.svg';
 import cachedFetch, { clearCacheFor } from '../../lib/cachedFetch';
 
 const HoursModal = React.lazy(() => import('./HoursModal'));
 const PrivacyModal = React.lazy(() => import('./PrivacyModal'));
 const TermsModal = React.lazy(() => import('./TermsModal'));
 const ContactModal = React.lazy(() => import('./ContactModal'));
-// ensure lazy imports are recognized by some static analyzers as used
-void HoursModal; void PrivacyModal; void TermsModal; void ContactModal;
+const OrderModal = React.lazy(() => import('./OrderModal'));
+// ensure lazy imports and SVG components are recognized by some static analyzers as used
+void HoursModal; void PrivacyModal; void TermsModal; void ContactModal; void OrderModal;
+// mark the inline Google SVG component as intentionally used
+void GoogleIcon;
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
@@ -32,6 +36,7 @@ export default function PublicFooter({ onGoToAdmin }) {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showOrder, setShowOrder] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -80,7 +85,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                           <button
                             type="button"
                             onClick={() => setShowPrivacy(true)}
-                            className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
+                            className="text-text-muted hover:text-text-primary tracking-tight"
                           >
                             {link.label}
                           </button>
@@ -88,7 +93,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                           <button
                             type="button"
                             onClick={() => setShowTerms(true)}
-                            className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
+                            className="text-text-muted hover:text-text-primary tracking-tight"
                           >
                             {link.label}
                           </button>
@@ -137,6 +142,91 @@ export default function PublicFooter({ onGoToAdmin }) {
                   Hours
                 </button>
               </div>
+              {/* Social links (Instagram, Facebook) */}
+              <div className="flex items-center gap-3 mt-2">
+                {(
+                  siteSettings?.instagram || siteSettings?.instagram_url || siteSettings?.social?.instagram
+                ) ? (
+                  <a
+                    href={siteSettings?.instagram || siteSettings?.instagram_url || siteSettings?.social?.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Thunder Road on Instagram"
+                    className="text-text-muted hover:text-text-primary transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                  </a>
+                ) : (
+                  <a
+                    href="https://www.instagram.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                    className="text-text-muted hover:text-text-primary transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                  </a>
+                )}
+
+                {(
+                  siteSettings?.facebook || siteSettings?.facebook_url || siteSettings?.social?.facebook
+                ) ? (
+                  <a
+                    href={siteSettings?.facebook || siteSettings?.facebook_url || siteSettings?.social?.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Thunder Road on Facebook"
+                    className="text-text-muted hover:text-text-primary transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
+                      <path d="M18 2h-3a4 4 0 0 0-4 4v3H8v4h3v8h4v-8h3l1-4h-4V6a1 1 0 0 1 1-1h3z"></path>
+                    </svg>
+                  </a>
+                ) : (
+                  <a
+                    href="https://www.facebook.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook"
+                    className="text-text-muted hover:text-text-primary transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
+                      <path d="M18 2h-3a4 4 0 0 0-4 4v3H8v4h3v8h4v-8h3l1-4h-4V6a1 1 0 0 1 1-1h3z"></path>
+                    </svg>
+                  </a>
+                )}
+                {(
+                  siteSettings?.google || siteSettings?.google_url || siteSettings?.social?.google
+                ) ? (
+                  <a
+                    href={siteSettings?.google || siteSettings?.google_url || siteSettings?.social?.google}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Thunder Road on Google"
+                    className="text-text-muted hover:text-text-primary transition"
+                  >
+                    <GoogleIcon width={20} height={20} className="inline-block" aria-hidden="true" />
+                  </a>
+                ) : (
+                  <a
+                    href="https://www.google.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Google"
+                    className="text-text-muted hover:text-text-primary transition"
+                  >
+                    <GoogleIcon width={20} height={20} className="inline-block" aria-hidden="true" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -146,35 +236,33 @@ export default function PublicFooter({ onGoToAdmin }) {
           {/* Quick Links column */}
           <div className="md:text-left">
             <h4 className="text-sm font-heading font-semibold mb-1 text-text-primary">Quick Links</h4>
-            <ul className="space-y-0.5">
-              <li><a href="#menu" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">Menu</a></li>
-              <li><a href="#about" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">About</a></li>
-              <li><a href="#reservations" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">Reservations</a></li>
-              <li><a href="#jobs" className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight">Careers</a></li>
+            <ul className="space-y-0 text-[11px] leading-tight">
+              <li><a href="#menu" className="text-text-muted hover:text-text-primary tracking-tight">Menu</a></li>
+              <li><a href="#about" className="text-text-muted hover:text-text-primary tracking-tight">About</a></li>
+              <li><a href="#reservations" className="text-text-muted hover:text-text-primary tracking-tight">Reservations</a></li>
+              <li><a href="#jobs" className="text-text-muted hover:text-text-primary tracking-tight">Careers</a></li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setShowOrder(true)}
+                  className="text-text-muted hover:text-text-primary tracking-tight"
+                >
+                  Order Online
+                </button>
+              </li>
             </ul>
           </div>
 
           {/* Legal + Admin column */}
           <div className="md:text-right">
             <h4 className="text-sm font-heading font-semibold mb-1 text-text-primary">Legal</h4>
-            <ul className="space-y-0.5">
+            {/* match quick-links sizing to keep the footer visually consistent */}
+            <ul className="space-y-0.5 text-[11px] leading-tight">
               <li>
-                <button
-                  type="button"
-                  onClick={() => setShowPrivacy(true)}
-                  className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
-                >
-                  Privacy Policy
-                </button>
+                <a href="/privacy" className="text-text-muted hover:text-text-primary transition tracking-tight">Privacy Policy</a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => setShowTerms(true)}
-                  className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight"
-                >
-                  Terms &amp; Conditions
-                </button>
+                <a href="/terms" className="text-text-muted hover:text-text-primary transition tracking-tight">Terms &amp; Conditions</a>
               </li>
             </ul>
 
@@ -193,7 +281,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     window.location.href = '/admin';
                   }
                 }}
-                className="text-text-muted hover:text-text-primary text-xs leading-tight tracking-tight"
+                className="text-text-muted hover:text-text-primary tracking-tight text-[11px] leading-tight"
               >
                 Admin
               </a>
@@ -231,6 +319,12 @@ export default function PublicFooter({ onGoToAdmin }) {
       {showTerms && (
         <React.Suspense fallback={<div aria-hidden className="fixed inset-0 z-40 flex items-center justify-center"><div className="bg-black/40" /></div>}>
           <TermsModal onClose={() => setShowTerms(false)} />
+        </React.Suspense>
+      )}
+
+      {showOrder && (
+        <React.Suspense fallback={<div aria-hidden className="fixed inset-0 z-40 flex items-center justify-center"><div className="bg-black/40" /></div>}>
+          <OrderModal onClose={() => setShowOrder(false)} />
         </React.Suspense>
       )}
     </footer>

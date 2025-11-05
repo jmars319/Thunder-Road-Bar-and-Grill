@@ -1,7 +1,6 @@
 /*
   PublicNavbar
 
-  Purpose:
   - Top navigation for the public site. Loads site settings and navigation
     and provides responsive navigation, theme toggle and the Order Online modal trigger.
 
@@ -12,6 +11,7 @@
   - Attempts to inline SVG logos for recoloring when the configured logo is an SVG.
 */
 import React, { useState, useEffect } from 'react';
+import { ReactComponent as DefaultLogo } from '../../logo.svg';
 import { createPortal } from 'react-dom';
 
 import { icons } from '../../icons';
@@ -46,6 +46,36 @@ const OrderModal = React.lazy(() => import('./OrderModal'));
 */
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+
+// Helper to build responsive srcsets (same convention as backend generator)
+function buildSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
+  try {
+    if (!url) return '';
+    const qIdx = url.indexOf('?');
+    const clean = qIdx === -1 ? url : url.slice(0, qIdx);
+    const dot = clean.lastIndexOf('.');
+    if (dot === -1) return '';
+    const ext = clean.slice(dot + 1);
+    const base = clean.slice(0, dot);
+    const parts = sizesArr.map(w => `${base}-${w}.${ext} ${w}w`);
+    parts.push(`${clean} ${Math.max(...sizesArr)}w`);
+    return parts.join(', ');
+  } catch (e) {
+    return '';
+  }
+}
+
+function buildWebpSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
+  try {
+    if (!url) return '';
+    const base = url.slice(0, url.lastIndexOf('.'));
+    const parts = sizesArr.map(w => `${base}-${w}.webp ${w}w`);
+    parts.push(`${base}.webp ${Math.max(...sizesArr)}w`);
+    return parts.join(', ');
+  } catch (e) {
+    return '';
+  }
+}
 
 export default function PublicNavbar({ onGoToAdmin }) {
   // kept for backwards compatibility with parent callers; no-op in navbar now
@@ -145,12 +175,20 @@ export default function PublicNavbar({ onGoToAdmin }) {
     return () => window.removeEventListener('siteSettingsUpdated', handler);
   }, []);
 
+  // Localized logo URL: prefer the configured logo; when none is configured
+  // render the bundled inline DefaultLogo component. Use an explicit
+  // `isBundledDefault` flag so linters don't report the imported component
+  // as unused and to avoid relying on string-equality checks against the
+  // bundler path.
+  const isBundledDefault = !siteSettings?.logo_url;
+  const logoUrl = siteSettings?.logo_url || '';
+
   return (
     <nav className="bg-surface shadow-md header-sticky top-0 z-50 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
   <div className="flex justify-between items-center h-16 md:h-20">
           <div className="flex items-center gap-3">
-            {siteSettings?.logo_url && (
+            {logoUrl && (
               <div className="logo-badge">
                 {/* Prefer inline SVG when available so logos can inherit token colors */}
                 {logoSvg ? (
@@ -161,11 +199,31 @@ export default function PublicNavbar({ onGoToAdmin }) {
                     dangerouslySetInnerHTML={{ __html: logoSvg }}
                   />
                 ) : (
-                  <img
-                    src={siteSettings.logo_url}
-                    alt={siteSettings.business_name}
-                    className="h-full w-auto"
-                  />
+                  <picture>
+                    {
+                      // Logo is a small inline element. Provide small responsive
+                      // variants so the browser doesn't assume a tiny display
+                      // size. Use 160/320 as the smallest widths that the
+                      // backend generator now produces.
+                    }
+                    {buildWebpSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600]) ? (
+                      <source srcSet={buildWebpSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600])} type="image/webp" sizes="(min-width: 768px) 80px, 64px" />
+                    ) : null}
+                    {buildSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600]) ? (
+                      <source srcSet={buildSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600])} type="image/jpeg" sizes="(min-width: 768px) 80px, 64px" />
+                    ) : null}
+                    {isBundledDefault ? (
+                      <DefaultLogo role="img" aria-label={siteSettings?.business_name || 'Site logo'} className="h-full w-auto object-contain" />
+                    ) : (
+                      <img
+                        src={logoUrl}
+                        srcSet={buildSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600]) || undefined}
+                        sizes="(min-width: 768px) 80px, 64px"
+                        alt={siteSettings?.business_name || 'Site logo'}
+                        className="h-full w-auto object-contain"
+                      />
+                    )}
+                  </picture>
                 )}
               </div>
             )}
@@ -323,5 +381,5 @@ export default function PublicNavbar({ onGoToAdmin }) {
 // Some editor/lint setups don't detect JSX uses of member-expressions like
 // `<icons.X />`. Provide a small used-symbol object so those tools don't
 // incorrectly report `icons` or `ThemeToggle` as unused.
-const __usedNavbar = { icons, ThemeToggle, Spinner, OrderModal };
+const __usedNavbar = { icons, ThemeToggle, Spinner, OrderModal, DefaultLogo };
 void __usedNavbar;

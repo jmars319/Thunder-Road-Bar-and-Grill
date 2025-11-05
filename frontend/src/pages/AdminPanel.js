@@ -16,6 +16,7 @@
 */
 
 import React, { useState, useEffect } from 'react';
+import { ReactComponent as DefaultLogo } from '../logo.svg';
 import { icons } from '../icons';
 import ThemeToggle from '../components/ThemeToggle';
 import DashboardModule from '../components/admin/DashboardModule';
@@ -27,6 +28,10 @@ import MediaModule from '../components/admin/MediaModule';
 import SettingsModule from '../components/admin/SettingsModule';
 import NewsletterModule from '../components/admin/NewsletterModule';
 import Snackbar from '../components/ui/Snackbar';
+
+// mark conditionally-rendered admin assets as used for static analyzers
+const __usedAdmin = { DefaultLogo };
+void __usedAdmin;
 
 const AdminModules = {
   dashboard: { component: DashboardModule, name: 'Dashboard', icon: icons.LayoutDashboard },
@@ -80,21 +85,21 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
       >
         <div className="p-4 flex items-center justify-between border-b border-divider">
           <div className="flex items-center gap-3">
-            {siteSettings?.logo_url ? (
+            {(
               <>
-                <img
-                  src={siteSettings.logo_url}
-                  alt={siteSettings?.business_name || 'Site logo'}
-                  className="h-8 object-contain"
-                />
+                {siteSettings?.logo_url ? (
+                  <img
+                    src={siteSettings.logo_url}
+                    alt={siteSettings?.business_name || 'Site logo'}
+                    className="h-8 object-contain"
+                  />
+                ) : (
+                  <DefaultLogo role="img" aria-label={siteSettings?.business_name || 'Site logo'} className="h-8 object-contain" />
+                )}
                 {sidebarOpen && (
                   <span className="text-sm font-heading font-bold text-text-inverse">TRBG ADMIN</span>
                 )}
               </>
-            ) : (
-              <div className="font-heading font-bold text-lg text-text-inverse">
-                {siteSettings?.business_name || 'Thunder Road'}
-              </div>
             )}
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2" aria-label={sidebarOpen?"Collapse sidebar":"Expand sidebar"}>
