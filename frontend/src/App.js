@@ -14,7 +14,7 @@
     handle their own data fetching and side-effects.
 */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
  
 import PublicSite from './pages/PublicSite';
 import PrivacyPage from './pages/PrivacyPage';
@@ -37,12 +37,27 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  const handleLogin = (user) => {
+  // Listen for auth expiration events from API utility
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      handleLogout();
+    };
+    window.addEventListener('authExpired', handleAuthExpired);
+    return () => window.removeEventListener('authExpired', handleAuthExpired);
+  }, []);
+
+  const handleLogin = (user, token) => {
+    // Store JWT token in localStorage for session persistence
+    if (token) {
+      localStorage.setItem('authToken', token);
+    }
     setCurrentUser(user);
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
+    // Clear JWT token from localStorage
+    localStorage.removeItem('authToken');
     setIsLoggedIn(false);
     setCurrentUser(null);
     setShowAdmin(false);

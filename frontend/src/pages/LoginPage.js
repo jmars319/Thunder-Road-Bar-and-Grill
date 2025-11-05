@@ -31,7 +31,7 @@ const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
  * - onBack(): optional -- navigate back to the public site
  */
 export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -99,7 +99,7 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
       const response = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       });
 
       if (!response.ok) {
@@ -113,7 +113,8 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
 
       if (data && data.success) {
         // Defensive: ensure onLogin is callable
-        if (typeof onLogin === 'function') onLogin(data.user);
+        // Pass both user and token to parent component
+        if (typeof onLogin === 'function') onLogin(data.user, data.token);
       } else {
         // Prefer server-provided message when available.
         setError(data?.message || 'Invalid credentials');
@@ -187,15 +188,15 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
           {/* Login Form: form submit improves accessibility and handles Enter key */}
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4" noValidate>
             <div>
-              <label htmlFor="login-email" className="block text-sm font-medium text-text-primary mb-1">
+              <label htmlFor="login-username" className="block text-sm font-medium text-text-primary mb-1">
                 Username
               </label>
               <input
-                id="login-email"
-                name="email"
+                id="login-username"
+                name="username"
                 type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="admin"
                 className="w-full form-input"
