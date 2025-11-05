@@ -143,6 +143,25 @@ app.use('/uploads', (req, res, next) => {
   // Small caching policy for uploaded assets
   res.setHeader('Cache-Control', 'public, max-age=3600');
 
+  // Restrictive CSP for uploaded content to prevent XSS from malicious uploads
+  // This prevents uploaded HTML/SVG files from executing scripts or loading external resources
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'none'; " +
+    "img-src 'self'; " +
+    "style-src 'unsafe-inline'; " +
+    "media-src 'self'; " +
+    "object-src 'none'; " +
+    "base-uri 'none'; " +
+    "form-action 'none'; " +
+    "frame-ancestors 'none'"
+  );
+
+  // Prevent MIME type sniffing which could cause images to be interpreted as HTML
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Prevent uploads from being framed (defense in depth)
+  res.setHeader('X-Frame-Options', 'DENY');
+
   // If the request includes an Origin header and it matches our allowed
   // frontend origins, echo it back so cross-origin requests with
   // credentials or crossorigin attributes succeed.
