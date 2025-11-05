@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const validateRequest = require('../middleware/validateRequest');
+const adminAuth = require('../middleware/adminAuth');
 const router = express.Router();
 const logger = require('../utils/logger');
 const isProduction = process.env.NODE_ENV === 'production';
@@ -457,10 +458,10 @@ router.get('/footer-columns', async (req, res, next) => {
 module.exports = router;
 
 // Temporary migration endpoint: add missing social columns to site_settings.
-// This is intentionally placed here for convenience and should be removed
-// after a successful run in production. It will only add columns if they
-// are not already present.
-router.post('/internal/migrate-site-settings', async (req, res, next) => {
+// Internal migration endpoint for adding social columns to site_settings table.
+// Protected with admin authentication to prevent unauthorized schema changes.
+// This endpoint is idempotent and only adds columns if they don't exist.
+router.post('/internal/migrate-site-settings', adminAuth, async (req, res, next) => {
   try {
     // Determine which columns already exist
     const [rows] = await req.dbPromise.query(
@@ -489,13 +490,13 @@ router.post('/internal/migrate-site-settings', async (req, res, next) => {
         added.push('google_widened');
       } catch (err) {
         // If MODIFY fails for permissions or other reasons, log and continue.
-        console.error('Failed to widen google column in migration endpoint:', err && err.message ? err.message : err);
+        logger.error('Failed to widen google column in migration endpoint', { error: err.message });
       }
     }
 
     return res.json({ ok: true, added, present });
   } catch (err) {
-    console.error('Migration failed:', err && err.message ? err.message : err);
+    logger.error('Migration failed', { error: err.message });
     return next(err);
   }
 });
