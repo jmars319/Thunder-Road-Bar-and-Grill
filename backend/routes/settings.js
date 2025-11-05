@@ -273,7 +273,7 @@ router.put('/site-settings',
             await doUpdate();
             return res.json({ message: 'Settings updated' });
           } catch (errTooLong) {
-            console.error('Failed to widen google column and retry update:', errTooLong && errTooLong.message ? errTooLong.message : errTooLong);
+            logger.error('Failed to widen google column and retry update', { error: errTooLong.message, stack: errTooLong.stack });
             throw errTooLong;
           }
         }
@@ -286,7 +286,13 @@ router.put('/site-settings',
 
         if (missing.length > 0) {
           try {
+            // Whitelist of allowed column names for ALTER TABLE to prevent SQL injection
+            const allowedColumns = ['instagram', 'facebook', 'google'];
             for (const col of missing) {
+              if (!allowedColumns.includes(col)) {
+                logger.error('Attempted to add non-whitelisted column', { column: col });
+                throw new Error(`Invalid column name: ${col}`);
+              }
               if (col === 'google') {
                 await req.dbPromise.query(`ALTER TABLE site_settings ADD COLUMN ${col} TEXT NULL`);
               } else {
@@ -295,7 +301,7 @@ router.put('/site-settings',
             }
             await doUpdate();
           } catch (err2) {
-            console.error('Failed to add missing social columns or retry update:', err2 && err2.message ? err2.message : err2);
+            logger.error('Failed to add missing social columns or retry update', { error: err2.message, stack: err2.stack, missingColumns: missing });
             throw err2;
           }
         } else {
