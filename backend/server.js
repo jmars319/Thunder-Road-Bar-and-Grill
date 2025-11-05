@@ -104,20 +104,33 @@ if (helmet) {
 
 // CORS: allow only configured origins. FRONTEND_URL may be a comma-separated list.
 const allowedOrigins = (process.env.FRONTEND_URL || FRONTEND_URL).split(',').map(s => s.trim()).filter(Boolean);
-app.use(cors({
-  origin: function (origin, cb) {
-    // allow non-browser tools like Postman (no origin) in dev
-    if (!origin) return cb(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) return cb(null, true);
-    return cb(new Error('CORS policy: Origin not allowed'), false);
+
+// Strict CORS middleware
+// - If a request has no Origin header (e.g., curl/Postman), respond with a
+//   wildcard Access-Control-Allow-Origin so server-to-server tools can access it.
+// - If a request includes an Origin and it exactly matches one of the
+//   configured allowedOrigins, echo that origin and allow credentials.
+// - Otherwise, do not set Access-Control-Allow-Origin (browser will block).
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (!origin) {
+    // Non-browser clients
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else if (Array.isArray(allowedOrigins) && allowedOrigins.indexOf(origin) !== -1) {
+    // Explicitly allowed origin for browser requests
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
   }
-  ,
-  // Allow credentials (cookies) to be sent from the frontend during dev/admin requests.
-  // Admin endpoints rely on a dev cookie (`admin=true`) or developer header — enabling
-  // credentials here ensures the browser will send cookies when fetch uses
-  // `credentials: 'include'` and the origin matches.
-  credentials: true
-}));
+
+  // Common preflight headers
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  return next();
+});
 
 // Limit JSON body size to avoid large payload abuse
 app.use(express.json({ limit: '1mb' }));
