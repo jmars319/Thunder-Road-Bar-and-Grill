@@ -49,7 +49,11 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
     if (!siteSettings?.logo_url) return;
     const url = siteSettings.logo_url;
     if (typeof url === 'string' && url.toLowerCase().endsWith('.svg')) {
-      fetch(url).then(r => (r.ok ? r.text() : Promise.reject())).then(t => setLogoSvg(t)).catch(() => setLogoSvg(null));
+      // Fetch sanitized SVG from backend API instead of direct file access
+      fetch(`${API_BASE}/logo/sanitized`)
+        .then(r => (r.ok ? r.text() : Promise.reject()))
+        .then(t => setLogoSvg(t))
+        .catch(() => setLogoSvg(null));
     } else {
       setLogoSvg(null);
     }

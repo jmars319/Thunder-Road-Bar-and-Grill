@@ -144,14 +144,15 @@ export default function PublicNavbar({ onGoToAdmin }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // If the logo_url is an SVG file, fetch the content and render inline so it
-  // inherits currentColor (recolorable). This is a best-effort fetch and will
-  // gracefully fall back to <img> on error.
+  // If the logo_url is an SVG file, fetch sanitized content from backend API
+  // to prevent XSS attacks. Inline rendering allows the SVG to inherit
+  // currentColor (recolorable). Falls back to <img> on error.
   useEffect(() => {
     if (!siteSettings?.logo_url) return;
     const url = siteSettings.logo_url;
     if (typeof url === 'string' && url.toLowerCase().endsWith('.svg')) {
-      fetch(url)
+      // Fetch sanitized SVG from backend API instead of direct file access
+      fetch(`${API_BASE}/logo/sanitized`)
         .then(r => (r.ok ? r.text() : Promise.reject()))
         .then(svgText => setLogoSvg(svgText))
         .catch(() => setLogoSvg(null));
