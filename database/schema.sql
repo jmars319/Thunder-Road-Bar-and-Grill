@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS site_settings (
   business_name VARCHAR(100) DEFAULT 'Thunder Road Bar and Grill',
   tagline VARCHAR(200) DEFAULT 'Great Food. Cold Drinks. Good Times.',
   logo_url VARCHAR(255),
+  instagram VARCHAR(255),
+  facebook VARCHAR(255),
+  google VARCHAR(255),
   phone VARCHAR(20),
   email VARCHAR(100),
   address TEXT,
@@ -49,6 +52,11 @@ INSERT INTO site_settings (id, business_name, tagline, phone, email, address)
 VALUES (1, 'Thunder Road Bar and Grill', 'Great Food. Cold Drinks. Good Times.', 
         '(555) 123-4567', 'info@thunderroad.com', '123 Main Street, Anytown, USA 12345')
 ON DUPLICATE KEY UPDATE id = id;
+
+-- NOTE: If you're upgrading an existing database, run the following ALTER statements
+-- to add the new social columns without wiping existing data:
+-- ALTER TABLE site_settings ADD COLUMN instagram VARCHAR(255);
+-- ALTER TABLE site_settings ADD COLUMN facebook VARCHAR(255);
 
 -- ============================================
 -- NAVIGATION
