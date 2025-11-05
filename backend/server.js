@@ -43,21 +43,15 @@ const PORT = process.env.PORT || 5001;
 app.disable('x-powered-by');
 
 // If running behind a trusted proxy (e.g., Heroku, Cloudflare), enable trust proxy
-if (process.env.TRUST_PROXY === '1') {
+if (process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
   app.set('trust proxy', 1);
+  logger.info('Trust proxy enabled - will respect X-Forwarded-* headers');
 }
 
-// Redirect HTTP -> HTTPS when FORCE_HTTPS=1 (useful behind a proxy that terminates SSL)
-if (process.env.FORCE_HTTPS === '1') {
-  app.use((req, res, next) => {
-    const proto = req.headers['x-forwarded-proto'] || req.protocol;
-    if (proto && proto.toLowerCase() === 'http') {
-      const host = req.headers.host || '';
-      return res.redirect(301, `https://${host}${req.originalUrl}`);
-    }
-    return next();
-  });
-}
+// HTTPS redirect middleware - enforces HTTPS in production
+// Set FORCE_HTTPS=true and TRUST_PROXY=true in production .env
+const httpsRedirect = require('./middleware/httpsRedirect');
+app.use(httpsRedirect);
 
 /*
   server.js - Express app bootstrap
