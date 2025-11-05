@@ -44,3 +44,4 @@ frontend/.stylelintrc.json
 backend.log
 backend/*.log
 backend-start.log
+test-logs/

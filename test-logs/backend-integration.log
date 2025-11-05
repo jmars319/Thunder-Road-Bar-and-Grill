@@ -1,5 +1,0 @@
-
-> thunder-road-backend@1.0.0 test:integration
-> node tests/menu.integration.test.js
-
-Integration test passed
