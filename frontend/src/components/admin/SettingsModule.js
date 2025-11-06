@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { clearCacheFor } from '../../lib/cachedFetch';
 import { icons } from '../../icons';
+import { API_BASE } from '../../config/api';
 
 /*
   SettingsModule
@@ -32,8 +33,6 @@ import { icons } from '../../icons';
   - All network calls are performed with minimal optimistic UX. Errors are caught and silently ignored
     to keep the admin UI responsive; consider surfacing errors to the user via toasts for a better UX.
 */
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 function SettingsModule() {
   const [siteSettings, setSiteSettings] = useState({});

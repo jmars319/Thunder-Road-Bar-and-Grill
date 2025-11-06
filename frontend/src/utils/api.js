@@ -13,7 +13,7 @@
   Last updated: 2025-11-05 — Created for JWT authentication
 */
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+import { API_BASE } from '../config/api';
 
 /**
  * Make an authenticated API request with JWT token
@@ -61,7 +61,11 @@ export async function authenticatedFetch(url, options = {}) {
 
 /**
  * Get the current API base URL
+ * @deprecated Import API_BASE directly from '../config/api' instead
  */
 export function getApiBase() {
   return API_BASE;
 }
+
+// Re-export API_BASE for convenience
+export { API_BASE };

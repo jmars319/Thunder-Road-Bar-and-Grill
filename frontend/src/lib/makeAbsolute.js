@@ -1,27 +1,29 @@
 /*
-  makeAbsolute
+  makeAbsolute - utility to normalize relative paths to absolute URLs
 
   Purpose:
-  - Convert a possibly-relative media/file URL into an absolute URL using the
-    configured API base. Falls back to localhost API base during development.
+  - Converts relative paths (e.g. '/uploads/image.png') to full URLs using
+    the configured API_BASE origin. This ensures images and uploads reference
+    the correct backend origin when the app is deployed.
 
-  Contract:
-  - export default function makeAbsolute(fileUrl: string) -> string
+  Usage:
+  - import makeAbsolute from './makeAbsolute';
+  - const fullUrl = makeAbsolute('/uploads/hero.jpg');
+    // => 'http://localhost:5001/uploads/hero.jpg'
 
   Notes:
-  - If `fileUrl` is already absolute (starts with http[s]), it is returned
+  - The function checks whether the path is already absolute. If yes, returns
     unchanged. Otherwise the function prepends the API origin (REACT_APP_API_BASE
-    without the trailing `/api`). This helper is small and safe to call in both
-    browser and test environments.
+    without the /api suffix).
 */
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+import { getApiOrigin } from '../config/api';
 
 export default function makeAbsolute(fileUrl) {
   if (!fileUrl) return '';
   // already absolute
   if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
-  const base = API_BASE.replace(/\/api$/, '');
+  const base = getApiOrigin();
   return base + (fileUrl.startsWith('/') ? fileUrl : '/' + fileUrl);
 }
 

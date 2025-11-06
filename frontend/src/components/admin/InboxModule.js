@@ -12,7 +12,9 @@
   - Keep UI optimistic but refetch after mutations to ensure server canonical state.
 */
 import { useState, useEffect, useCallback } from 'react';
+import { sanitize } from 'isomorphic-dompurify';
 import { icons } from '../../icons';
+import { API_BASE } from '../../config/api';
 
 /*
   InboxModule
@@ -43,8 +45,6 @@ import { icons } from '../../icons';
     avoid accidental submits. Buttons expose aria-labels and use visual focus
     styles from the project's design tokens.
 */
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 /* DEV:
    - This admin inbox uses tokenized classes for surfaces and text (e.g., bg-surface,
