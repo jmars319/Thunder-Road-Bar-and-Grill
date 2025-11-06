@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ReactComponent as DefaultLogo } from '../logo.svg';
+import { buildSrcSet, buildWebpSrcSet, LOGO_SIZES } from '../utils/imageUtils';
 
 // Mark intentionally imported but conditionally-rendered components as used
 // so static analyzers don't report false-positive 'defined but never used'.
@@ -58,36 +59,6 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
       setLogoSvg(null);
     }
   }, [siteSettings]);
-
-  // Helpers for responsive srcset generation (same convention as backend generator)
-  function buildSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
-    try {
-      if (!url) return '';
-      const qIdx = url.indexOf('?');
-      const clean = qIdx === -1 ? url : url.slice(0, qIdx);
-      const dot = clean.lastIndexOf('.');
-      if (dot === -1) return '';
-      const ext = clean.slice(dot + 1);
-      const base = clean.slice(0, dot);
-      const parts = sizesArr.map(w => `${base}-${w}.${ext} ${w}w`);
-      parts.push(`${clean} ${Math.max(...sizesArr)}w`);
-      return parts.join(', ');
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function buildWebpSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
-    try {
-      if (!url) return '';
-      const base = url.slice(0, url.lastIndexOf('.'));
-      const parts = sizesArr.map(w => `${base}-${w}.webp ${w}w`);
-      parts.push(`${base}.webp ${Math.max(...sizesArr)}w`);
-      return parts.join(', ');
-    } catch (e) {
-      return '';
-    }
-  }
 
   // Primary submit handler. Keeps error/loading state local and defensive about
   // response shapes. We always check `response.ok` before parsing JSON because
@@ -157,16 +128,16 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
                           <span role="img" aria-label={siteSettings?.business_name || 'Site logo'} dangerouslySetInnerHTML={{ __html: logoSvg }} className="h-12 w-12 inline-block" />
                         ) : (
                           <picture>
-                            {buildWebpSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600]) ? (
-                              <source srcSet={buildWebpSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600])} type="image/webp" sizes="(min-width: 768px) 80px, 64px" />
+                            {buildWebpSrcSet(logoUrl, LOGO_SIZES) ? (
+                              <source srcSet={buildWebpSrcSet(logoUrl, LOGO_SIZES)} type="image/webp" sizes="(min-width: 768px) 80px, 64px" />
                             ) : null}
-                            {buildSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600]) ? (
-                              <source srcSet={buildSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600])} type="image/jpeg" sizes="(min-width: 768px) 80px, 64px" />
+                            {buildSrcSet(logoUrl, LOGO_SIZES) ? (
+                              <source srcSet={buildSrcSet(logoUrl, LOGO_SIZES)} type="image/jpeg" sizes="(min-width: 768px) 80px, 64px" />
                             ) : null}
                             {isBundledDefault ? (
                               <DefaultLogo role="img" aria-label={siteSettings?.business_name || 'Site logo'} className="inline-block h-12 w-auto" />
                             ) : (
-                              <img src={logoUrl} srcSet={buildSrcSet(logoUrl, [160, 320, 480, 768, 1024, 1600]) || undefined} sizes="(min-width: 768px) 80px, 64px" alt={siteSettings?.business_name || 'Site logo'} className="inline-block h-12 w-auto" />
+                              <img src={logoUrl} srcSet={buildSrcSet(logoUrl, LOGO_SIZES) || undefined} sizes="(min-width: 768px) 80px, 64px" alt={siteSettings?.business_name || 'Site logo'} className="inline-block h-12 w-auto" />
                             )}
                           </picture>
                         )}

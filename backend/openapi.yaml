@@ -1,0 +1,1239 @@
+openapi: 3.0.3
+info:
+  title: Thunder Road Bar and Grill API
+  version: 1.0.0
+  description: |
+    Backend API for Thunder Road Bar and Grill website.
+    Provides endpoints for site management, content delivery, and form submissions.
+  contact:
+    name: Thunder Road Development Team
+servers:
+  - url: http://localhost:5001/api
+    description: Local development server
+  - url: https://thunderroad.example.com/api
+    description: Production server
+
+tags:
+  - name: Public
+    description: Public-facing endpoints (no authentication required)
+  - name: Admin
+    description: Admin endpoints (JWT authentication required)
+  - name: Authentication
+    description: User authentication
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /login endpoint
+  
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: An error occurred
+    
+    SiteSettings:
+      type: object
+      properties:
+        business_name:
+          type: string
+          example: Thunder Road Bar and Grill
+        tagline:
+          type: string
+          example: Great food, cold drinks, live music
+        logo_url:
+          type: string
+          example: /uploads/logo.svg
+        hero_images:
+          type: array
+          items:
+            type: object
+            properties:
+              file_url:
+                type: string
+              alt_text:
+                type: string
+              title:
+                type: string
+        menu_description:
+          type: string
+        phone:
+          type: string
+          example: (555) 123-4567
+        email:
+          type: string
+          format: email
+          example: info@thunderroad.com
+        address:
+          type: string
+          example: 123 Main St, City, ST 12345
+        facebook_url:
+          type: string
+        instagram_url:
+          type: string
+        google_business_url:
+          type: string
+    
+    NavigationLink:
+      type: object
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+          example: Menu
+        path:
+          type: string
+          example: /menu
+        is_button:
+          type: boolean
+        display_order:
+          type: integer
+    
+    MenuCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Appetizers
+        description:
+          type: string
+        image_url:
+          type: string
+        gallery_image_url:
+          type: string
+        display_order:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuItem'
+    
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Buffalo Wings
+        description:
+          type: string
+        price:
+          type: string
+          example: 12.99
+        image_url:
+          type: string
+        is_featured:
+          type: boolean
+        is_available:
+          type: boolean
+        display_order:
+          type: integer
+    
+    MediaItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+          enum: [hero, gallery, menu, logo]
+        file_url:
+          type: string
+        title:
+          type: string
+        alt_text:
+          type: string
+        display_order:
+          type: integer
+        uploaded_at:
+          type: string
+          format: date-time
+    
+    ContactSubmission:
+      type: object
+      required:
+        - name
+        - email
+        - message
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        phone:
+          type: string
+          maxLength: 20
+          example: (555) 123-4567
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          example: I'd like to inquire about hosting an event
+    
+    ReservationSubmission:
+      type: object
+      required:
+        - name
+        - email
+        - phone
+        - party_size
+        - date
+        - time
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: Jane Smith
+        email:
+          type: string
+          format: email
+          example: jane@example.com
+        phone:
+          type: string
+          maxLength: 20
+          example: (555) 987-6543
+        party_size:
+          type: integer
+          minimum: 1
+          maximum: 50
+          example: 4
+        date:
+          type: string
+          format: date
+          example: 2025-12-25
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          example: 19:00
+        special_requests:
+          type: string
+          maxLength: 500
+    
+    NewsletterSubscription:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: subscriber@example.com
+    
+    JobApplication:
+      type: object
+      required:
+        - name
+        - email
+        - phone
+        - position
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: Alex Johnson
+        email:
+          type: string
+          format: email
+          example: alex@example.com
+        phone:
+          type: string
+          maxLength: 20
+          example: (555) 555-5555
+        position:
+          type: string
+          maxLength: 100
+          example: Server
+        experience:
+          type: string
+          maxLength: 2000
+        availability:
+          type: string
+          maxLength: 500
+        resume_url:
+          type: string
+          description: URL of uploaded resume file
+
+paths:
+  # Authentication
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: Admin login
+      description: Authenticate with username and password to receive a JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  example: admin123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    description: JWT token for authentication
+                  user:
+                    type: object
+                    properties:
+                      username:
+                        type: string
+                      role:
+                        type: string
+                        example: admin
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Site Settings
+  /site-settings:
+    get:
+      tags:
+        - Public
+      summary: Get site settings
+      description: Retrieve public site configuration including business info, logo, hero images
+      responses:
+        '200':
+          description: Site settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteSettings'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags:
+        - Admin
+      summary: Update site settings
+      description: Update site configuration (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteSettings'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized - invalid or missing token
+        '500':
+          description: Server error
+
+  # Navigation
+  /navigation:
+    get:
+      tags:
+        - Public
+      summary: Get navigation links
+      description: Retrieve site navigation menu items
+      responses:
+        '200':
+          description: Navigation links retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NavigationLink'
+    
+    put:
+      tags:
+        - Admin
+      summary: Update navigation links
+      description: Replace all navigation links (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/NavigationLink'
+      responses:
+        '200':
+          description: Navigation updated successfully
+        '401':
+          description: Unauthorized
+
+  # Menu
+  /menu:
+    get:
+      tags:
+        - Public
+      summary: Get menu categories and items
+      description: Retrieve full menu with categories and items
+      responses:
+        '200':
+          description: Menu retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MenuCategory'
+    
+    put:
+      tags:
+        - Admin
+      summary: Update entire menu
+      description: Replace menu categories and items (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/MenuCategory'
+      responses:
+        '200':
+          description: Menu updated successfully
+        '401':
+          description: Unauthorized
+
+  /menu/categories:
+    post:
+      tags:
+        - Admin
+      summary: Create menu category
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Category created
+        '401':
+          description: Unauthorized
+
+  /menu/categories/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Update menu category
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuCategory'
+      responses:
+        '200':
+          description: Category updated
+        '401':
+          description: Unauthorized
+    
+    delete:
+      tags:
+        - Admin
+      summary: Delete menu category
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Category deleted
+        '401':
+          description: Unauthorized
+
+  /menu/items:
+    post:
+      tags:
+        - Admin
+      summary: Create menu item
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItem'
+      responses:
+        '201':
+          description: Item created
+        '401':
+          description: Unauthorized
+
+  /menu/items/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Update menu item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItem'
+      responses:
+        '200':
+          description: Item updated
+        '401':
+          description: Unauthorized
+    
+    delete:
+      tags:
+        - Admin
+      summary: Delete menu item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Item deleted
+        '401':
+          description: Unauthorized
+
+  # Media
+  /media:
+    get:
+      tags:
+        - Public
+      summary: Get media items
+      description: Retrieve media gallery items
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [hero, gallery, menu, logo]
+          description: Filter by media category
+      responses:
+        '200':
+          description: Media items retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MediaItem'
+    
+    post:
+      tags:
+        - Admin
+      summary: Upload media file
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                category:
+                  type: string
+                  enum: [hero, gallery, menu, logo]
+                title:
+                  type: string
+                alt_text:
+                  type: string
+      responses:
+        '201':
+          description: File uploaded successfully
+        '400':
+          description: Invalid file or parameters
+        '401':
+          description: Unauthorized
+
+  /media/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Update media metadata
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                alt_text:
+                  type: string
+                display_order:
+                  type: integer
+      responses:
+        '200':
+          description: Media updated
+        '401':
+          description: Unauthorized
+    
+    delete:
+      tags:
+        - Admin
+      summary: Delete media file
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Media deleted
+        '401':
+          description: Unauthorized
+
+  # Contact
+  /contact:
+    post:
+      tags:
+        - Public
+      summary: Submit contact form
+      description: |
+        Submit a contact message. Rate limited to 5 requests per 15 minutes per IP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactSubmission'
+      responses:
+        '201':
+          description: Message submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Thank you for contacting us!
+        '400':
+          description: Validation error
+        '429':
+          description: Rate limit exceeded
+    
+    get:
+      tags:
+        - Admin
+      summary: Get all contact messages
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Contact messages retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/ContactSubmission'
+                    - type: object
+                      properties:
+                        id:
+                          type: integer
+                        status:
+                          type: string
+                          enum: [new, read, replied]
+                        submitted_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: Unauthorized
+
+  /contact/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Update contact message status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [new, read, replied]
+      responses:
+        '200':
+          description: Status updated
+        '401':
+          description: Unauthorized
+    
+    delete:
+      tags:
+        - Admin
+      summary: Delete contact message
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Message deleted
+        '401':
+          description: Unauthorized
+
+  # Reservations
+  /reservations:
+    post:
+      tags:
+        - Public
+      summary: Submit reservation request
+      description: |
+        Submit a table reservation request. Rate limited to 3 requests per 15 minutes per IP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationSubmission'
+      responses:
+        '201':
+          description: Reservation submitted successfully
+        '400':
+          description: Validation error
+        '429':
+          description: Rate limit exceeded
+    
+    get:
+      tags:
+        - Admin
+      summary: Get all reservations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by reservation date
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, cancelled, completed]
+      responses:
+        '200':
+          description: Reservations retrieved
+        '401':
+          description: Unauthorized
+
+  /reservations/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Update reservation status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, confirmed, cancelled, completed]
+      responses:
+        '200':
+          description: Reservation updated
+        '401':
+          description: Unauthorized
+    
+    delete:
+      tags:
+        - Admin
+      summary: Delete reservation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reservation deleted
+        '401':
+          description: Unauthorized
+
+  # Newsletter
+  /newsletter:
+    post:
+      tags:
+        - Public
+      summary: Subscribe to newsletter
+      description: |
+        Subscribe to the newsletter. Rate limited to 3 requests per 15 minutes per IP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscription'
+      responses:
+        '201':
+          description: Subscribed successfully
+        '400':
+          description: Validation error or already subscribed
+        '429':
+          description: Rate limit exceeded
+    
+    get:
+      tags:
+        - Admin
+      summary: Get newsletter subscribers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Subscribers retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/NewsletterSubscription'
+                    - type: object
+                      properties:
+                        id:
+                          type: integer
+                        subscribed_at:
+                          type: string
+                          format: date-time
+                        is_active:
+                          type: boolean
+        '401':
+          description: Unauthorized
+
+  /newsletter/{id}:
+    delete:
+      tags:
+        - Admin
+      summary: Remove newsletter subscriber
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Subscriber removed
+        '401':
+          description: Unauthorized
+
+  # Jobs
+  /jobs/config:
+    get:
+      tags:
+        - Public
+      summary: Get available job positions
+      description: Retrieve list of currently open positions
+      responses:
+        '200':
+          description: Job positions retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  positions:
+                    type: array
+                    items:
+                      type: string
+                      example: Server
+    
+    put:
+      tags:
+        - Admin
+      summary: Update job positions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                positions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Positions updated
+        '401':
+          description: Unauthorized
+
+  /jobs:
+    post:
+      tags:
+        - Public
+      summary: Submit job application
+      description: |
+        Submit a job application. Rate limited to 3 requests per 15 minutes per IP.
+        Resumes can be uploaded via separate /upload endpoint first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobApplication'
+      responses:
+        '201':
+          description: Application submitted successfully
+        '400':
+          description: Validation error
+        '429':
+          description: Rate limit exceeded
+    
+    get:
+      tags:
+        - Admin
+      summary: Get job applications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: position
+          in: query
+          schema:
+            type: string
+          description: Filter by position
+      responses:
+        '200':
+          description: Applications retrieved
+        '401':
+          description: Unauthorized
+
+  /jobs/{id}:
+    delete:
+      tags:
+        - Admin
+      summary: Delete job application
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Application deleted
+        '401':
+          description: Unauthorized
+
+  # Logo
+  /logo/sanitized:
+    get:
+      tags:
+        - Public
+      summary: Get sanitized SVG logo
+      description: |
+        Returns the configured logo as sanitized SVG content.
+        Used for inline SVG rendering that can be styled with CSS.
+      responses:
+        '200':
+          description: Sanitized SVG logo
+          content:
+            text/html:
+              schema:
+                type: string
+                example: '<svg>...</svg>'
+        '404':
+          description: Logo not found or not an SVG
+
+  # About Content
+  /about-content:
+    get:
+      tags:
+        - Public
+      summary: Get about page content
+      responses:
+        '200':
+          description: About content retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  heading:
+                    type: string
+                  content:
+                    type: string
+    
+    put:
+      tags:
+        - Admin
+      summary: Update about page content
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                heading:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '200':
+          description: About content updated
+        '401':
+          description: Unauthorized
+
+  # Business Hours
+  /business-hours:
+    get:
+      tags:
+        - Public
+      summary: Get business hours
+      responses:
+        '200':
+          description: Business hours retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    day:
+                      type: string
+                      example: Monday
+                    hours:
+                      type: string
+                      example: 11:00 AM - 10:00 PM
+                    is_closed:
+                      type: boolean
+    
+    put:
+      tags:
+        - Admin
+      summary: Update business hours
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: string
+                  hours:
+                    type: string
+                  is_closed:
+                    type: boolean
+      responses:
+        '200':
+          description: Business hours updated
+        '401':
+          description: Unauthorized
+
+  # Footer
+  /footer:
+    get:
+      tags:
+        - Public
+      summary: Get footer content
+      responses:
+        '200':
+          description: Footer content retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  columns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        display_order:
+                          type: integer
+                        links:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              label:
+                                type: string
+                              url:
+                                type: string
+                              display_order:
+                                type: integer
+    
+    put:
+      tags:
+        - Admin
+      summary: Update footer content
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                columns:
+                  type: array
+      responses:
+        '200':
+          description: Footer updated
+        '401':
+          description: Unauthorized

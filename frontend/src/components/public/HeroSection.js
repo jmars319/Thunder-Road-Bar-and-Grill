@@ -14,6 +14,7 @@
 // React 17+ with new JSX transform doesn't require importing React for JSX usage.
 
 import { useEffect, useState, useRef } from 'react';
+import { buildSrcSet, buildWebpSrcSet } from '../../utils/imageUtils';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
@@ -113,37 +114,6 @@ export default function HeroSection() {
       if (link && link.parentNode) link.parentNode.removeChild(link);
     };
   }, [images]);
-
-  // Helper: build srcset strings for expected variant filenames. If you run the
-  // backend generator, files like `name-480.jpg` and `name-480.webp` will exist
-  // next to the original upload. Sizes should be an array of widths in px.
-  function buildSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
-    try {
-      const qIdx = url.indexOf('?');
-      const clean = qIdx === -1 ? url : url.slice(0, qIdx);
-      const dot = clean.lastIndexOf('.');
-      if (dot === -1) return '';
-      const ext = clean.slice(dot + 1);
-      const base = clean.slice(0, dot);
-      const parts = sizesArr.map(w => `${base}-${w}.${ext} ${w}w`);
-      // include the original at end as a large candidate
-      parts.push(`${clean} ${Math.max(...sizesArr)}w`);
-      return parts.join(', ');
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function buildWebpSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
-    try {
-      const base = url.slice(0, url.lastIndexOf('.'));
-      const parts = sizesArr.map(w => `${base}-${w}.webp ${w}w`);
-      parts.push(`${base}.webp ${Math.max(...sizesArr)}w`);
-      return parts.join(', ');
-    } catch (e) {
-      return '';
-    }
-  }
 
   return (
     <div className="hero-gradient text-text-inverse py-20 relative overflow-hidden">

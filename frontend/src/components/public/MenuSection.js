@@ -20,38 +20,7 @@ import cachedFetch, { clearCacheFor } from '../../lib/cachedFetch';
 import makeAbsolute from '../../lib/makeAbsolute';
 import menuDescription from '../../config/menuDescription';
 import LazyImage from '../LazyImage';
-
-// Helper: build srcset strings for expected variant filenames. Mirrors the
-// logic used in HeroSection so generated variants (basename-480.jpg / .webp)
-// are referenced when available.
-function buildSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
-  try {
-    if (!url) return '';
-    const qIdx = url.indexOf('?');
-    const clean = qIdx === -1 ? url : url.slice(0, qIdx);
-    const dot = clean.lastIndexOf('.');
-    if (dot === -1) return '';
-    const ext = clean.slice(dot + 1);
-    const base = clean.slice(0, dot);
-    const parts = sizesArr.map(w => `${base}-${w}.${ext} ${w}w`);
-    parts.push(`${clean} ${Math.max(...sizesArr)}w`);
-    return parts.join(', ');
-  } catch (e) {
-    return '';
-  }
-}
-
-function buildWebpSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
-  try {
-    if (!url) return '';
-    const base = url.slice(0, url.lastIndexOf('.'));
-    const parts = sizesArr.map(w => `${base}-${w}.webp ${w}w`);
-    parts.push(`${base}.webp ${Math.max(...sizesArr)}w`);
-    return parts.join(', ');
-  } catch (e) {
-    return '';
-  }
-}
+import { buildSrcSet, buildWebpSrcSet } from '../../utils/imageUtils';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
