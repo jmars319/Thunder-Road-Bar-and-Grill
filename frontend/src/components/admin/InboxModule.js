@@ -12,7 +12,6 @@
   - Keep UI optimistic but refetch after mutations to ensure server canonical state.
 */
 import { useState, useEffect, useCallback } from 'react';
-import { sanitize } from 'isomorphic-dompurify';
 import { icons } from '../../icons';
 import { API_BASE } from '../../config/api';
 

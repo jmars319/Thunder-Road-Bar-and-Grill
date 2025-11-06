@@ -311,7 +311,7 @@ router.put('/site-settings',
 
       return res.json({ message: 'Settings updated' });
     } catch (err) {
-      console.error('Failed to update site_settings:', err && err.message ? err.message : err);
+      logger.error('Failed to update site_settings', { error: err.message, stack: err.stack });
       return next(err);
     }
   }
@@ -324,7 +324,7 @@ router.get('/navigation', async (req, res, next) => {
     return res.json(results);
   } catch (err) {
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
-      console.warn('Missing navigation_links table; returning empty list for public site');
+      logger.warn('Missing navigation_links table; returning empty list for public site');
       return res.json([]);
     }
     return next(err);
@@ -339,7 +339,7 @@ router.get('/business-hours', async (req, res, next) => {
     return res.json(results);
   } catch (err) {
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
-      console.warn('Missing business_hours table; returning empty hours for public site');
+      logger.warn('Missing business_hours table; returning empty hours for public site');
       res.set('Cache-Control', 'public, max-age=300');
       return res.json([]);
     }
@@ -376,7 +376,7 @@ router.get('/about', async (req, res, next) => {
     return res.json(results[0] || {});
   } catch (err) {
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
-      console.warn('Missing about_content table; returning empty about content');
+      logger.warn('Missing about_content table; returning empty about content');
       return res.json({});
     }
     return next(err);
@@ -450,7 +450,7 @@ router.get('/footer-columns', async (req, res, next) => {
     return res.json(Object.values(columns));
   } catch (err) {
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
-      console.warn('Missing footer_columns/footer_links tables; returning empty columns');
+      logger.warn('Missing footer_columns/footer_links tables; returning empty columns');
       res.set('Cache-Control', 'public, max-age=300');
       return res.json([]);
     }
