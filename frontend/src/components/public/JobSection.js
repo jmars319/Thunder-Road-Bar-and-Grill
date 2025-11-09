@@ -265,17 +265,17 @@ export default function JobSection() {
           return;
         }
 
-        // No public/open positions — use a static fallback list instead of
-        // calling admin endpoints which are intentionally protected. This
-        // avoids noisy 401 Unauthorized errors in the browser console.
-        const fallback = ['Server','Bartender','Line Cook','Prep Cook','Dishwasher','Host','Manager'];
+  // No public/open positions — use a static fallback list instead of
+  // calling admin endpoints which are intentionally protected. This
+  // avoids noisy 401 Unauthorized errors in the browser console.
+  const fallback = ['Server','Bartender','Line Cook','Dishwasher','Cashier','Manager'];
         setPositions(fallback.map((p, i) => ({ id: `f-${i}`, name: p })));
         setForm((s) => ({ ...s, position: fallback[0] }));
       })
       .catch(() => {
-        const fallback = ['Server','Bartender','Line Cook','Prep Cook','Dishwasher','Host','Manager'];
-        setPositions(fallback.map((p, i) => ({ id: `f-${i}`, name: p })));
-        setForm((s) => ({ ...s, position: fallback[0] }));
+  const fallback = ['Server','Bartender','Line Cook','Dishwasher','Cashier','Manager'];
+  setPositions(fallback.map((p, i) => ({ id: `f-${i}`, name: p })));
+  setForm((s) => ({ ...s, position: fallback[0] }));
       });
 
     fetch(`${API_BASE}/application-fields`)
