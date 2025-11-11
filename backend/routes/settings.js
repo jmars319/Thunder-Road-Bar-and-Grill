@@ -332,9 +332,14 @@ router.get('/navigation', async (req, res, next) => {
 });
 
 // Get business hours
+// Supports optional query param `area` to filter by area (e.g. ?area=bar). If omitted,
+// returns all rows ordered by area then id so the admin UI can render grouped datasets.
 router.get('/business-hours', async (req, res, next) => {
   try {
-    const [results] = await req.dbPromise.query('SELECT * FROM business_hours ORDER BY id');
+    const area = req.query.area ? String(req.query.area).trim() : null;
+    const sql = area ? 'SELECT * FROM business_hours WHERE area = ? ORDER BY id' : 'SELECT * FROM business_hours ORDER BY area, id';
+    const params = area ? [area] : [];
+    const [results] = await req.dbPromise.query(sql, params);
     res.set('Cache-Control', 'public, max-age=300');
     return res.json(results);
   } catch (err) {

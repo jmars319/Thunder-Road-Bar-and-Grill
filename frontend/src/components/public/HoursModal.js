@@ -31,7 +31,15 @@ export default function HoursModal({ onClose }) {
       })
       .then(data => {
         if (!mounted) return;
-        setHours(Array.isArray(data) ? data : []);
+        // Data may include multiple areas (e.g., 'kitchen', 'bar'). Group by area for display.
+        const rows = Array.isArray(data) ? data : [];
+        const grouped = rows.reduce((acc, r) => {
+          const area = r.area || 'kitchen';
+          acc[area] = acc[area] || [];
+          acc[area].push(r);
+          return acc;
+        }, {});
+        setHours(grouped);
         setLoading(false);
       })
       .catch(err => {
@@ -58,17 +66,22 @@ export default function HoursModal({ onClose }) {
           {error && <div className="text-red-500">{error}</div>}
 
           {!loading && !error && (
-            <ul className="space-y-1">
-              {hours.length === 0 && <li className="text-text-muted">No hours available</li>}
-              {hours.map(h => (
-                <li key={h.id} className="flex justify-between">
-                  <span className="font-medium">{h.day_of_week}</span>
-                  <span className="text-text-muted">
-                    {h.is_closed ? 'Closed' : `${h.opening_time?.slice(0,5)} - ${h.closing_time?.slice(0,5)}`}
-                  </span>
-                </li>
+            <div className="space-y-4">
+              {Object.keys(hours).length === 0 && <div className="text-text-muted">No hours available</div>}
+              {Object.entries(hours).map(([area, list]) => (
+                <div key={area}>
+                  <h4 className="font-medium mb-1">{area === 'kitchen' ? 'Kitchen Hours' : (area.charAt(0).toUpperCase() + area.slice(1) + ' Hours')}</h4>
+                  <ul className="space-y-1">
+                    {list.map(h => (
+                      <li key={h.id} className="flex justify-between">
+                        <span className="font-medium">{h.day_of_week}</span>
+                        <span className="text-text-muted">{h.is_closed ? 'Closed' : `${h.opening_time?.slice(0,5)} - ${h.closing_time?.slice(0,5)}`}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
