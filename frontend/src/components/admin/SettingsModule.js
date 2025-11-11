@@ -38,6 +38,7 @@ function SettingsModule() {
   const [siteSettings, setSiteSettings] = useState({});
   const [aboutContent, setAboutContent] = useState({});
   const [businessHours, setBusinessHours] = useState([]);
+  const [selectedArea, setSelectedArea] = useState('kitchen');
   const [saved, setSaved] = useState(false);
   const [menuSaved, setMenuSaved] = useState(false);
   const originalSettingsRef = useRef({});
@@ -428,55 +429,98 @@ function SettingsModule() {
         </div>
       </div>
 
-      {/* Business Hours */}
+      {/* Business Hours: show Kitchen and Bar side-by-side */}
       <div className="bg-surface rounded-lg shadow p-6">
-  <h3 className="text-xl font-bold mb-4 text-text-primary">Business Hours</h3>
-        <div className="space-y-3">
-          {businessHours.map(day => (
-            <div key={day.id} className="flex items-center gap-4">
-              <div className="w-32 font-medium text-text-primary">{day.day_of_week}</div>
-              <input
-                type="time"
-                value={day.opening_time || ''}
-                onChange={(e) => {
-                  const updated = businessHours.map(d => 
-                    d.id === day.id ? {...d, opening_time: e.target.value} : d
-                  );
-                  setBusinessHours(updated);
-                }}
-                disabled={day.is_closed}
-                className="form-input"
-              />
-              <span className="text-text-secondary">to</span>
-              <input
-                type="time"
-                value={day.closing_time || ''}
-                onChange={(e) => {
-                  const updated = businessHours.map(d => 
-                    d.id === day.id ? {...d, closing_time: e.target.value} : d
-                  );
-                  setBusinessHours(updated);
-                }}
-                disabled={day.is_closed}
-                className="form-input"
-              />
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={day.is_closed}
-                  onChange={(e) => {
-                    const updated = businessHours.map(d => 
-                      d.id === day.id ? {...d, is_closed: e.target.checked} : d
-                    );
-                    setBusinessHours(updated);
-                  }}
-                />
-                <span className="text-sm text-text-secondary">Closed</span>
-              </label>
-              {/* Per-day save removed in favor of a single 'Save All Hours' action below */}
+        <h3 className="text-xl font-bold mb-4 text-text-primary">Business Hours</h3>
+
+        {/* Group hours by area (default to kitchen) */}
+        {Array.isArray(businessHours) && businessHours.length === 0 && (
+          <div className="text-text-muted">No business hours configured</div>
+        )}
+
+        {Array.isArray(businessHours) && businessHours.length > 0 && (() => {
+          const areas = Array.from(new Set(businessHours.map(h => h.area || 'kitchen')));
+          // Ensure kitchen then bar ordering when present
+          const ordered = [];
+          if (areas.includes('kitchen')) ordered.push('kitchen');
+          if (areas.includes('bar')) ordered.push('bar');
+          for (const a of areas) if (!ordered.includes(a)) ordered.push(a);
+
+          const grouped = ordered.reduce((acc, area) => {
+            acc[area] = businessHours.filter(h => (h.area || 'kitchen') === area).sort((a,b) => a.id - b.id);
+            return acc;
+          }, {});
+
+          // Responsive: on small screens show a selector to pick area; on md+ show both columns
+          return (
+            <div>
+              {/* mobile selector */}
+              <div className="mb-4 md:hidden">
+                <label className="sr-only">Select area</label>
+                <select
+                  value={selectedArea}
+                  onChange={(e) => setSelectedArea(e.target.value)}
+                  className="w-full form-select"
+                >
+                  {ordered.map(a => (
+                    <option key={a} value={a}>{a === 'kitchen' ? 'Kitchen' : (a.charAt(0).toUpperCase() + a.slice(1))}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {ordered.map(area => (
+                  <div
+                    key={area}
+                    className={`${area === selectedArea ? 'block' : 'hidden'} md:block bg-background p-4 rounded`}
+                  >
+                    <h4 className="font-medium mb-2">{area === 'kitchen' ? 'Kitchen Hours' : (area.charAt(0).toUpperCase() + area.slice(1) + ' Hours')}</h4>
+                    <div className="space-y-2">
+                      {grouped[area].map(day => (
+                        <div key={day.id} className="flex items-center gap-3">
+                          <div className="w-28 font-medium text-text-primary">{day.day_of_week}</div>
+                          <input
+                            type="time"
+                            value={day.opening_time || ''}
+                            onChange={(e) => {
+                              const updated = businessHours.map(d => d.id === day.id ? { ...d, opening_time: e.target.value } : d);
+                              setBusinessHours(updated);
+                            }}
+                            disabled={day.is_closed}
+                            className="form-input"
+                          />
+                          <span className="text-text-secondary">to</span>
+                          <input
+                            type="time"
+                            value={day.closing_time || ''}
+                            onChange={(e) => {
+                              const updated = businessHours.map(d => d.id === day.id ? { ...d, closing_time: e.target.value } : d);
+                              setBusinessHours(updated);
+                            }}
+                            disabled={day.is_closed}
+                            className="form-input"
+                          />
+                          <label className="flex items-center gap-2 ml-auto">
+                            <input
+                              type="checkbox"
+                              checked={!!day.is_closed}
+                              onChange={(e) => {
+                                const updated = businessHours.map(d => d.id === day.id ? { ...d, is_closed: e.target.checked } : d);
+                                setBusinessHours(updated);
+                              }}
+                            />
+                            <span className="text-sm text-text-secondary">Closed</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })()}
+
         <div className="mt-4">
           <button
             onClick={saveAllBusinessHours}
