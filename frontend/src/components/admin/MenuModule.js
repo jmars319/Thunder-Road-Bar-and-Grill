@@ -20,6 +20,7 @@ import { icons } from '../../icons';
 import Toast from '../ui/Toast';
 import usePaginatedResource from '../../hooks/usePaginatedResource';
 import Spinner from '../ui/Spinner';
+import { authenticatedFetch, API_BASE } from '../../utils/api';
 // ensure imports are recognized by some linters when used only in JSX
 const __usedSpinner = Spinner;
 void __usedSpinner;
@@ -33,8 +34,6 @@ void __usedSpinner;
    
    Last reviewed: 2025-10-24 — confirmed lint notes and token guidance are current.
 */
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 function MenuModule() {
   const [categories, setCategories] = useState([]);
@@ -92,9 +91,7 @@ function MenuModule() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch(`${API_BASE}/menu/admin`, {
-        headers: { 'X-Admin-Auth': 'admin' }
-      });
+      const res = await authenticatedFetch('/menu/admin');
       if (!res.ok) { setCategories([]); return; }
       const data = await res.json();
       // server returns categories already ordered by display_order and items ordered by display_order
@@ -128,9 +125,8 @@ function MenuModule() {
 
     // clean save path (no debug helpers)
 
-    fetch(url, {
+    authenticatedFetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).then(() => {
       fetchCategories();
@@ -208,7 +204,7 @@ function MenuModule() {
 
   const deleteCategory = (id) => {
     if (window.confirm('Delete this category and all its items?')) {
-      fetch(`${API_BASE}/menu/categories/${id}`, { method: 'DELETE' })
+      authenticatedFetch(`/menu/categories/${id}`, { method: 'DELETE' })
         .then(() => fetchCategories());
     }
   };
@@ -217,11 +213,10 @@ function MenuModule() {
   // confirmation from the admin because public menus hide $0.00 prices.
   const doSaveItem = (payload) => {
     const method = payload.id ? 'PUT' : 'POST';
-    const url = payload.id ? `${API_BASE}/menu/items/${payload.id}` : `${API_BASE}/menu/items`;
+    const url = payload.id ? `/menu/items/${payload.id}` : '/menu/items';
 
-    fetch(url, {
+    authenticatedFetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).then(() => {
       fetchCategories();
@@ -256,7 +251,7 @@ function MenuModule() {
 
   const deleteItem = (id) => {
     if (window.confirm('Delete this menu item?')) {
-      fetch(`${API_BASE}/menu/items/${id}`, { method: 'DELETE' })
+      authenticatedFetch(`/menu/items/${id}`, { method: 'DELETE' })
         .then(() => fetchCategories());
     }
   };
@@ -294,9 +289,8 @@ function MenuModule() {
           display_order: u.display_order,
           is_available: typeof original.is_available !== 'undefined' ? original.is_available : 1,
         };
-        return fetch(`${API_BASE}/menu/items/${u.id}`, {
+        return authenticatedFetch(`/menu/items/${u.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         }).then(res => {
           if (!res.ok) return Promise.reject(new Error('Failed to update item'));
@@ -375,34 +369,6 @@ function MenuModule() {
             <icons.Plus size={18} />
             Add Category
           </button>
-          {/* Dev-only: sign in helper to set admin cookie for local testing. */}
-          {process.env.NODE_ENV !== 'production' && (
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  // Call dev signin endpoint which sets a cookie on the backend origin.
-                  const resp = await fetch(`${API_BASE}/auth/dev-signin`, { method: 'POST' });
-                  if (resp.ok) {
-                    // refresh categories once signed in
-                    await fetchCategories();
-                    setToast({ type: 'success', message: 'Signed in (dev) — admin cookie set' });
-                    setTimeout(() => setToast(null), 2500);
-                  } else {
-                    const body = await resp.json().catch(() => ({}));
-                    setToast({ type: 'error', message: body && body.message ? body.message : 'Dev sign-in failed' });
-                    setTimeout(() => setToast(null), 2500);
-                  }
-                } catch (e) {
-                  setToast({ type: 'error', message: 'Dev sign-in request failed' });
-                  setTimeout(() => setToast(null), 2500);
-                }
-              }}
-              className="px-3 py-2 rounded bg-surface text-sm"
-            >
-              Sign in (dev)
-            </button>
-          )}
         </div>
       </div>
 

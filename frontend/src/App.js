@@ -19,12 +19,11 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import PublicSite from './pages/PublicSite';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
+import LoginPage from './pages/LoginPage';
+import ErrorBoundary from './components/ErrorBoundary';
  
 // Lazy load AdminPanel to reduce initial bundle size
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
- 
-import LoginPage from './pages/LoginPage';
-import ErrorBoundary from './components/ErrorBoundary';
 
 // References to the routes are used inside the App function; keep a local
 // registry to make usage explicit for linters that don't follow JSX.
@@ -34,7 +33,9 @@ export default function App() {
   // follow JSX usage. This is a minimal in-function reference and has no
   // runtime impact.
   const _routes = { PublicSite, LoginPage, PrivacyPage, TermsPage, ErrorBoundary };
+  const _lazyComponents = { AdminPanel, Suspense };
   void _routes;
+  void _lazyComponents;
   const [showAdmin, setShowAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
