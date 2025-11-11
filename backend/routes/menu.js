@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { body } = require('express-validator');
+const validateRequest = require('../middleware/validateRequest');
 const adminAuth = require('../middleware/adminAuth');
 
 /*
@@ -116,6 +118,8 @@ router.get('/menu', (req, res) => {
     // Store serialized payload in cache
     menuCache.payload = out;
     menuCache.expiresAt = Date.now() + MENU_CACHE_TTL_MS;
+    // Add caching headers for browser/CDN caching
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
     res.json(out);
   });
 });
@@ -209,35 +213,47 @@ router.get('/menu/categories/:categoryId/items', (req, res) => {
 });
 
 // Create category
-router.post('/menu/categories', (req, res) => {
-  const { name, description, image_url, gallery_image_id, display_order } = req.body;
-  const is_active = typeof req.body.is_active !== 'undefined' && req.body.is_active !== null ? req.body.is_active : 1;
-  req.db.query(
-    'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, is_active) VALUES (?, ?, ?, ?, ?, ?)',
-    [name, description, image_url, gallery_image_id || null, display_order || 0, is_active],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      invalidateMenuCache();
-      res.json({ id: result.insertId, message: 'Category created' });
-    }
-  );
-});
+router.post('/menu/categories',
+  body('name').trim().notEmpty().withMessage('Category name is required'),
+  body('description').optional().trim(),
+  body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
+  validateRequest,
+  (req, res) => {
+    const { name, description, image_url, gallery_image_id, display_order } = req.body;
+    const is_active = typeof req.body.is_active !== 'undefined' && req.body.is_active !== null ? req.body.is_active : 1;
+    req.db.query(
+      'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, is_active) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, description, image_url, gallery_image_id || null, display_order || 0, is_active],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        invalidateMenuCache();
+        res.json({ id: result.insertId, message: 'Category created' });
+      }
+    );
+  }
+);
 
 // Update category
-router.put('/menu/categories/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, description, image_url, gallery_image_id, display_order } = req.body;
-  const is_active = typeof req.body.is_active !== 'undefined' && req.body.is_active !== null ? req.body.is_active : 1;
-  req.db.query(
-    'UPDATE menu_categories SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, is_active = ? WHERE id = ?',
-    [name, description, image_url, gallery_image_id || null, display_order, is_active, id],
-    (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      invalidateMenuCache();
-      res.json({ message: 'Category updated' });
-    }
-  );
-});
+router.put('/menu/categories/:id',
+  body('name').optional().trim().notEmpty().withMessage('Category name cannot be empty'),
+  body('description').optional().trim(),
+  body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
+  validateRequest,
+  (req, res) => {
+    const { id } = req.params;
+    const { name, description, image_url, gallery_image_id, display_order } = req.body;
+    const is_active = typeof req.body.is_active !== 'undefined' && req.body.is_active !== null ? req.body.is_active : 1;
+    req.db.query(
+      'UPDATE menu_categories SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, is_active = ? WHERE id = ?',
+      [name, description, image_url, gallery_image_id || null, display_order, is_active, id],
+      (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        invalidateMenuCache();
+        res.json({ message: 'Category updated' });
+      }
+    );
+  }
+);
 
 // Delete category
 router.delete('/menu/categories/:id', (req, res) => {
@@ -250,30 +266,46 @@ router.delete('/menu/categories/:id', (req, res) => {
 });
 
 // Create menu item
-router.post('/menu/items', (req, res) => {
-  const { category_id, name, description, price, image_url, display_order, primary_quantity, secondary_quantity, secondary_price, is_available } = req.body;
-  req.db.query(
-    'INSERT INTO menu_items (category_id, name, description, price, image_url, display_order, primary_quantity, secondary_quantity, secondary_price, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [category_id, name, description, price, image_url, display_order || 0, primary_quantity || null, secondary_quantity || null, typeof secondary_price !== 'undefined' ? secondary_price : null, typeof is_available !== 'undefined' ? is_available : 1],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      invalidateMenuCache();
-      res.json({ id: result.insertId, message: 'Item created' });
-    }
-  );
-});
+router.post('/menu/items',
+  body('category_id').isInt({ min: 1 }).withMessage('Valid category ID is required'),
+  body('name').trim().notEmpty().withMessage('Item name is required'),
+  body('description').optional().trim(),
+  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a non-negative number'),
+  body('secondary_price').optional().isFloat({ min: 0 }).withMessage('Secondary price must be a non-negative number'),
+  body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
+  validateRequest,
+  (req, res) => {
+    const { category_id, name, description, price, image_url, display_order, primary_quantity, secondary_quantity, secondary_price, is_available } = req.body;
+    req.db.query(
+      'INSERT INTO menu_items (category_id, name, description, price, image_url, display_order, primary_quantity, secondary_quantity, secondary_price, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [category_id, name, description, price, image_url, display_order || 0, primary_quantity || null, secondary_quantity || null, typeof secondary_price !== 'undefined' ? secondary_price : null, typeof is_available !== 'undefined' ? is_available : 1],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        invalidateMenuCache();
+        res.json({ id: result.insertId, message: 'Item created' });
+      }
+    );
+  }
+);
 
 // Update menu item
-router.put('/menu/items/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, description, price, image_url, display_order, is_available, primary_quantity, secondary_quantity, secondary_price } = req.body;
-  req.db.query(
-    'UPDATE menu_items SET name = ?, description = ?, price = ?, image_url = ?, display_order = ?, is_available = ?, primary_quantity = ?, secondary_quantity = ?, secondary_price = ? WHERE id = ?',
-    [name, description, price, image_url, display_order, is_available, primary_quantity || null, secondary_quantity || null, typeof secondary_price !== 'undefined' ? secondary_price : null, id],
-    (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      invalidateMenuCache();
-      res.json({ message: 'Item updated' });
+router.put('/menu/items/:id',
+  body('name').optional().trim().notEmpty().withMessage('Item name cannot be empty'),
+  body('description').optional().trim(),
+  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a non-negative number'),
+  body('secondary_price').optional().isFloat({ min: 0 }).withMessage('Secondary price must be a non-negative number'),
+  body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
+  validateRequest,
+  (req, res) => {
+    const { id } = req.params;
+    const { name, description, price, image_url, display_order, is_available, primary_quantity, secondary_quantity, secondary_price } = req.body;
+    req.db.query(
+      'UPDATE menu_items SET name = ?, description = ?, price = ?, image_url = ?, display_order = ?, is_available = ?, primary_quantity = ?, secondary_quantity = ?, secondary_price = ? WHERE id = ?',
+      [name, description, price, image_url, display_order, is_available, primary_quantity || null, secondary_quantity || null, typeof secondary_price !== 'undefined' ? secondary_price : null, id],
+      (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        invalidateMenuCache();
+        res.json({ message: 'Item updated' });
     }
   );
 });
