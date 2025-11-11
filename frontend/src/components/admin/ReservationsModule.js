@@ -13,6 +13,7 @@
 */
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
+import { authenticatedFetch } from '../../utils/api';
 
 /*
   ReservationsModule
@@ -39,8 +40,6 @@ import { icons } from '../../icons';
   // Last updated: 2025-10-21 — doc sweep: clarified status lifecycle and pagination recommendations.
 
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-
 function ReservationsModule() {
   const [reservations, setReservations] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -50,16 +49,15 @@ function ReservationsModule() {
   }, []);
 
   const fetchReservations = () => {
-    fetch(`${API_BASE}/reservations`)
+    authenticatedFetch('/reservations')
       .then(res => res.json())
       .then(data => setReservations(Array.isArray(data) ? data : []))
       .catch(() => setReservations([]));
   };
 
   const updateStatus = (id, status) => {
-    fetch(`${API_BASE}/reservations/${id}`, {
+    authenticatedFetch(`/reservations/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     }).then(() => fetchReservations()).catch(() => {});
   };

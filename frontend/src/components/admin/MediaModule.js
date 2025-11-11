@@ -16,6 +16,7 @@ import usePaginatedResource from '../../hooks/usePaginatedResource';
 import Spinner from '../ui/Spinner';
 import MediaCardSkeleton from '../ui/MediaCardSkeleton';
 import makeAbsolute from '../../lib/makeAbsolute';
+import { authenticatedFetch, API_BASE } from '../../utils/api';
 
 // Some linters may report these UI helpers as unused when components are
 // conditionally rendered; reference them here to ensure they're recognized.
@@ -23,8 +24,6 @@ const __usedSpinner = Spinner;
 const __usedMediaCardSkeleton = MediaCardSkeleton;
 void __usedSpinner;
 void __usedMediaCardSkeleton;
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 /*
   MediaModule
@@ -173,7 +172,7 @@ function MediaModule() {
 
   useEffect(() => {
     fetchMedia();
-    fetch(`${API_BASE}/site-settings`).then(r => r.ok ? r.json() : {}).then(s => {
+    authenticatedFetch('/site-settings').then(r => r.ok ? r.json() : {}).then(s => {
       setSiteSettings(s || {});
       if (Array.isArray(s?.hero_images) && s.hero_images.length) setSelectedHeroes(s.hero_images);
     }).catch(() => {});
@@ -211,8 +210,9 @@ function MediaModule() {
     formData.append('category', category);
 
     try {
-      await fetch(`${API_BASE}/media/upload?category=${encodeURIComponent(category)}`, {
+      await authenticatedFetch(`/media/upload?category=${encodeURIComponent(category)}`, {
           method: 'POST',
+          headers: {}, // Override to not set Content-Type for FormData
           body: formData
         });
       // refresh the relevant paginated list (and notify All uploads)
@@ -284,7 +284,7 @@ function MediaModule() {
   const saveHeroImages = async () => {
     const payload = { ...(siteSettings || {}), hero_images: selectedHeroes };
     try {
-      const res = await fetch(`${API_BASE}/site-settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await authenticatedFetch('/site-settings', { method: 'PUT', body: JSON.stringify(payload) });
   if (!res.ok) throw new Error('Failed to save');
   setSiteSettings(payload);
       // Broadcast the updated settings so other parts of the app (for example
@@ -316,7 +316,7 @@ function MediaModule() {
     const absolute = `${API_BASE.replace(/\/api$/, '')}${item.file_url}`;
     const payload = { ...(siteSettings || {}), logo_url: absolute };
     try {
-      const res = await fetch(`${API_BASE}/site-settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await authenticatedFetch('/site-settings', { method: 'PUT', body: JSON.stringify(payload) });
       if (!res.ok) throw new Error('Failed to set logo');
       setSiteSettings(payload);
       // Dispatch a cross-component event. Use window.CustomEvent when
@@ -343,7 +343,7 @@ function MediaModule() {
 
   const deleteMedia = (id) => {
     if (window.confirm('Delete this media file?')) {
-      fetch(`${API_BASE}/media/${id}`, { method: 'DELETE' })
+      authenticatedFetch(`/media/${id}`, { method: 'DELETE' })
         .then(() => {
           // refresh legacy and paginated lists
           fetchMedia();
@@ -386,7 +386,7 @@ function MediaModule() {
     setGalleryItem(item);
     setSelectedCategoryId(null);
   setCategoriesLoading(true);
-    fetch(`${API_BASE}/menu/categories`)
+    authenticatedFetch('/menu/categories')
       .then(r => r.json())
   .then(d => setCategoriesList(Array.isArray(d) ? d : []))
   .catch(() => setCategoriesList([]))
@@ -415,7 +415,7 @@ function MediaModule() {
       is_active: cat.is_active
     };
     try {
-      const res = await fetch(`${API_BASE}/menu/categories/${cat.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await authenticatedFetch(`/menu/categories/${cat.id}`, { method: 'PUT', body: JSON.stringify(payload) });
       if (!res.ok) throw new Error('Failed to update category');
       setShowGalleryPicker(false);
       setGalleryItem(null);

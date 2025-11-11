@@ -13,6 +13,7 @@
 */
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
+import { authenticatedFetch } from '../../utils/api';
 
 /*
   JobsModule
@@ -37,8 +38,6 @@ import { icons } from '../../icons';
 */
   // Last updated: 2025-10-21 — doc sweep: noted optimistic updates and accessibility reminders.
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-
 function JobsModule() {
   const [applications, setApplications] = useState([]);
   const [selectedApp, setSelectedApp] = useState(null);
@@ -51,7 +50,7 @@ function JobsModule() {
   }, []);
 
   const fetchApplications = () => {
-    fetch(`${API_BASE}/jobs`)
+    authenticatedFetch('/jobs')
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch applications');
         return res.json();
@@ -61,7 +60,7 @@ function JobsModule() {
   };
 
   const fetchPositions = () => {
-    fetch(`${API_BASE}/job-positions`)
+    authenticatedFetch('/job-positions')
       .then(res => res.ok ? res.json() : [])
       .then(data => setPositions(Array.isArray(data) ? data : []))
       .catch(() => setPositions([]));
@@ -69,9 +68,8 @@ function JobsModule() {
 
   const createPosition = () => {
     if (!newPositionName.trim()) return;
-    fetch(`${API_BASE}/job-positions`, {
+    authenticatedFetch('/job-positions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newPositionName })
     }).then(res => {
       if (res.ok) {
@@ -83,15 +81,14 @@ function JobsModule() {
 
   const deletePosition = (id) => {
     if (!window.confirm('Delete this position?')) return;
-    fetch(`${API_BASE}/job-positions/${id}`, { method: 'DELETE' })
+    authenticatedFetch(`/job-positions/${id}`, { method: 'DELETE' })
       .then(() => fetchPositions())
       .catch(() => {});
   };
 
   const updateStatus = (id, status) => {
-    fetch(`${API_BASE}/jobs/${id}`, {
+    authenticatedFetch(`/jobs/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     }).then(res => {
       if (res.ok) fetchApplications();
@@ -101,7 +98,7 @@ function JobsModule() {
 
   const deleteApplication = (id) => {
     if (window.confirm('Delete this application?')) {
-      fetch(`${API_BASE}/jobs/${id}`, { method: 'DELETE' })
+      authenticatedFetch(`/jobs/${id}`, { method: 'DELETE' })
         .then(() => {
           fetchApplications();
           setSelectedApp(null);
@@ -143,9 +140,8 @@ function JobsModule() {
                       // optimistic update
                       const next = positions.map(x => x.id === p.id ? { ...x, is_active: e.target.checked } : x);
                       setPositions(next);
-                      fetch(`${API_BASE}/job-positions/${p.id}`, {
+                      authenticatedFetch(`/job-positions/${p.id}`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ is_active: e.target.checked })
                       }).then(res => {
                         if (!res.ok) {

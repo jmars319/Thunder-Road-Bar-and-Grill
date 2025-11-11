@@ -13,6 +13,7 @@
 */
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
+import { authenticatedFetch } from '../../utils/api';
 
 /*
   NewsletterModule
@@ -28,8 +29,6 @@ import { icons } from '../../icons';
   - For very large lists consider server-side pagination or an export endpoint.
 */
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-
 function NewsletterModule() {
   const [subscribers, setSubscribers] = useState([]);
 
@@ -38,7 +37,7 @@ function NewsletterModule() {
   }, []);
 
   const fetchSubscribers = () => {
-    fetch(`${API_BASE}/newsletter/subscribers`)
+    authenticatedFetch('/newsletter/subscribers')
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -51,7 +50,7 @@ function NewsletterModule() {
     if (!window.confirm('Remove this subscriber?')) return;
     // Wrap in try/catch-like promise chain and surface a minimal error so
     // maintainers can add logging or toast feedback later.
-    fetch(`${API_BASE}/newsletter/subscribers/${id}`, { method: 'DELETE' })
+    authenticatedFetch(`/newsletter/subscribers/${id}`, { method: 'DELETE' })
       .then(res => {
         if (!res.ok) throw new Error('Delete failed');
         return res.json();
