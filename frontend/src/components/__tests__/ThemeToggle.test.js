@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /**
  * ThemeToggle.test.js
  * 
@@ -9,6 +10,7 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import ThemeToggle from '../ThemeToggle';
+import { ThemeProvider } from '../../contexts/ThemeContext';
 
 describe('ThemeToggle', () => {
   let mockLocalStorage;
@@ -41,8 +43,8 @@ describe('ThemeToggle', () => {
       })),
     });
 
-    // Clear any theme class from document
-    document.documentElement.classList.remove('dark-theme', 'light-theme');
+  // Clear any theme data attribute from document
+  document.documentElement.removeAttribute('data-theme');
   });
 
   afterEach(() => {
@@ -62,31 +64,39 @@ describe('ThemeToggle', () => {
   });
 
   test('toggles theme on click', () => {
-    mockLocalStorage.getItem.mockReturnValue('light-theme');
+    mockLocalStorage.getItem.mockReturnValue('system');
     
-    render(<ThemeToggle />);
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>
+    );
     const button = screen.getByRole('button');
     
-    // Initial state should be light
-    expect(document.documentElement.classList.contains('light-theme')).toBe(true);
+    // Initial state should be system (no data-theme attribute)
+    expect(document.documentElement.getAttribute('data-theme')).toBe(null);
     
     // Click to toggle to dark
     fireEvent.click(button);
     
-    // Should save to localStorage
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('theme', 'dark-theme');
+    // Should save to localStorage using the ThemeContext key
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('site-theme', 'dark');
   });
 
   test('loads saved theme from localStorage on mount', () => {
-    mockLocalStorage.getItem.mockReturnValue('dark-theme');
+    mockLocalStorage.getItem.mockReturnValue('dark');
     
-    render(<ThemeToggle />);
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>
+    );
     
-    expect(document.documentElement.classList.contains('dark-theme')).toBe(true);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
   test('uses system preference when no saved theme', () => {
-    mockLocalStorage.getItem.mockReturnValue(null);
+  mockLocalStorage.getItem.mockReturnValue(null);
     
     // Mock system preference for dark mode
     window.matchMedia = jest.fn().mockImplementation(query => ({
@@ -100,17 +110,24 @@ describe('ThemeToggle', () => {
       dispatchEvent: jest.fn(),
     }));
     
-    render(<ThemeToggle />);
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>
+    );
     
-    // Should detect system dark mode preference
-    // Note: Actual behavior depends on component implementation
-    expect(mockLocalStorage.getItem).toHaveBeenCalledWith('theme');
+    // Should have checked storage using the ThemeContext key
+    expect(mockLocalStorage.getItem).toHaveBeenCalledWith('site-theme');
   });
 
   test('displays correct icon for current theme', () => {
-    mockLocalStorage.getItem.mockReturnValue('light-theme');
+    mockLocalStorage.getItem.mockReturnValue('light');
     
-    const { container } = render(<ThemeToggle />);
+    const { container } = render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>
+    );
     
     // Should show moon icon for light theme (to switch to dark)
     // or sun icon for dark theme (to switch to light)
@@ -119,15 +136,23 @@ describe('ThemeToggle', () => {
   });
 
   test('maintains theme across re-renders', () => {
-    mockLocalStorage.getItem.mockReturnValue('dark-theme');
+    mockLocalStorage.getItem.mockReturnValue('dark');
     
-    const { rerender } = render(<ThemeToggle />);
+    const { rerender } = render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>
+    );
     
-    expect(document.documentElement.classList.contains('dark-theme')).toBe(true);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     
-    rerender(<ThemeToggle />);
+    rerender(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>
+    );
     
-    expect(document.documentElement.classList.contains('dark-theme')).toBe(true);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
   test('button is keyboard accessible', () => {

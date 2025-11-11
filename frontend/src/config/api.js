@@ -34,6 +34,7 @@ export const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001
  * getApiUrl('menu')  // => 'http://localhost:5001/api/menu'
  */
 export function getApiUrl(endpoint) {
+  if (!endpoint) return API_BASE;
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${API_BASE}${path}`;
 }
