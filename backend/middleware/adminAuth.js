@@ -53,18 +53,22 @@ module.exports = function adminAuth(req, res, next) {
     }
   }
 
-  // Development fallback: allow simple header/cookie ONLY in non-production
+  // SECURITY WARNING: Development fallback authentication
+  // This allows simple header/cookie auth ONLY in non-production environments
+  // NEVER enable these methods in production - they bypass proper JWT verification
+  // These methods exist solely for local development convenience
   if (process.env.NODE_ENV !== 'production') {
     const allowHeader = String(process.env.ALLOW_DEV_ADMIN_HEADER || '0') === '1';
     const header = req.get('X-Admin-Auth');
 
+    // SECURITY: Header-based auth - must be explicitly enabled AND in dev mode
     if (header && allowHeader && header === 'admin') {
-      // Dev convenience with explicit enable
+      // Dev convenience with explicit enable - NEVER use in production
       req.user = { id: 1, username: 'admin', role: 'admin' }; // Mock user for dev
       return next();
     }
 
-    // Cookie-based dev auth
+    // SECURITY: Cookie-based dev auth - automatically disabled in production
     if (req.cookies && (req.cookies.admin === 'true' || req.cookies.admin === true)) {
       req.user = { id: 1, username: 'admin', role: 'admin' }; // Mock user for dev
       return next();

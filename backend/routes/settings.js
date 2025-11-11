@@ -82,6 +82,13 @@ router.get('/logo/sanitized', async (req, res, next) => {
       return res.status(400).json({ error: 'Logo is not an SVG file' });
     }
 
+    // SECURITY: Validate path to prevent directory traversal attacks
+    // Only allow files from /uploads/ directory
+    if (logoUrl.includes('..') || !logoUrl.startsWith('/uploads/')) {
+      logger.warn('Attempted path traversal in logo URL', { logoUrl });
+      return res.status(400).json({ error: 'Invalid logo path' });
+    }
+
     const path = require('path');
     const fs = require('fs');
     const DOMPurify = require('isomorphic-dompurify');
