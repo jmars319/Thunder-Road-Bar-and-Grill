@@ -321,10 +321,12 @@ router.put('/site-settings',
 router.get('/navigation', async (req, res, next) => {
   try {
     const [results] = await req.dbPromise.query('SELECT * FROM navigation_links ORDER BY display_order');
+    res.set('Cache-Control', 'public, max-age=300');
     return res.json(results);
   } catch (err) {
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
       logger.warn('Missing navigation_links table; returning empty list for public site');
+      res.set('Cache-Control', 'public, max-age=300');
       return res.json([]);
     }
     return next(err);
@@ -378,10 +380,12 @@ router.put('/business-hours/:id',
 router.get('/about', async (req, res, next) => {
   try {
     const [results] = await req.dbPromise.query('SELECT * FROM about_content WHERE id = 1');
+    res.set('Cache-Control', 'public, max-age=300');
     return res.json(results[0] || {});
   } catch (err) {
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/.test(err.message))) {
       logger.warn('Missing about_content table; returning empty about content');
+      res.set('Cache-Control', 'public, max-age=300');
       return res.json({});
     }
     return next(err);
