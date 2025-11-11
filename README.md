@@ -98,6 +98,13 @@ Website opens at: `http://localhost:3000`
 
 Click "Admin" in the navbar to access the admin panel.
 
+> **⚠️ Security Warning**: The default admin credentials (`admin`/`admin123`) are for development only. **Before deploying to production**, you must:
+> 1. Create a new admin user with a strong password
+> 2. Delete or disable the default admin account
+> 3. Set a secure `JWT_SECRET` environment variable (not the default `dev-secret-change-in-production`)
+> 
+> See `backend/migrations/20251105_hash_admin_password.js` for password hashing examples.
+
 ## Project Structure
 
 ```
