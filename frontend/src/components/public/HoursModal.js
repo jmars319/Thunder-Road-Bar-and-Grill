@@ -66,16 +66,45 @@ export default function HoursModal({ onClose }) {
           {error && <div className="text-red-500">{error}</div>}
 
           {!loading && !error && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {Object.keys(hours).length === 0 && <div className="text-text-muted">No hours available</div>}
               {Object.entries(hours).map(([area, list]) => (
-                <div key={area}>
-                  <h4 className="font-medium mb-1">{area === 'kitchen' ? 'Kitchen Hours' : (area.charAt(0).toUpperCase() + area.slice(1) + ' Hours')}</h4>
-                  <ul className="space-y-1">
+                <div 
+                  key={area} 
+                  className={`rounded-lg p-4 border-2 ${
+                    area === 'kitchen' 
+                      ? 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-700' 
+                      : 'bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700'
+                  }`}
+                >
+                  <h4 className={`font-heading text-lg font-bold mb-3 flex items-center gap-2 ${
+                    area === 'kitchen'
+                      ? 'text-amber-800 dark:text-amber-300'
+                      : 'text-blue-800 dark:text-blue-300'
+                  }`}>
+                    {area === 'kitchen' ? (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                        Kitchen Hours
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        {area.charAt(0).toUpperCase() + area.slice(1)} Hours
+                      </>
+                    )}
+                  </h4>
+                  <ul className="space-y-2">
                     {list.map(h => (
-                      <li key={h.id} className="flex justify-between">
-                        <span className="font-medium">{h.day_of_week}</span>
-                        <span className="text-text-muted">{h.is_closed ? 'Closed' : `${h.opening_time?.slice(0,5)} - ${h.closing_time?.slice(0,5)}`}</span>
+                      <li key={h.id} className="flex justify-between items-center py-1 border-b border-current/10 last:border-0">
+                        <span className="font-semibold text-text-primary">{h.day_of_week}</span>
+                        <span className={`font-medium ${h.is_closed ? 'text-red-600 dark:text-red-400' : 'text-text-secondary'}`}>
+                          {h.is_closed ? 'Closed' : `${h.opening_time?.slice(0,5)} - ${h.closing_time?.slice(0,5)}`}
+                        </span>
                       </li>
                     ))}
                   </ul>
