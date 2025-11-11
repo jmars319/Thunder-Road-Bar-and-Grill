@@ -13,7 +13,7 @@
     text inside this modal.
 */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
@@ -21,6 +21,7 @@ export default function HoursModal({ onClose }) {
   const [hours, setHours] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const modalRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -51,65 +52,131 @@ export default function HoursModal({ onClose }) {
     return () => { mounted = false; };
   }, []);
 
+  // Accessibility: improved focus management and keyboard handling
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+
+    // remember previously focused element to restore on close
+  const previous = (document.activeElement && typeof document.activeElement.focus === 'function') ? document.activeElement : null;
+    // move focus into the dialog
+    el.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        // recompute focusable elements each time (handles dynamic content)
+  const focusable = Array.from(el.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])')).filter((n) => typeof n.focus === 'function');
+        if (!focusable.length) {
+          // if nothing focusable, keep focus on the dialog container
+          e.preventDefault();
+          el.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // restore focus to the previous element if possible
+      try {
+        if (previous && typeof previous.focus === 'function') previous.focus();
+      } catch (err) {
+        // ignore
+      }
+    };
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative bg-surface text-text-primary rounded-lg shadow-lg max-w-md w-full p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="hours-modal-title"
+        aria-describedby="hours-modal-desc"
+        tabIndex={-1}
+        className="relative bg-surface text-text-primary rounded-lg shadow-lg max-w-3xl w-full p-4"
+      >
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-heading font-semibold">Hours</h3>
+          <h3 id="hours-modal-title" className="text-lg font-heading font-semibold">Hours</h3>
           <button onClick={onClose} aria-label="Close" className="text-text-muted hover:text-text-primary">✕</button>
         </div>
+        <div id="hours-modal-desc" className="sr-only">This modal displays business hours for kitchen and bar. Press Escape to close.</div>
 
         <div className="min-h-[6rem]">
           {loading && <div className="text-text-muted">Loading...</div>}
           {error && <div className="text-red-500">{error}</div>}
 
           {!loading && !error && (
-            <div className="space-y-6">
+            <div>
               {Object.keys(hours).length === 0 && <div className="text-text-muted">No hours available</div>}
-              {Object.entries(hours).map(([area, list]) => (
-                <div 
-                  key={area} 
-                  className={`rounded-lg p-4 border-2 ${
-                    area === 'kitchen' 
-                      ? 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-700' 
-                      : 'bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700'
-                  }`}
-                >
-                  <h4 className={`font-heading text-lg font-bold mb-3 flex items-center gap-2 ${
-                    area === 'kitchen'
-                      ? 'text-amber-800 dark:text-amber-300'
-                      : 'text-blue-800 dark:text-blue-300'
-                  }`}>
-                    {area === 'kitchen' ? (
-                      <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                        Kitchen Hours
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        {area.charAt(0).toUpperCase() + area.slice(1)} Hours
-                      </>
-                    )}
-                  </h4>
-                  <ul className="space-y-2">
-                    {list.map(h => (
-                      <li key={h.id} className="flex justify-between items-center py-1 border-b border-current/10 last:border-0">
-                        <span className="font-semibold text-text-primary">{h.day_of_week}</span>
-                        <span className={`font-medium ${h.is_closed ? 'text-red-600 dark:text-red-400' : 'text-text-secondary'}`}>
-                          {h.is_closed ? 'Closed' : `${h.opening_time?.slice(0,5)} - ${h.closing_time?.slice(0,5)}`}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+
+              {/* Responsive two-column layout: stacked on small screens, side-by-side on md+ */}
+              <div className="relative">
+                {/* subtle vertical divider on md+ screens */}
+                <div className="hidden md:block absolute inset-y-0 left-1/2 w-px bg-current/10 transform -translate-x-0.5" aria-hidden="true" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(() => {
+                  // Ensure a predictable left/right layout: kitchen left, bar right when present
+                  const keys = Object.keys(hours);
+                  const ordered = ['kitchen', 'bar', ...keys.filter(k => k !== 'kitchen' && k !== 'bar')];
+                  return ordered.map(area => {
+                    const list = hours[area] || [];
+                    return (
+                      <div
+                        key={area}
+                        className={`rounded-lg p-4 border-2 ${
+                          area === 'kitchen'
+                            ? 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-700'
+                            : 'bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700'
+                        }`}
+                      >
+                        <h4 className={`font-heading text-lg font-bold mb-3 ${
+                          area === 'kitchen'
+                            ? 'text-amber-800 dark:text-amber-300'
+                            : 'text-blue-800 dark:text-blue-300'
+                        }`}>
+                          {area === 'kitchen' ? 'Kitchen Hours' : (area.charAt(0).toUpperCase() + area.slice(1) + ' Hours')}
+                        </h4>
+                        <ul className="space-y-2">
+                          {list.map(h => (
+                            <li key={h.id} className="flex justify-between items-center py-1 border-b border-current/10 last:border-0">
+                              <span className="font-semibold text-text-primary">{h.day_of_week}</span>
+                              <span className={`font-medium ${h.is_closed ? 'text-red-600 dark:text-red-400' : 'text-text-secondary'}`}>
+                                {h.is_closed ? 'Closed' : `${h.opening_time?.slice(0,5)} - ${h.closing_time?.slice(0,5)}`}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  });
+                })()}
                 </div>
-              ))}
+              </div>
             </div>
           )}
         </div>
