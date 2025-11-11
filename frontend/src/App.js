@@ -14,13 +14,14 @@
     handle their own data fetching and side-effects.
 */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
  
 import PublicSite from './pages/PublicSite';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
  
-import AdminPanel from './pages/AdminPanel';
+// Lazy load AdminPanel to reduce initial bundle size
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
  
 import LoginPage from './pages/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -32,7 +33,7 @@ export default function App() {
   // Local registry to ensure imports are used in JS by linters that don't
   // follow JSX usage. This is a minimal in-function reference and has no
   // runtime impact.
-  const _routes = { PublicSite, AdminPanel, LoginPage, PrivacyPage, TermsPage, ErrorBoundary };
+  const _routes = { PublicSite, LoginPage, PrivacyPage, TermsPage, ErrorBoundary };
   void _routes;
   const [showAdmin, setShowAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -64,15 +65,24 @@ export default function App() {
     setShowAdmin(false);
   };
 
-  // Show admin panel if logged in
+  // Show admin panel if logged in (lazy loaded)
   if (showAdmin && isLoggedIn && currentUser) {
     return (
       <ErrorBoundary>
-        <AdminPanel 
-          user={currentUser} 
-          onLogout={handleLogout} 
-          onBackToSite={() => setShowAdmin(false)} 
-        />
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center bg-surface">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-text-secondary">Loading admin panel...</p>
+            </div>
+          </div>
+        }>
+          <AdminPanel 
+            user={currentUser} 
+            onLogout={handleLogout} 
+            onBackToSite={() => setShowAdmin(false)} 
+          />
+        </Suspense>
       </ErrorBoundary>
     );
   }
