@@ -13,7 +13,7 @@
 */
 import { useState, useEffect, useCallback } from 'react';
 import { icons } from '../../icons';
-import { API_BASE } from '../../config/api';
+import { authenticatedFetch } from '../../utils/api';
 
 /*
   InboxModule
@@ -65,7 +65,7 @@ function InboxModule() {
 
   const fetchMessages = useCallback(() => {
     // Prefer a minimal check for OK responses and gracefully handle unexpected shapes
-    fetch(`${API_BASE}/contact/messages?page=${page}&per_page=${perPage}`)
+    authenticatedFetch(`/contact/messages?page=${page}&per_page=${perPage}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch messages');
         return res.json();
@@ -92,9 +92,8 @@ function InboxModule() {
 
   const markAsRead = (id) => {
     // Only send the update; if it fails keep the UI consistent by refetching.
-    fetch(`${API_BASE}/contact/messages/${id}`, {
+    authenticatedFetch(`/contact/messages/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_read: true })
     }).then(res => {
       if (res.ok) fetchMessages();
@@ -104,7 +103,7 @@ function InboxModule() {
 
   const deleteMessage = (id) => {
     if (window.confirm('Delete this message?')) {
-      fetch(`${API_BASE}/contact/messages/${id}`, { method: 'DELETE' })
+      authenticatedFetch(`/contact/messages/${id}`, { method: 'DELETE' })
         .then(() => {
           fetchMessages();
           setSelectedMessage(null);

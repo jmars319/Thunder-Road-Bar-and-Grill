@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { clearCacheFor } from '../../lib/cachedFetch';
 import { icons } from '../../icons';
-import { API_BASE } from '../../config/api';
+import { authenticatedFetch, API_BASE } from '../../utils/api';
 
 /*
   SettingsModule
@@ -48,9 +48,9 @@ function SettingsModule() {
     const loadAll = async () => {
       try {
         const [siteRes, aboutRes, hoursRes] = await Promise.all([
-          fetch(`${API_BASE}/site-settings`),
-          fetch(`${API_BASE}/about`),
-          fetch(`${API_BASE}/business-hours`)
+          authenticatedFetch('/site-settings'),
+          authenticatedFetch('/about'),
+          authenticatedFetch('/business-hours')
         ]);
 
         if (siteRes.ok) {
@@ -113,9 +113,8 @@ function SettingsModule() {
         }
       } catch (e) {}
 
-      const res = await fetch(`${API_BASE}/site-settings`, {
+      const res = await authenticatedFetch('/site-settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -167,9 +166,8 @@ function SettingsModule() {
         }
       }
 
-      const res = await fetch(`${API_BASE}/about`, {
+      const res = await authenticatedFetch('/about', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -184,9 +182,8 @@ function SettingsModule() {
   // Update a single day's hours. Returns the fetch Response so callers can handle errors.
   const saveBusinessHours = async (id, data) => {
     try {
-      const res = await fetch(`${API_BASE}/business-hours/${id}`, {
+      const res = await authenticatedFetch(`/business-hours/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
       return res;
@@ -217,7 +214,7 @@ function SettingsModule() {
 
       // All saved successfully — refetch hours to ensure canonical state
       try {
-        const hr = await fetch(`${API_BASE}/business-hours`);
+        const hr = await authenticatedFetch('/business-hours');
         if (hr.ok) {
           const data = await hr.json();
           setBusinessHours(Array.isArray(data) ? data : []);
