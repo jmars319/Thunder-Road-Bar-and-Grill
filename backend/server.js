@@ -231,6 +231,11 @@ const dbPool = mysql.createPool({
 dbPool.getConnection((err, conn) => {
   if (err) {
     logger.error('Database connection failed', { error: err.message, code: err.code });
+    // Fail fast in production - don't start server if DB is unavailable
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('Production environment requires database connection. Exiting.');
+      process.exit(1);
+    }
   } else {
     conn.release();
     logger.info('Connected to MySQL database (pool)');
