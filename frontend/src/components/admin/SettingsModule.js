@@ -97,17 +97,8 @@ function SettingsModule() {
         }
       }
 
-      // Debug: log siteSettings, original snapshot, and computed payload so
-      // we can diagnose why saves sometimes do not trigger a network request.
-      try {
-        if (typeof window !== 'undefined' && typeof window.__app_debug === 'function') {
-          window.__app_debug('saveSiteSettings', { siteSettings, original: originalSettingsRef.current, payload });
-        }
-      } catch (e) {}
-
       // If nothing changed, show a quick saved indicator and return
       if (Object.keys(payload).length === 0) {
-        try { if (typeof window !== 'undefined' && typeof window.__app_debug === 'function') window.__app_debug('saveSiteSettings', 'no changes, aborting save'); } catch (e) {}
         setSaved(true);
         setTimeout(() => setSaved(false), 1200);
         return;
@@ -121,8 +112,6 @@ function SettingsModule() {
           payload.google = siteSettings.google;
         }
       } catch (e) {}
-
-  try { if (typeof window !== 'undefined' && typeof window.__app_debug === 'function') window.__app_debug('saveSiteSettings:performFetch', payload); } catch (e) {}
 
       const res = await fetch(`${API_BASE}/site-settings`, {
         method: 'PUT',
@@ -240,10 +229,8 @@ function SettingsModule() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      // TODO: show a toast with err.message; currently we just setSaved false
       console.error('Failed to save business hours:', err && err.message);
       setSaved(false);
-      // Consider exposing the error with a toast in future
     }
   };
 
