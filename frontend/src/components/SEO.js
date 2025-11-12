@@ -23,13 +23,13 @@
 // eslint-disable-next-line no-unused-vars
 import { Helmet } from 'react-helmet-async';
 
-export default function SEO({
-  title,
-  description,
-  keywords = '',
-  image = 'https://thunderroadbarandgrill.com/og/og-1200x627.png',
+function SEO({
+  title = '',
+  description = 'Thunder Road Bar & Grill — Midway, NC',
+  keywords = 'Thunder Road, Bar and Grill, Midway NC, restaurant, bar, American food, live music',
+  image = 'https://trbgmidway.com/og/og-1200x627.png',
   url = '',
-  type = 'website'
+  type = 'website',
 }) {
   const siteTitle = 'Thunder Road Bar & Grill — Midway, NC';
   const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
@@ -60,3 +60,5 @@ export default function SEO({
     </Helmet>
   );
 }
+
+export default SEO;

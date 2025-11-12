@@ -17,7 +17,7 @@ export default function TermsPage() {
       <SEO 
         title="Terms of Service"
         description="Terms of Service for Thunder Road Bar and Grill — site use, ordering and legal notices."
-        url="https://thunderroadbarandgrill.com/terms"
+        url="https://trbgmidway.com/terms"
       />
       <div className="min-h-screen bg-background">
         <PublicNavbar />

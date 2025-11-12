@@ -4,4 +4,4 @@ Disallow: /admin
 Disallow: /admin/*
 
 # Sitemap
-Sitemap: https://thunderroadbarandgrill.com/sitemap.xml
+Sitemap: https://trbgmidway.com/sitemap.xml

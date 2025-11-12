@@ -233,7 +233,7 @@ NODE_ENV=production
 PORT=${{PORT}}  # Railway provides this automatically
 
 # Frontend URL (your GoDaddy domain)
-FRONTEND_URL=https://thunderroadbarandgrill.com,https://www.thunderroadbarandgrill.com
+FRONTEND_URL=https://trbgmidway.com,https://www.trbgmidway.com
 
 # Trust proxy (Railway uses proxies)
 TRUST_PROXY=true
@@ -622,7 +622,7 @@ Now that your GoDaddy site is live:
 - [ ] Go to "Variables" tab
 - [ ] Update `FRONTEND_URL` with your actual domain:
   ```
-  FRONTEND_URL=https://thunderroadbarandgrill.com,https://www.thunderroadbarandgrill.com
+  FRONTEND_URL=https://trbgmidway.com,https://www.trbgmidway.com
   ```
 - [ ] Save changes (Railway will auto-redeploy)
 
@@ -630,12 +630,12 @@ Now that your GoDaddy site is live:
 
 #### 4.4 Configure Railway Custom Domain (Optional)
 
-If you want a custom subdomain like `api.thunderroadbarandgrill.com`:
+If you want a custom subdomain like `api.trbgmidway.com`:
 
 - [ ] In Railway, go to your backend service
 - [ ] Click "Settings" → "Domains"
 - [ ] Click "Add Custom Domain"
-- [ ] Enter: `api.thunderroadbarandgrill.com`
+- [ ] Enter: `api.trbgmidway.com`
 - [ ] Railway provides DNS instructions (CNAME record)
 - [ ] In GoDaddy DNS Management:
   - Type: CNAME
@@ -646,7 +646,7 @@ If you want a custom subdomain like `api.thunderroadbarandgrill.com`:
 - [ ] Railway automatically provisions SSL
 - [ ] Update frontend `.env.production`:
   ```
-  REACT_APP_API_BASE=https://api.thunderroadbarandgrill.com/api
+  REACT_APP_API_BASE=https://api.trbgmidway.com/api
   ```
 - [ ] Rebuild and redeploy frontend
 
@@ -678,7 +678,7 @@ curl https://thunder-road-backend-production-xxxx.up.railway.app/api/business-ho
 
 #### 5.2 Test GoDaddy Frontend
 
-- [ ] Visit your domain: `https://thunderroadbarandgrill.com`
+- [ ] Visit your domain: `https://trbgmidway.com`
 - [ ] Verify HTTPS is working (padlock icon in browser)
 - [ ] Check browser console (F12) for errors
 - [ ] Verify no CORS errors
@@ -927,7 +927,7 @@ router.get('/admin/backup/uploads', adminAuth, async (req, res) => {
 - [ ] Add monitors:
   - **Frontend Monitor:**
     - Type: HTTP(s)
-    - URL: `https://thunderroadbarandgrill.com`
+    - URL: `https://trbgmidway.com`
     - Interval: 5 minutes
   - **Backend Monitor:**
     - Type: HTTP(s)
@@ -1069,7 +1069,7 @@ Free tier includes:
 | DB_USER | root | **${{MySQL.MYSQL_USER}}** |
 | DB_PASSWORD | local-password | **${{MySQL.MYSQL_PASSWORD}}** |
 | DB_NAME | thunder_road | **${{MySQL.MYSQL_DATABASE}}** |
-| FRONTEND_URL | http://localhost:3000 | **https://thunderroadbarandgrill.com** |
+| FRONTEND_URL | http://localhost:3000 | **https://trbgmidway.com** |
 | TRUST_PROXY | false | **true** (Railway uses proxies) |
 | FORCE_HTTPS | false | **true** |
 | ALLOW_DEV_ADMIN_HEADER | 0 or 1 (dev testing) | **0 (NEVER enable)** |
@@ -1139,7 +1139,7 @@ Free tier includes:
    - Must match your GoDaddy domain EXACTLY
    - No trailing slashes
    - Include both www and non-www:
-     FRONTEND_URL=https://thunderroadbarandgrill.com,https://www.thunderroadbarandgrill.com
+     FRONTEND_URL=https://trbgmidway.com,https://www.trbgmidway.com
    - Railway will auto-redeploy
    ```
 

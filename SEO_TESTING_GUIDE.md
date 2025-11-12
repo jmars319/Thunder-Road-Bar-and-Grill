@@ -41,10 +41,10 @@
 **After Deployment:**
 ```bash
 # Visit your sitemap
-curl https://thunderroadbarandgrill.com/sitemap.xml
+curl https://trbgmidway.com/sitemap.xml
 
 # Or in browser:
-https://thunderroadbarandgrill.com/sitemap.xml
+https://trbgmidway.com/sitemap.xml
 ```
 
 **Expected:** XML file with all 7 URLs listed
@@ -60,7 +60,7 @@ https://thunderroadbarandgrill.com/sitemap.xml
 
 **Visit:**
 ```
-https://thunderroadbarandgrill.com/robots.txt
+https://trbgmidway.com/robots.txt
 ```
 
 **Expected Content:**
@@ -69,7 +69,7 @@ User-agent: *
 Disallow: /admin
 Disallow: /admin/*
 
-Sitemap: https://thunderroadbarandgrill.com/sitemap.xml
+Sitemap: https://trbgmidway.com/sitemap.xml
 ```
 
 **✅ Verify:**
@@ -109,7 +109,7 @@ Sitemap: https://thunderroadbarandgrill.com/sitemap.xml
 2. [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
 
 **Steps:**
-1. Enter your URL: `https://thunderroadbarandgrill.com/`
+1. Enter your URL: `https://trbgmidway.com/`
 2. Click "Scrape" or "Inspect"
 3. Verify preview shows:
    - Correct title
@@ -148,7 +148,7 @@ Sitemap: https://thunderroadbarandgrill.com/sitemap.xml
 1. **Submit Sitemap:**
    - Go to [Google Search Console](https://search.google.com/search-console)
    - Navigate to "Sitemaps"
-   - Enter: `https://thunderroadbarandgrill.com/sitemap.xml`
+   - Enter: `https://trbgmidway.com/sitemap.xml`
    - Click "Submit"
 
 2. **Monitor Indexing:**
@@ -229,7 +229,7 @@ Sitemap: https://thunderroadbarandgrill.com/sitemap.xml
 
 **Google My Business:**
 1. Claim your business listing
-2. Add website: `https://thunderroadbarandgrill.com`
+2. Add website: `https://trbgmidway.com`
 3. Verify NAP (Name, Address, Phone) matches website
 
 **✅ Verify:**

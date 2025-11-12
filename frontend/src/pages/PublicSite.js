@@ -62,7 +62,7 @@ export default function PublicSite({ onGoToAdmin }) {
         title="Thunder Road Bar & Grill — Midway, NC"
         description="Thunder Road Bar & Grill in Midway, NC — great food, cold drinks, live music, and a friendly neighborhood atmosphere. View our menu, hours, and events."
         keywords="Thunder Road, bar, grill, Midway NC, restaurant, burgers, wings, live music, reservations, Winston-Salem"
-        url="https://thunderroadbarandgrill.com/"
+        url="https://trbgmidway.com/"
       />
       <div className="min-h-screen bg-background">
         {/* Skip link for keyboard users */}

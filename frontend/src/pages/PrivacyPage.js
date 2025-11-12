@@ -19,7 +19,7 @@ export default function PrivacyPage() {
       <SEO 
         title="Privacy Policy"
         description="Privacy Policy for Thunder Road Bar and Grill — how we collect and use personal information."
-        url="https://thunderroadbarandgrill.com/privacy"
+        url="https://trbgmidway.com/privacy"
       />
       <div className="min-h-screen bg-background">
         <PublicNavbar />
