@@ -13,6 +13,7 @@
 */
 
 // Using automatic JSX runtime; explicit React import not required
+import SEO from '../components/SEO';
 import PublicNavbar from '../components/public/PublicNavbar';
 import HeroSection from '../components/public/HeroSection';
 import MenuSection from '../components/public/MenuSection';
@@ -51,23 +52,31 @@ import PublicFooter from '../components/public/PublicFooter';
 
 export default function PublicSite({ onGoToAdmin }) {
   // Local registry reference to ensure linters detect symbol usage.
-  const _refs = { PublicNavbar, HeroSection, MenuSection, ReservationSection, JobSection, AboutSection, PublicFooter };
+  const _refs = { SEO, PublicNavbar, HeroSection, MenuSection, ReservationSection, JobSection, AboutSection, PublicFooter };
   void _refs;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Skip link for keyboard users */}
-      <a href="#site-main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:bg-surface focus:text-text-primary focus:px-2 focus:py-1 rounded">Skip to main content</a>
-      <PublicNavbar onGoToAdmin={onGoToAdmin} />
-      <main id="site-main" role="main">
-    <HeroSection />
-    <MenuSection />
-  <ReservationSection />
-  <AboutSection />
-  <JobSection />
-      </main>
-      <PublicFooter onGoToAdmin={onGoToAdmin} />
-    </div>
+    <>
+      <SEO 
+        title="Thunder Road Bar & Grill — Midway, NC"
+        description="Thunder Road Bar & Grill in Midway, NC — great food, cold drinks, live music, and a friendly neighborhood atmosphere. View our menu, hours, and events."
+        keywords="Thunder Road, bar, grill, Midway NC, restaurant, burgers, wings, live music, reservations, Winston-Salem"
+        url="https://thunderroadbarandgrill.com/"
+      />
+      <div className="min-h-screen bg-background">
+        {/* Skip link for keyboard users */}
+        <a href="#site-main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:bg-surface focus:text-text-primary focus:px-2 focus:py-1 rounded">Skip to main content</a>
+        <PublicNavbar onGoToAdmin={onGoToAdmin} />
+        <main id="site-main" role="main">
+      <HeroSection />
+      <MenuSection />
+    <ReservationSection />
+    <AboutSection />
+    <JobSection />
+        </main>
+        <PublicFooter onGoToAdmin={onGoToAdmin} />
+      </div>
+    </>
   );
 }
 

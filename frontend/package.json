@@ -5,11 +5,12 @@
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
-  "@testing-library/react": "^14.3.1",
+    "@testing-library/react": "^14.3.1",
     "@testing-library/user-event": "^13.5.0",
     "lucide-react": "^0.545.0",
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-helmet-async": "^2.0.5",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
@@ -21,7 +22,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-  "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",
     "lint:fix": "eslint \"src/**/*.{js,jsx}\" --fix",

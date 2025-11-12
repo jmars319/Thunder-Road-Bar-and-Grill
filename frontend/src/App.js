@@ -15,6 +15,7 @@
 */
 
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
  
 import PublicSite from './pages/PublicSite';
 import PrivacyPage from './pages/PrivacyPage';
@@ -108,23 +109,29 @@ export default function App() {
 
   if (path === '/privacy') {
     return (
-      <ErrorBoundary>
-        <PrivacyPage />
-      </ErrorBoundary>
+      <HelmetProvider>
+        <ErrorBoundary>
+          <PrivacyPage />
+        </ErrorBoundary>
+      </HelmetProvider>
     );
   }
 
   if (path === '/terms') {
     return (
-      <ErrorBoundary>
-        <TermsPage />
-      </ErrorBoundary>
+      <HelmetProvider>
+        <ErrorBoundary>
+          <TermsPage />
+        </ErrorBoundary>
+      </HelmetProvider>
     );
   }
 
   return (
-    <ErrorBoundary>
-      <PublicSite onGoToAdmin={() => setShowAdmin(true)} />
-    </ErrorBoundary>
+    <HelmetProvider>
+      <ErrorBoundary>
+        <PublicSite onGoToAdmin={() => setShowAdmin(true)} />
+      </ErrorBoundary>
+    </HelmetProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import SEO from '../components/SEO';
 // Some linters may not detect JSX usage in this file's render path; mark
 // these imports as intentionally used to avoid false-positive warnings.
 // eslint-disable-next-line no-unused-vars
@@ -7,16 +7,21 @@ import PublicNavbar from '../components/public/PublicNavbar';
 import PublicFooter from '../components/public/PublicFooter';
 
 export default function TermsPage() {
-  useTermsSeo();
   const goHome = () => {
     window.location.href = '/';
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicNavbar />
+    <>
+      <SEO 
+        title="Terms of Service"
+        description="Terms of Service for Thunder Road Bar and Grill — site use, ordering and legal notices."
+        url="https://thunderroadbarandgrill.com/terms"
+      />
+      <div className="min-h-screen bg-background">
+        <PublicNavbar />
 
-      <main className="max-w-4xl mx-auto p-6">
+        <main className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-heading font-bold mb-4">Terms of Service</h1>
         <p className="text-sm text-text-secondary mb-2">Last updated: {new Date().toLocaleDateString()}</p>
 
@@ -54,73 +59,8 @@ export default function TermsPage() {
         </div>
       </main>
 
-      <PublicFooter />
-    </div>
+        <PublicFooter />
+      </div>
+    </>
   );
-}
-
-function useTermsSeo() {
-  useEffect(() => {
-    const title = 'Terms of Service — Thunder Road Bar and Grill';
-    const description = 'Terms of Service for Thunder Road Bar and Grill — site use, ordering and legal notices.';
-    document.title = title;
-
-    const setTag = (attr, name, content) => {
-      let el = null;
-      try {
-        el = document.querySelector(`[${attr}="${name}"]`);
-      } catch (e) {
-        el = null;
-      }
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, name);
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', content);
-    };
-
-    setTag('name', 'description', description);
-    setTag('property', 'og:title', title);
-    setTag('property', 'og:description', description);
-    setTag('property', 'og:type', 'website');
-    setTag('name', 'twitter:card', 'summary_large_image');
-    setTag('name', 'twitter:title', title);
-    setTag('name', 'twitter:description', description);
-
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute('href', window.location.origin + '/terms');
-
-    const ldId = 'seo-org-jsonld-terms';
-    let existing = document.getElementById(ldId);
-    if (existing) existing.remove();
-    const script = document.createElement('script');
-    script.id = ldId;
-    script.type = 'application/ld+json';
-    const org = {
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'Thunder Road Bar and Grill',
-      url: window.location.origin || '/',
-      sameAs: [],
-    };
-    script.text = JSON.stringify(org);
-    document.head.appendChild(script);
-
-    return () => {
-      const removeIfMatches = (attr, name, value) => {
-        const el = document.querySelector(`[${attr}="${name}"]`);
-        if (el && el.getAttribute('content') === value) el.remove();
-      };
-      removeIfMatches('name', 'description', description);
-      removeIfMatches('property', 'og:description', description);
-      const ld = document.getElementById(ldId);
-      if (ld) ld.remove();
-    };
-  }, []);
 }

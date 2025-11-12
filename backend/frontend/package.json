@@ -2,5 +2,8 @@
   "devDependencies": {
     "eslint": "^9.37.0",
     "eslint-plugin-react-hooks": "^7.0.0"
+  },
+  "dependencies": {
+    "react-helmet-async": "^2.0.5"
   }
 }

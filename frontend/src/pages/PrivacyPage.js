@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import SEO from '../components/SEO';
 // Some linters may not detect JSX usage in this file's render path; mark
 // these imports as intentionally used to avoid false-positive warnings.
 // eslint-disable-next-line no-unused-vars
@@ -7,7 +7,6 @@ import PublicNavbar from '../components/public/PublicNavbar';
 import PublicFooter from '../components/public/PublicFooter';
 
 export default function PrivacyPage() {
-  usePrivacySeo();
   const goHome = () => {
     // use a full navigation to the site root; this keeps behavior consistent
     // across hosting environments and avoids relying on browser globals.
@@ -15,10 +14,16 @@ export default function PrivacyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicNavbar />
+    <>
+      <SEO 
+        title="Privacy Policy"
+        description="Privacy Policy for Thunder Road Bar and Grill — how we collect and use personal information."
+        url="https://thunderroadbarandgrill.com/privacy"
+      />
+      <div className="min-h-screen bg-background">
+        <PublicNavbar />
 
-      <main className="max-w-4xl mx-auto p-6">
+        <main className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-heading font-bold mb-4">Privacy Policy</h1>
         <p className="text-sm text-text-secondary mb-2">Last updated: {new Date().toLocaleDateString()}</p>
 
@@ -70,81 +75,9 @@ export default function PrivacyPage() {
         </div>
       </main>
 
-      <PublicFooter />
-    </div>
+        <PublicFooter />
+      </div>
+    </>
   );
-}
-
-// SEO: set meta tags and structured data when page mounts
-// This keeps the app dependency-free (no react-helmet) while providing
-// essential SEO signals for crawlers and social previews.
-function usePrivacySeo() {
-  useEffect(() => {
-    const title = 'Privacy Policy — Thunder Road Bar and Grill';
-    const description = 'Privacy Policy for Thunder Road Bar and Grill — how we collect and use personal information.';
-    document.title = title;
-
-    const setTag = (attr, name, content) => {
-      let el = null;
-      try {
-        el = document.querySelector(`[${attr}="${name}"]`);
-      } catch (e) {
-        el = null;
-      }
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, name);
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', content);
-    };
-
-    setTag('name', 'description', description);
-    setTag('property', 'og:title', title);
-    setTag('property', 'og:description', description);
-    setTag('property', 'og:type', 'website');
-    setTag('name', 'twitter:card', 'summary_large_image');
-    setTag('name', 'twitter:title', title);
-    setTag('name', 'twitter:description', description);
-
-    // canonical link
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute('href', window.location.origin + '/privacy');
-
-    // JSON-LD Organization
-    const ldId = 'seo-org-jsonld';
-    let existing = document.getElementById(ldId);
-    if (existing) existing.remove();
-    const script = document.createElement('script');
-    script.id = ldId;
-    script.type = 'application/ld+json';
-    const org = {
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'Thunder Road Bar and Grill',
-      url: window.location.origin || '/',
-      sameAs: [],
-    };
-    script.text = JSON.stringify(org);
-    document.head.appendChild(script);
-
-    return () => {
-      // cleanup: remove tags we created (leave existing ones alone)
-      // (we keep title as-is when navigating away)
-      const removeIfMatches = (attr, name, value) => {
-        const el = document.querySelector(`[${attr}="${name}"]`);
-        if (el && el.getAttribute('content') === value) el.remove();
-      };
-      removeIfMatches('name', 'description', description);
-      removeIfMatches('property', 'og:description', description);
-      const ld = document.getElementById(ldId);
-      if (ld) ld.remove();
-    };
-  }, []);
 }
 
