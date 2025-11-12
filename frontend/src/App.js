@@ -15,6 +15,7 @@
 */
 
 import { useState, useEffect, lazy, Suspense } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { HelmetProvider } from 'react-helmet-async';
  
 import PublicSite from './pages/PublicSite';

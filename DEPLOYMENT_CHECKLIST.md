@@ -34,6 +34,8 @@
 
 ## 📋 Pre-Deployment Checklist
 
+> 📄 **See DEPLOYMENT_FILES.md** for a complete breakdown of which files to deploy and which to keep in development.
+
 ### Phase 1: Local Preparation (Complete These BEFORE Deployment)
 
 #### 1.1 Security Configuration ✅
@@ -161,6 +163,8 @@
 ---
 
 ## 🚀 Railway Backend Deployment (Phase 2)
+
+> 📄 **Reference DEPLOYMENT_FILES.md** for the exact list of backend files to deploy to Railway.
 
 ### Phase 2: Deploy Backend + Database to Railway
 
@@ -402,6 +406,8 @@ curl https://thunder-road-backend-production-xxxx.up.railway.app/api/menu
 ---
 
 ## 🌐 GoDaddy Frontend Deployment (Phase 3)
+
+> 📄 **Reference DEPLOYMENT_FILES.md** for the exact list of frontend build files to upload to GoDaddy.
 
 ### Phase 3: Deploy React Frontend to GoDaddy Deluxe
 

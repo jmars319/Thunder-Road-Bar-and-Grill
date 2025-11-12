@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import SEO from '../components/SEO';
 // Some linters may not detect JSX usage in this file's render path; mark
 // these imports as intentionally used to avoid false-positive warnings.

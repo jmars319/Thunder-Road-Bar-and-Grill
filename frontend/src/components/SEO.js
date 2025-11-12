@@ -20,6 +20,7 @@
   - Falls back to default image if none provided
 */
 
+// eslint-disable-next-line no-unused-vars
 import { Helmet } from 'react-helmet-async';
 
 export default function SEO({

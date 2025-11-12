@@ -13,6 +13,7 @@
 */
 
 // Using automatic JSX runtime; explicit React import not required
+// eslint-disable-next-line no-unused-vars
 import SEO from '../components/SEO';
 import PublicNavbar from '../components/public/PublicNavbar';
 import HeroSection from '../components/public/HeroSection';
