@@ -24,9 +24,10 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Insert default admin user (username: admin, password: admin123)
--- Note: In production, use proper password hashing
+-- Password is bcrypt-hashed (cost factor 10)
+-- IMPORTANT: Change this password immediately after deployment!
 INSERT INTO users (username, password_hash, email, full_name, role) 
-VALUES ('admin', 'admin123', 'admin@thunderroad.com', 'Admin User', 'admin')
+VALUES ('admin', '$2y$10$/r68NL6iotpmBzCQ8QCEYeTUJFIziMZiDGdMt7jVxqywMmBk8MoTC', 'admin@thunderroad.com', 'Admin User', 'admin')
 ON DUPLICATE KEY UPDATE username = username;
 
 -- ============================================
