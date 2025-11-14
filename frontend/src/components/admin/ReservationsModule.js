@@ -42,7 +42,7 @@ import { authenticatedFetch } from '../../utils/api';
 
 function ReservationsModule() {
   const [reservations, setReservations] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('pending');
 
   useEffect(() => {
     fetchReservations();
@@ -62,7 +62,12 @@ function ReservationsModule() {
     }).then(() => fetchReservations()).catch(() => {});
   };
 
-  // deleteReservation is intentionally omitted — use status updates to manage reservations
+  const deleteReservation = (id) => {
+    if (!window.confirm('Permanently delete this reservation?')) return;
+    authenticatedFetch(`/reservations/${id}`, {
+      method: 'DELETE'
+    }).then(() => fetchReservations()).catch(() => {});
+  };
 
   const filteredReservations = filter === 'all' 
     ? reservations 
@@ -81,7 +86,7 @@ function ReservationsModule() {
   return (
     <div className="space-y-6">
       <div className="flex gap-2">
-        {['all', 'pending', 'confirmed', 'cancelled', 'completed'].map(status => (
+        {['pending', 'confirmed', 'cancelled', 'completed', 'all'].map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -159,6 +164,15 @@ function ReservationsModule() {
                           title="Mark Complete"
                         >
                           <icons.Clock size={18} />
+                        </button>
+                      )}
+                      {(res.status === 'completed' || res.status === 'cancelled') && (
+                        <button
+                          onClick={() => deleteReservation(res.id)}
+                          className="text-error hover:bg-surface-warm p-2 rounded"
+                          title="Permanently Delete"
+                        >
+                          <icons.Trash2 size={18} />
                         </button>
                       )}
                     </div>

@@ -344,30 +344,7 @@ export default function JobSection() {
             <textarea name="cover_letter" value={form.cover_letter} onChange={handleChange} rows="4" className="form-input" />
           </label>
 
-          <label className="flex flex-col">
-            <span className="text-sm mb-1">Resume (optional)</span>
-            {/* Stack on small screens, inline on sm+ */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <input ref={fileInputRef} type="file" accept="application/pdf,.doc,.docx" onChange={handleFileChange} aria-describedby="resume-help" />
-              <div className="text-sm text-muted mt-1 sm:mt-0" id="resume-help">PDF or Word — max 3 MB</div>
-            </div>
-            {resumeFile && (
-                <div className="mt-2 text-sm">
-                  Selected: {resumeFile.name} · {(resumeFile.size / 1024).toFixed(0)} KB
-                </div>
-            )}
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="w-full bg-surface-warm h-2 rounded mt-2 overflow-hidden">
-                <div className="bg-accent h-2" style={{ width: `${uploadProgress}%` }} />
-              </div>
-            )}
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="mt-2">
-                <button type="button" onClick={cancelUpload} className="btn btn-ghost btn-sm">Cancel upload</button>
-              </div>
-            )}
-            {previewWarning && <Toast type="info">{previewWarning}</Toast>}
-          </label>
+          {/* Resume upload temporarily disabled - will be added in a future update */}
           {error && <Toast type="error">{error}</Toast>}
           {message && <Toast type="success">{message}</Toast>}
 

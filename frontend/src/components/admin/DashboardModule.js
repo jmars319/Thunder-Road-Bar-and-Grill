@@ -14,6 +14,7 @@
 */
 import { useState, useEffect } from 'react';
 import { icons } from '../../icons';
+import { authenticatedFetch } from '../../utils/api';
 
 /*
   DashboardModule
@@ -85,10 +86,10 @@ function DashboardModule() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API_BASE}/reservations`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${API_BASE}/jobs`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${API_BASE}/newsletter/subscribers`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${API_BASE}/contact/messages`).then(r => r.ok ? r.json() : []).catch(() => [])
+      authenticatedFetch('/reservations').then(r => r.ok ? r.json() : []).catch(() => []),
+      authenticatedFetch('/jobs').then(r => r.ok ? r.json() : []).catch(() => []),
+      authenticatedFetch('/subscribers').then(r => r.ok ? r.json() : []).catch(() => []),
+      authenticatedFetch('/messages').then(r => r.ok ? r.json() : []).catch(() => [])
     ]).then(([reservations, jobs, subscribers, messages]) => {
       // Normalize contact messages response: the inbox endpoint returns a
       // paginated object { total, page, per_page, messages: [...] } while other

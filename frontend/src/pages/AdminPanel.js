@@ -41,7 +41,7 @@ const AdminModules = {
   jobs: { component: JobsModule, name: 'Jobs', icon: icons.Briefcase },
   media: { component: MediaModule, name: 'Media', icon: icons.Image },
   settings: { component: SettingsModule, name: 'Settings', icon: icons.Settings },
-  newsletters: { component: NewsletterModule, name: 'Newsletter', icon: icons.Mail },
+  // newsletters: { component: NewsletterModule, name: 'Newsletter', icon: icons.Mail }, // Hidden for now
 };
 
 export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => {}, onBackToSite = () => {} }) {

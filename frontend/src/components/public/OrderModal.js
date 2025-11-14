@@ -100,9 +100,9 @@ export default function OrderModal({ onClose }) {
         className={`bg-surface rounded-lg p-4 max-w-md w-full mx-auto modal-transition ${mounted ? 'modal-enter-active' : 'modal-exit-active'}`}
         tabIndex={-1}
       >
-        <h3 className="text-lg font-bold mb-2 text-text-primary">Order Online (WIP)</h3>
+        <h3 className="text-lg font-bold mb-2 text-text-primary">Order Online - Coming Soon</h3>
         <p className="text-sm text-text-secondary mb-4">
-          We're currently working on online ordering. In the meantime you can place an order by phone or stop by the restaurant.
+          Online ordering is currently in development and will be available soon! In the meantime, please call us or visit the restaurant to place your order.
         </p>
         <div className="flex justify-end gap-2">
           <button

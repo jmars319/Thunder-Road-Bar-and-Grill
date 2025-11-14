@@ -48,6 +48,8 @@ function MenuModule() {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   // drag-and-drop state for reordering items within a category
   const [dragging, setDragging] = useState({ itemId: null, fromCategoryId: null });
+  // drag-and-drop state for reordering categories
+  const [draggingCategory, setDraggingCategory] = useState(null);
   const MEDIA_LIMIT_MENU = 24;
 
   // paginated gallery media hook (infinite scroll sentinel provided by hook)
@@ -353,6 +355,76 @@ function MenuModule() {
 
   const handleDragEnd = () => {
     setDragging({ itemId: null, fromCategoryId: null });
+  };
+
+  // Category drag-and-drop handlers
+  const handleCategoryDragStart = (e, categoryId) => {
+    try { e.dataTransfer.setData('text/plain', String(categoryId)); } catch (err) {}
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingCategory(categoryId);
+  };
+
+  const handleCategoryDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleCategoryDrop = async (e, dropIndex) => {
+    e.preventDefault();
+    const categoryId = draggingCategory || (e.dataTransfer && e.dataTransfer.getData('text/plain')) || null;
+    if (!categoryId) {
+      setDraggingCategory(null);
+      return;
+    }
+
+    const fromIndex = categories.findIndex(c => String(c.id) === String(categoryId));
+    if (fromIndex === -1 || fromIndex === dropIndex) {
+      setDraggingCategory(null);
+      return;
+    }
+
+    // Reorder categories locally
+    const newCategories = [...categories];
+    const [movedCategory] = newCategories.splice(fromIndex, 1);
+    newCategories.splice(dropIndex, 0, movedCategory);
+
+    // Update display_order for all categories
+    const updates = newCategories.map((cat, idx) => ({
+      ...cat,
+      display_order: idx
+    }));
+
+    setCategories(updates);
+    setDraggingCategory(null);
+
+    // Save all category orders to backend using batch endpoint
+    try {
+      const response = await authenticatedFetch('/menu/categories/reorder', {
+        method: 'PUT',
+        body: JSON.stringify({
+          categories: updates.map(cat => ({
+            id: cat.id,
+            display_order: cat.display_order
+          }))
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update category order');
+      }
+
+      setToast({ type: 'success', message: 'Category order updated' });
+      setTimeout(() => setToast(null), 3000);
+      fetchCategories(); // Refresh to ensure consistency
+    } catch (err) {
+      fetchCategories(); // Revert on error
+      setToast({ type: 'error', message: 'Failed to update category order' });
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  const handleCategoryDragEnd = () => {
+    setDraggingCategory(null);
   };
 
   return (
@@ -700,9 +772,25 @@ function MenuModule() {
 
       {/* Categories List */}
       <div className="space-y-4">
-        {categories.map(category => (
-          <div key={category.id} className="bg-surface rounded-lg shadow">
+        {categories.map((category, idx) => (
+          <div
+            key={category.id}
+            className={`bg-surface rounded-lg shadow ${draggingCategory === category.id ? 'opacity-60' : ''}`}
+            onDragOver={handleCategoryDragOver}
+            onDrop={(e) => handleCategoryDrop(e, idx)}
+          >
               <div className="flex items-center justify-between p-4 border-b border-divider">
+              {/* Drag handle for category */}
+              <button
+                type="button"
+                className={`mr-3 p-2 rounded ${draggingCategory === category.id ? 'cursor-grabbing' : 'cursor-grab'} text-text-secondary`}
+                draggable
+                onDragStart={(e) => handleCategoryDragStart(e, category.id)}
+                onDragEnd={handleCategoryDragEnd}
+                aria-label={`Drag ${category.name} category`}
+              >
+                <icons.Menu size={20} />
+              </button>
               <button
                 type="button"
                 onClick={() => setExpandedCategory(expandedCategory === category.id ? null : category.id)}

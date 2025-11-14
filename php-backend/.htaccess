@@ -1,0 +1,70 @@
+# Thunder Road Bar & Grill - PHP Backend API
+# Apache .htaccess for clean URL routing
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Set base directory (adjust if API is not at root)
+RewriteBase /api/
+
+# Don't rewrite if the file exists (allows direct access to uploads/)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route all requests through index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Security headers
+<IfModule mod_headers.c>
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+    
+    # Prevent clickjacking
+    Header set X-Frame-Options "DENY"
+    
+    # Referrer policy
+    Header set Referrer-Policy "no-referrer"
+    
+    # Cross-Origin-Resource-Policy
+    Header set Cross-Origin-Resource-Policy "same-origin"
+</IfModule>
+
+# PHP settings
+<IfModule mod_php.c>
+    # Increase upload limits
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 30
+    php_value max_input_time 30
+    
+    # Hide PHP version
+    php_flag expose_php Off
+    
+    # Enable error logging (disable display in production)
+    php_flag display_errors Off
+    php_flag log_errors On
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect .env file
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Allow CORS (handled in PHP for better control, but this is a fallback)
+<IfModule mod_headers.c>
+    # CORS headers are set in PHP middleware for better per-route control
+    # This is a fallback for static files in uploads/
+    SetEnvIf Origin "^https?://(localhost:3000|trbgmidway\.com|www\.trbgmidway\.com)$" ORIGIN_MATCH=$0
+    Header set Access-Control-Allow-Origin "%{ORIGIN_MATCH}e" env=ORIGIN_MATCH
+    Header set Access-Control-Allow-Credentials "true" env=ORIGIN_MATCH
+</IfModule>

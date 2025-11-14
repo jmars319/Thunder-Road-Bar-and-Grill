@@ -15,7 +15,6 @@ import { ReactComponent as DefaultLogo } from '../../logo.svg';
 import { createPortal } from 'react-dom';
 
 import { icons } from '../../icons';
-import ThemeToggle from '../ThemeToggle';
 import Spinner from '../ui/Spinner';
 import { buildSrcSet, buildWebpSrcSet, LOGO_SIZES } from '../../utils/imageUtils';
 // Lazy-load the OrderModal so it's only fetched when a user opens the modal.
@@ -71,8 +70,19 @@ export default function PublicNavbar({ onGoToAdmin }) {
     // Load the navigation payload (array of { id, label, url }).
     fetch(`${API_BASE}/navigation`)
       .then(res => res.json())
-      .then(data => setNavLinks(data || []))
-      .catch(() => setNavLinks([]));
+      .then(data => {
+        // Ensure we always set an array, even if data is null/undefined/not-an-array
+        if (Array.isArray(data)) {
+          setNavLinks(data);
+        } else {
+          console.warn('Navigation data is not an array:', data);
+          setNavLinks([]);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch navigation:', err);
+        setNavLinks([]);
+      });
   }, []);
 
   // Smooth-scroll handler for same-page hash links. For links that begin
@@ -252,10 +262,6 @@ export default function PublicNavbar({ onGoToAdmin }) {
             >
               Order Online
             </button>
-            {React.createElement(ThemeToggle, { inline: true, className: 'ml-2' })}
-            {/* ensure ThemeToggle symbol is considered used by linters */}
-            {/* ensure ThemeToggle symbol is considered used by some linters */}
-            {/* (no-op handled at module scope) */}
           </div>
 
           {/* Mobile menu toggle */}
@@ -344,7 +350,11 @@ export default function PublicNavbar({ onGoToAdmin }) {
           </button>,
           document.body
         )}
-        {orderOpen && <OrderModal onClose={() => setOrderOpen(false)} />}
+        {orderOpen && (
+          <React.Suspense fallback={null}>
+            <OrderModal onClose={() => setOrderOpen(false)} />
+          </React.Suspense>
+        )}
       </div>
     </nav>
   );
@@ -352,6 +362,6 @@ export default function PublicNavbar({ onGoToAdmin }) {
 
 // Some editor/lint setups don't detect JSX uses of member-expressions like
 // `<icons.X />`. Provide a small used-symbol object so those tools don't
-// incorrectly report `icons` or `ThemeToggle` as unused.
-const __usedNavbar = { icons, ThemeToggle, Spinner, OrderModal, DefaultLogo };
+// incorrectly report `icons` as unused.
+const __usedNavbar = { icons, Spinner, OrderModal, DefaultLogo };
 void __usedNavbar;

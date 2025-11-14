@@ -341,6 +341,27 @@ function MediaModule() {
     }
   };
 
+  const changeMediaCategory = async (id, newCategory) => {
+    try {
+      const res = await authenticatedFetch(`/media/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ category: newCategory })
+      });
+      
+      if (!res.ok) throw new Error('Failed to update category');
+      
+      // Refresh all category lists to reflect the change
+      try { resetLogo(); fetchLogoPage(0, false).catch(() => {}); } catch (e) {}
+      try { resetHero(); fetchHeroPage(0, false).catch(() => {}); } catch (e) {}
+      try { resetGallery(); fetchGalleryPage(0, false).catch(() => {}); } catch (e) {}
+      try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
+      try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Category updated' })); } catch (e) {}
+    } catch (err) {
+      console.error('Failed to update category', err);
+      try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Failed to update category' })); } catch (e) {}
+    }
+  };
+
   const deleteMedia = (id) => {
     if (window.confirm('Delete this media file?')) {
       authenticatedFetch(`/media/${id}`, { method: 'DELETE' })
@@ -457,14 +478,23 @@ function MediaModule() {
                 <MediaCardSkeleton count={4} />
               ) : (
                 logoItems.map(item => (
-                  <div key={item.id} className="bg-surface rounded overflow-hidden">
+                  <div key={item.id} className="bg-surface rounded overflow-hidden border border-divider">
                     <img loading="lazy" src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-24 object-cover" />
-                    <div className="p-2 text-xs flex justify-between items-center">
-                      <span className="truncate">{item.title}</span>
-                      <div className="flex gap-2">
-                        <button type="button" onClick={() => setAsLogo(item)} className="text-xs">Use as logo</button>
-                        <button onClick={() => copyUrl(item.file_url)} className="text-xs">Copy</button>
-                        <button onClick={() => deleteMedia(item.id)} className="text-xs text-error">Del</button>
+                    <div className="p-2 space-y-2">
+                      <div className="text-xs truncate font-medium">{item.title}</div>
+                      <select
+                        value={item.category || 'logo'}
+                        onChange={(e) => changeMediaCategory(item.id, e.target.value)}
+                        className="w-full text-xs p-1 rounded border text-gray-900 bg-white"
+                      >
+                        <option value="logo">Logo</option>
+                        <option value="hero">Hero</option>
+                        <option value="gallery">Gallery</option>
+                      </select>
+                      <div className="flex gap-2 justify-between">
+                        <button type="button" onClick={() => setAsLogo(item)} className="text-xs px-2 py-1 bg-primary text-text-inverse rounded">Use</button>
+                        <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
+                        <button onClick={() => deleteMedia(item.id)} className="text-xs px-2 py-1 bg-error text-white rounded">Del</button>
                       </div>
                     </div>
                   </div>
@@ -502,16 +532,25 @@ function MediaModule() {
                 <MediaCardSkeleton count={4} />
               ) : (
                 heroItems.map(item => (
-                  <div key={item.id} className="bg-surface rounded overflow-hidden relative">
+                  <div key={item.id} className="bg-surface rounded overflow-hidden relative border border-divider">
                     <img loading="lazy" src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-24 object-cover" />
                     <label className="absolute top-2 left-2 bg-white/80 rounded p-1 text-xs">
                       <input type="checkbox" checked={selectedHeroes.some(h => h.id === item.id)} onChange={() => toggleHeroSelection(item.id)} />
                     </label>
-                    <div className="p-2 text-xs flex justify-between items-center">
-                      <span className="truncate">{item.title}</span>
-                      <div className="flex gap-2">
-                        <button onClick={() => copyUrl(item.file_url)} className="text-xs">Copy</button>
-                        <button onClick={() => deleteMedia(item.id)} className="text-xs text-error">Del</button>
+                    <div className="p-2 space-y-2">
+                      <div className="text-xs truncate font-medium">{item.title}</div>
+                      <select
+                        value={item.category || 'hero'}
+                        onChange={(e) => changeMediaCategory(item.id, e.target.value)}
+                        className="w-full text-xs p-1 rounded border text-gray-900 bg-white"
+                      >
+                        <option value="logo">Logo</option>
+                        <option value="hero">Hero</option>
+                        <option value="gallery">Gallery</option>
+                      </select>
+                      <div className="flex gap-2 justify-between">
+                        <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
+                        <button onClick={() => deleteMedia(item.id)} className="text-xs px-2 py-1 bg-error text-white rounded">Del</button>
                       </div>
                     </div>
                   </div>
@@ -571,13 +610,22 @@ function MediaModule() {
                 <MediaCardSkeleton count={8} />
               ) : (
                 galleryItems.map(item => (
-                  <div key={item.id} className="bg-surface rounded overflow-hidden">
+                  <div key={item.id} className="bg-surface rounded overflow-hidden border border-divider">
                     <img loading="lazy" src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-24 object-cover" />
-                    <div className="p-2 text-xs flex justify-between items-center">
-                      <span className="truncate">{item.title}</span>
-                      <div className="flex gap-2">
-                        <button onClick={() => copyUrl(item.file_url)} className="text-xs">Copy</button>
-                        <button onClick={() => deleteMedia(item.id)} className="text-xs text-error">Del</button>
+                    <div className="p-2 space-y-2">
+                      <div className="text-xs truncate font-medium">{item.title}</div>
+                      <select
+                        value={item.category || 'gallery'}
+                        onChange={(e) => changeMediaCategory(item.id, e.target.value)}
+                        className="w-full text-xs p-1 rounded border text-gray-900 bg-white"
+                      >
+                        <option value="logo">Logo</option>
+                        <option value="hero">Hero</option>
+                        <option value="gallery">Gallery</option>
+                      </select>
+                      <div className="flex gap-2 justify-between">
+                        <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
+                        <button onClick={() => deleteMedia(item.id)} className="text-xs px-2 py-1 bg-error text-white rounded">Del</button>
                       </div>
                     </div>
                   </div>

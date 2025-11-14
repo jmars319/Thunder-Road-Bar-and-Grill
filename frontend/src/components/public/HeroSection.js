@@ -138,7 +138,7 @@ export default function HeroSection() {
                     alt={img.alt || ''}
                     className="absolute inset-0 w-full h-full object-cover"
                     loading={i === 0 ? 'eager' : 'lazy'}
-                    {...(i === 0 ? { fetchPriority: 'high' } : {})}
+                    {...(i === 0 ? { fetchpriority: 'high' } : {})}
                     {...(initialDims && i === 0 ? { width: initialDims.width, height: initialDims.height } : {})}
                     aria-hidden="true"
                     sizes={sizesAttr}
