@@ -1,27 +1,29 @@
 # Thunder Road Bar & Grill - PHP Backend API
 
-A lightweight PHP REST API backend for the Thunder Road Bar & Grill website, designed to run on GoDaddy Deluxe hosting with no external dependencies.
+A lightweight, production-ready PHP REST API backend for the Thunder Road Bar & Grill website, optimized for GoDaddy Deluxe hosting.
 
-## 🎯 Why PHP?
+## Overview
 
-- **Cost Effective**: Runs on your existing GoDaddy Deluxe plan ($8/month) - no additional hosting costs
-- **GoDaddy Optimized**: Works perfectly with GoDaddy's Apache/PHP/MySQL stack
-- **No External Services**: Everything on one server - no Render, Railway, or other services needed
-- **Simple Deployment**: Just FTP upload - no build process or CLI tools required
-- **Familiar Stack**: PHP + MySQL is well-supported and documented
+This PHP backend provides a complete RESTful API for managing the restaurant's website, including menu items, reservations, job applications, contact messages, and site settings. It replaces the previous Node.js backend, reducing hosting costs by $7/month while maintaining full functionality.
 
-## 📋 Features
+## Key Features
 
-- ✅ RESTful API with clean URL routing
-- ✅ JWT authentication with bcrypt password hashing
-- ✅ CORS middleware with configurable origins
-- ✅ Rate limiting to prevent abuse
-- ✅ File-based caching for menu data
-- ✅ Centralized error handling
-- ✅ Request validation
-- ✅ PSR-compliant logging
-- ✅ Database connection pooling (PDO)
-- ✅ Development/production environment support
+- ✅ **RESTful API** - Clean URL routing with parameterized endpoints
+- ✅ **JWT Authentication** - Secure admin access with bcrypt password hashing (cost factor 10)
+- ✅ **Rate Limiting** - Protection against brute force and abuse (5/15min login, 100/min forms, 300/min global)
+- ✅ **CORS Middleware** - Configurable origin whitelist for cross-origin requests
+- ✅ **Input Validation** - Comprehensive request validation with detailed error messages
+- ✅ **Caching** - File-based menu caching (5 minute TTL, configurable)
+- ✅ **Error Handling** - Centralized error handling with PSR-compliant logging
+- ✅ **SQL Injection Protection** - 100% coverage via PDO prepared statements
+- ✅ **Security Headers** - X-Frame-Options, X-Content-Type-Options, CSP, Referrer-Policy
+
+## Prerequisites
+
+- **PHP:** 7.4 or higher
+- **MySQL:** 5.7 or higher
+- **Hosting:** GoDaddy Deluxe plan (or Apache server with mod_rewrite)
+- **Extensions:** PDO, pdo_mysql, mbstring, json
 
 ## 🏗️ Architecture
 
@@ -49,120 +51,92 @@ php-backend/
 └── uploads/              # User uploads directory
 ```
 
-## 🚀 Quick Start
+## Quick Start (Development)
 
-### 1. Copy Environment File
+### Local Development Setup
 
-```bash
-cd php-backend
-cp .env.example .env
-```
+1. **Start the development server:**
+   ```bash
+   cd php-backend
+   ./start-dev.sh
+   # or manually:
+   php -S localhost:5001 router.php
+   ```
 
-### 2. Configure Environment
+2. **Configure environment (first time only):**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your local database credentials
+   ```
 
-Edit `.env` and set your configuration:
+3. **Import database schema:**
+   ```bash
+   mysql -u root -p thunder_road < ../database/schema.sql
+   ```
 
-```ini
-# Environment
-APP_ENV=production
-APP_DEBUG=false
+4. **Test the API:**
+   ```bash
+   # Health check
+   curl http://localhost:5001/api/health
+   
+   # Run full test suite
+   ./test-api.sh
+   ```
 
-# Database
-DB_HOST=localhost
-DB_USER=your_godaddy_db_user
-DB_PASSWORD=your_secure_password
-DB_NAME=thunder_road
+5. **Start the frontend:**
+   ```bash
+   cd ../frontend
+   npm start
+   # Visit http://localhost:3000
+   ```
 
-# Security
-JWT_SECRET=<run: openssl rand -base64 32>
-JWT_EXPIRY=86400
+### Default Credentials
 
-# CORS
-FRONTEND_URL=https://trbgmidway.com,https://www.trbgmidway.com
-```
+- **Username:** `admin`
+- **Password:** `admin123`
+- ⚠️ **MUST change in production!**
 
-### 3. Generate JWT Secret
-
-```bash
-# Generate a strong secret
-openssl rand -base64 32
-
-# Copy output to .env as JWT_SECRET
-```
-
-### 4. Upload to GoDaddy
-
-**Via FTP:**
-1. Connect to your GoDaddy FTP
-2. Upload entire `php-backend/` folder to `public_html/api/`
-3. Ensure `.htaccess` and `.env` are uploaded
-
-**Via cPanel File Manager:**
-1. Go to GoDaddy → cPanel → File Manager
-2. Navigate to `public_html/`
-3. Create `api/` folder
-4. Upload all php-backend files
-
-### 5. Set File Permissions
-
-```bash
-# Via cPanel or FTP client:
-Directories: 755
-PHP files: 644
-.env file: 640 (or 644)
-uploads/: 755 (writable)
-cache/: 755 (writable)
-logs/: 755 (writable)
-```
-
-### 6. Test API
-
-```bash
-# Health check
-curl https://trbgmidway.com/api/health
-
-# Expected:
-# {"status":"OK","message":"Thunder Road API is running","timestamp":"..."}
-
-# Test menu endpoint
-curl https://trbgmidway.com/api/menu
-```
-
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `APP_ENV` | Yes | production | Environment (development/production) |
-| `APP_DEBUG` | No | false | Enable debug mode (NEVER in production) |
-| `FRONTEND_URL` | Yes | - | Comma-separated allowed origins |
-| `DB_HOST` | Yes | localhost | MySQL host |
-| `DB_USER` | Yes | root | MySQL user |
-| `DB_PASSWORD` | Yes | - | MySQL password |
-| `DB_NAME` | Yes | thunder_road | Database name |
-| `DB_PORT` | No | 3306 | MySQL port |
-| `JWT_SECRET` | Yes | - | JWT signing secret (MUST CHANGE!) |
-| `JWT_EXPIRY` | No | 86400 | Token expiration (seconds) |
-| `RATE_LIMIT_ENABLED` | No | true | Enable rate limiting |
-| `RATE_LIMIT_GLOBAL` | No | 300 | Requests per minute |
-| `RATE_LIMIT_LOGIN` | No | 5 | Login attempts per 15 min |
-| `CACHE_MENU` | No | true | Enable menu caching |
-| `CACHE_MENU_TTL` | No | 300 | Cache TTL (seconds) |
-| `LOG_LEVEL` | No | info | Logging level (debug/info/warning/error) |
+Create `.env` from `.env.example` and configure:
 
-### GoDaddy-Specific Settings
+```ini
+# Environment
+APP_ENV=production              # development | production
+APP_DEBUG=false                 # NEVER true in production
 
-**.htaccess** is configured for GoDaddy's Apache setup:
-- Clean URLs via `mod_rewrite`
-- Security headers
-- PHP settings (upload limits, etc.)
-- CORS fallback headers
+# Database (from GoDaddy cPanel → MySQL)
+DB_HOST=localhost               # Usually localhost on GoDaddy
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=thunder_road
 
-**Database Connection:**
-- Uses PDO with persistent connections (connection pooling)
-- GoDaddy MySQL is on `localhost` by default
-- Database credentials from cPanel → MySQL Databases
+# Security
+JWT_SECRET=<generate-with-openssl>   # openssl rand -base64 32
+JWT_EXPIRY=86400                      # 24 hours
+
+# CORS
+FRONTEND_URL=https://trbgmidway.com,https://www.trbgmiddy.com
+
+# Rate Limiting (file-based)
+RATE_LIMIT_GLOBAL=300           # Requests per minute
+RATE_LIMIT_LOGIN=5              # Login attempts per 15 min
+
+# Caching
+CACHE_MENU=true                 # Enable menu cache
+CACHE_MENU_TTL=300              # Cache TTL (seconds)
+```
+
+### Security Features
+
+- **JWT Authentication:** HMAC SHA256 with bcrypt password hashing (cost factor 10)
+- **Rate Limiting:** File-based - Login (5/15min), Forms (100/min), Global (300/min)
+- **SQL Injection Protection:** 100% via PDO prepared statements
+- **CORS:** Origin whitelist enforcement
+- **Security Headers:** X-Frame-Options, CSP, X-Content-Type-Options, Referrer-Policy
+- **.htaccess:** Apache configuration with clean URLs and security hardening
 
 ## 📡 API Endpoints
 
@@ -222,224 +196,152 @@ All admin endpoints require JWT token in Authorization header:
 Authorization: Bearer <your_jwt_token>
 ```
 
-## 🔒 Security
 
-### Production Checklist
 
-- [x] `APP_ENV=production`
-- [x] `APP_DEBUG=false`
-- [x] Change `JWT_SECRET` to strong random value
-- [x] Set secure `DB_PASSWORD`
-- [x] Update `FRONTEND_URL` to actual domain(s)
-- [x] Change default admin password in database
-- [x] File permissions: 644 for PHP, 755 for directories
-- [x] `.env` file protected by `.htaccess`
-- [x] `ALLOW_DEV_ADMIN_HEADER=false` (or removed)
 
-### Security Features
 
-- **JWT Authentication**: Industry-standard token-based auth
-- **Bcrypt Password Hashing**: Secure password storage (cost factor 10)
-- **Rate Limiting**: Prevents brute force and abuse
-- **CORS Protection**: Strict origin validation
-- **Input Validation**: All inputs validated before processing
-- **SQL Injection Prevention**: PDO prepared statements
-- **XSS Protection**: HTML entity encoding
-- **Security Headers**: X-Content-Type-Options, X-Frame-Options, etc.
-- **Error Hiding**: No sensitive data in production errors
+## Deployment
 
-## 🛠️ Development
+### Prerequisites
 
-### Local Development
+- **Hosting:** GoDaddy Deluxe plan (or equivalent)
+- **PHP Version:** 7.4 or higher
+- **MySQL:** 5.7 or higher
+- **Access:** FTP credentials and cPanel access
 
-1. **Setup Local Environment:**
-   ```bash
-   # Install PHP 7.4+ with MySQL extension
-   brew install php mysql  # macOS
-   
-   # Start MySQL
-   brew services start mysql
-   
-   # Create database
-   mysql -u root -p
-   CREATE DATABASE thunder_road;
-   ```
+### Production Deployment Checklist
 
-2. **Configure Local .env:**
-   ```ini
-   APP_ENV=development
-   APP_DEBUG=true
-   DB_HOST=localhost
-   DB_USER=root
-   DB_PASSWORD=
-   FRONTEND_URL=http://localhost:3000
-   ALLOW_DEV_ADMIN_HEADER=true
-   ```
-
-3. **Run Local Server:**
-   ```bash
-   cd php-backend
-   php -S localhost:5001
-   
-   # Test
-   curl http://localhost:5001/api/health
-   ```
-
-### Adding New Routes
-
-1. **Create route file in `routes/`:**
-   ```php
-   <?php
-   // routes/settings.php
-   require_once __DIR__ . '/../utils/Database.php';
-   
-   class SettingsRoutes {
-       private $db;
-       
-       public function __construct() {
-           $this->db = Database::getInstance();
-       }
-       
-       public function getSiteSettings() {
-           $settings = $this->db->fetchAll('SELECT * FROM site_settings');
-           echo json_encode($settings);
-       }
-   }
-   ```
-
-2. **Register in `index.php`:**
-   ```php
-   require_once __DIR__ . '/routes/settings.php';
-   $settingsRoutes = new SettingsRoutes();
-   
-   $router->get('/site-settings', function() use ($settingsRoutes) {
-       $settingsRoutes->getSiteSettings();
-   });
-   ```
-
-## 📊 Monitoring & Debugging
-
-### Logs
-
-Logs are stored in `logs/app.log`:
+#### 1. Environment Configuration
 
 ```bash
-# View logs via cPanel File Manager or FTP
-tail -f logs/app.log
-
-# Log levels: debug, info, warning, error
-# Controlled by LOG_LEVEL in .env
+# Copy and configure .env
+cp .env.example .env
 ```
 
-### Debug Mode
-
-Enable in development only:
+**Required settings:**
 ```ini
-APP_DEBUG=true
-LOG_LEVEL=debug
-LOG_QUERIES=true  # Log all SQL queries
+APP_ENV=production
+APP_DEBUG=false
+JWT_SECRET=<generate-with: openssl rand -base64 32>
+DB_HOST=localhost
+DB_USER=<godaddy-mysql-user>
+DB_PASSWORD=<godaddy-mysql-password>
+DB_NAME=thunder_road
+FRONTEND_URL=https://trbgmidway.com,https://www.trbgmidway.com
 ```
 
-## 🔄 Database Migrations
+#### 2. Database Setup
 
-PHP backend uses the same MySQL database as Node.js backend.
+1. **Create database in GoDaddy cPanel:**
+   - Navigate to: cPanel → MySQL Databases
+   - Create database: `thunder_road`
+   - Create user and grant all privileges
 
-**Schema location:** `/database/schema.sql`
+2. **Import schema:**
+   - Navigate to: cPanel → phpMyAdmin
+   - Select `thunder_road` database
+   - Import → Select `/database/schema.sql`
 
-**To apply schema:**
+3. **Change default admin password:**
+   ```sql
+   UPDATE users 
+   SET password_hash = '$2y$10$<your-bcrypt-hash>' 
+   WHERE username = 'admin';
+   ```
+   Generate hash with: `php -r "echo password_hash('your-new-password', PASSWORD_BCRYPT);"`
+
+#### 3. File Upload
+
+**Via FTP:**
+1. Connect to GoDaddy FTP server
+2. Upload `php-backend/*` to `public_html/api/`
+3. Verify `.htaccess` and `.env` are uploaded
+
+**Via cPanel File Manager:**
+1. Navigate to: cPanel → File Manager
+2. Go to `public_html/`
+3. Create folder: `api/`
+4. Upload all `php-backend` files
+
+#### 4. File Permissions
+
+Set via FTP client or cPanel File Manager:
+```
+Directories:    755
+PHP files:      644
+.env:           640 (or 644)
+uploads/:       755 (writable)
+cache/:         755 (writable)
+logs/:          755 (writable)
+```
+
+#### 5. Frontend Deployment
+
 ```bash
-# Via MySQL command line
-mysql -u root -p thunder_road < database/schema.sql
+# Build production frontend
+cd frontend
+npm run build
 
-# Or via GoDaddy cPanel → phpMyAdmin
-# Import → schema.sql
+# Update API URL in build
+# Verify frontend/.env.production has:
+REACT_APP_API_BASE=https://trbgmidway.com/api
 ```
 
-## 🚀 Deployment
+Upload `frontend/build/*` to `public_html/`
 
-### Deploy to GoDaddy
+#### 6. Verification
 
-1. **Build Frontend** (if not done already):
-   ```bash
-   cd frontend
-   npm run build
-   ```
+```bash
+# Test API health
+curl https://trbgmidway.com/api/health
 
-2. **Upload PHP Backend**:
-   ```bash
-   # Via FTP or cPanel File Manager
-   # Upload php-backend/* to public_html/api/
-   ```
+# Test public endpoints
+curl https://trbgmidway.com/api/menu
 
-3. **Upload Frontend**:
-   ```bash
-   # Upload frontend/build/* to public_html/
-   ```
+# Test admin login
+curl -X POST https://trbgmidway.com/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"your-new-password"}'
 
-4. **Update Frontend API URL**:
-   ```bash
-   # frontend/.env.production
-   REACT_APP_API_BASE=https://trbgmiddy.com/api
-   ```
+# Visit website
+open https://trbgmidway.com
+```
 
-5. **Test Deployment**:
-   ```bash
-   curl https://trbgmidway.com/api/health
-   curl https://trbgmidway.com/api/menu
-   ```
+#### 7. Post-Deployment
 
-## 💡 Tips & Tricks
-
-### Performance
-
-- Menu caching is enabled by default (5 min TTL)
-- Use PDO persistent connections (enabled)
-- Configure Apache `KeepAlive` for better performance
-- Consider enabling PHP OpCache in GoDaddy cPanel
+- [ ] Verify all API endpoints respond correctly
+- [ ] Test admin login and JWT authentication
+- [ ] Verify rate limiting is active (check `logs/app.log`)
+- [ ] Test file uploads work (check `uploads/` directory)
+- [ ] Verify CORS allows frontend origin
+- [ ] Monitor `logs/app.log` for errors
+- [ ] Set `APP_DEBUG=false` (confirm)
+- [ ] Remove `ALLOW_DEV_ADMIN_HEADER` from production `.env`
 
 ### Troubleshooting
 
 **500 Internal Server Error:**
-- Check `logs/app.log` for details
-- Verify `.htaccess` is uploaded
+- Check `logs/app.log` via FTP or cPanel
+- Verify `.htaccess` uploaded correctly
 - Check file permissions (755/644)
-- Enable `APP_DEBUG=true` temporarily
 
 **CORS Errors:**
-- Verify `FRONTEND_URL` in `.env`
-- Check browser console for exact origin
-- Ensure `.htaccess` is not overriding CORS headers
+- Verify `FRONTEND_URL` matches exact origin
+- Check browser console for actual origin
+- Ensure no trailing slashes in URLs
 
 **Database Connection Failed:**
-- Verify credentials in `.env`
-- Check GoDaddy cPanel → MySQL Databases
-- Ensure database exists
-- Test connection with phpMyAdmin
+- Verify MySQL credentials in `.env`
+- Test connection in phpMyAdmin
+- Confirm database exists
 
 **JWT Token Issues:**
-- Verify `JWT_SECRET` is set
-- Check token expiration (JWT_EXPIRY)
-- Ensure `Authorization` header is sent
-- Test with dev signin in development
-
-## 📚 Additional Resources
-
-- [GoDaddy PHP Documentation](https://www.godaddy.com/help/php-30210)
-- [PDO Documentation](https://www.php.net/manual/en/book.pdo.php)
-- [JWT Introduction](https://jwt.io/introduction)
-- [Apache mod_rewrite Guide](https://httpd.apache.org/docs/current/mod/mod_rewrite.html)
-
-## 🆘 Support
-
-For issues or questions:
-1. Check `logs/app.log` for error details
-2. Review this README for configuration
-3. Test with `APP_DEBUG=true` in development
-4. Verify all environment variables are set
+- Regenerate `JWT_SECRET` with openssl
+- Clear browser localStorage
+- Verify token in Authorization header
 
 ---
 
-**Built for:** Thunder Road Bar & Grill  
 **Platform:** GoDaddy Deluxe Hosting  
 **Stack:** PHP 7.4+, MySQL 5.7+, Apache 2.4+  
-**Cost:** $8/month (included in GoDaddy plan)
+**Cost Savings:** $7/month ($84/year) vs Node.js on Render
