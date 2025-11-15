@@ -9,7 +9,7 @@ class PasswordValidator {
     /**
      * Minimum password length
      */
-    const MIN_LENGTH = 12;
+    const MIN_LENGTH = 8;
 
     /**
      * Common passwords to reject (small sample - use full list in production)
