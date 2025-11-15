@@ -116,6 +116,103 @@ class RateLimitMiddleware {
     }
 
     /**
+     * Apply public endpoint rate limit (for read-only endpoints)
+     * 
+     * @param string $ip IP address
+     */
+    public static function publicEndpoint($ip) {
+        $limit = Config::getInt('RATE_LIMIT_PUBLIC', 100);
+        if (!self::check($ip, $limit, 60)) {
+            http_response_code(429);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Too many requests. Please try again later.']);
+            exit;
+        }
+    }
+
+    /**
+     * Track failed login attempts for account lockout
+     * 
+     * @param string $username Username attempting login
+     * @return int Number of failed attempts in lockout window
+     */
+    public static function trackFailedLogin($username) {
+        self::init();
+
+        $hash = md5('failed_login_' . strtolower($username));
+        $file = self::$cacheDir . '/' . $hash . '.txt';
+
+        $now = time();
+        $lockoutWindow = 900; // 15 minutes
+        $attempts = [];
+
+        // Read existing attempts
+        if (file_exists($file)) {
+            $data = file_get_contents($file);
+            $attempts = json_decode($data, true) ?: [];
+        }
+
+        // Filter out old attempts outside the window
+        $attempts = array_filter($attempts, function($timestamp) use ($now, $lockoutWindow) {
+            return ($now - $timestamp) < $lockoutWindow;
+        });
+
+        // Add current failed attempt
+        $attempts[] = $now;
+
+        // Save updated attempts
+        file_put_contents($file, json_encode($attempts));
+
+        return count($attempts);
+    }
+
+    /**
+     * Check if account is locked due to too many failed login attempts
+     * 
+     * @param string $username Username to check
+     * @return bool True if account is locked
+     */
+    public static function isAccountLocked($username) {
+        self::init();
+
+        $hash = md5('failed_login_' . strtolower($username));
+        $file = self::$cacheDir . '/' . $hash . '.txt';
+
+        if (!file_exists($file)) {
+            return false;
+        }
+
+        $now = time();
+        $lockoutWindow = 900; // 15 minutes
+        $data = file_get_contents($file);
+        $attempts = json_decode($data, true) ?: [];
+
+        // Filter to recent attempts only
+        $recentAttempts = array_filter($attempts, function($timestamp) use ($now, $lockoutWindow) {
+            return ($now - $timestamp) < $lockoutWindow;
+        });
+
+        // Lock account if 5 or more failed attempts
+        return count($recentAttempts) >= 5;
+    }
+
+    /**
+     * Clear failed login attempts (called on successful login)
+     * 
+     * @param string $username Username that successfully logged in
+     */
+    public static function clearFailedLogins($username) {
+        self::init();
+
+        $hash = md5('failed_login_' . strtolower($username));
+        $file = self::$cacheDir . '/' . $hash . '.txt';
+
+        if (file_exists($file)) {
+            unlink($file);
+        }
+    }
+
+    /**
      * Clean old rate limit files
      */
     public static function cleanup() {

@@ -49,6 +49,16 @@ class AuthRoutes {
             ErrorHandler::validation($validator->getErrors());
         }
 
+        // Check if account is locked due to failed attempts
+        if (RateLimitMiddleware::isAccountLocked($username)) {
+            http_response_code(429);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.'
+            ]);
+            return;
+        }
+
         try {
             // Look up user by username
             $user = $this->db->fetchOne(
@@ -59,6 +69,9 @@ class AuthRoutes {
 
             // Return generic error to prevent username enumeration
             if (!$user) {
+                // Track failed attempt
+                RateLimitMiddleware::trackFailedLogin($username);
+                
                 http_response_code(401);
                 echo json_encode([
                     'success' => false,
@@ -79,13 +92,25 @@ class AuthRoutes {
 
             // Verify password with bcrypt
             if (!password_verify($password, $user['password_hash'])) {
+                // Track failed attempt
+                $failedAttempts = RateLimitMiddleware::trackFailedLogin($username);
+                
+                $message = 'Invalid credentials';
+                if ($failedAttempts >= 3) {
+                    $remaining = 5 - $failedAttempts;
+                    $message .= ". Warning: {$remaining} attempts remaining before account lockout.";
+                }
+                
                 http_response_code(401);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Invalid credentials'
+                    'message' => $message
                 ]);
                 return;
             }
+
+            // Clear failed login attempts on successful login
+            RateLimitMiddleware::clearFailedLogins($username);
 
             // Update last_login timestamp
             $this->db->query(

@@ -84,8 +84,9 @@ $router->post('/dev-signin', function() use ($authRoutes) {
 require_once __DIR__ . '/routes/menu.php';
 $menuRoutes = new MenuRoutes();
 
-// Public
+// Public (with rate limiting)
 $router->get('/menu', function() use ($menuRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->getMenu();
 });
 
@@ -95,10 +96,12 @@ $router->get('/menu/admin', function() use ($menuRoutes) {
 });
 
 $router->get('/menu/categories', function() use ($menuRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->getCategories();
 });
 
 $router->get('/menu/categories/:id/items', function($id) use ($menuRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->getCategoryItems($id);
 });
 
@@ -143,24 +146,29 @@ $router->delete('/menu/items/:id', function($id) use ($menuRoutes) {
 require_once __DIR__ . '/routes/settings.php';
 $settingsRoutes = new SettingsRoutes();
 
-// Public
+// Public (with rate limiting)
 $router->get('/site-settings', function() use ($settingsRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $settingsRoutes->getSiteSettings();
 });
 
 $router->get('/navigation', function() use ($settingsRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $settingsRoutes->getNavigation();
 });
 
 $router->get('/business-hours', function() use ($settingsRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $settingsRoutes->getBusinessHours();
 });
 
 $router->get('/about', function() use ($settingsRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $settingsRoutes->getAbout();
 });
 
 $router->get('/footer-columns', function() use ($settingsRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $settingsRoutes->getFooterColumns();
 });
 
@@ -187,10 +195,12 @@ require_once __DIR__ . '/routes/media.php';
 $mediaRoutes = new MediaRoutes();
 
 $router->get('/media', function() use ($mediaRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $mediaRoutes->getAllMedia();
 });
 
 $router->get('/media/:id', function($id) use ($mediaRoutes) {
+    RateLimitMiddleware::publicEndpoint($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $mediaRoutes->getMediaById($id);
 });
 
