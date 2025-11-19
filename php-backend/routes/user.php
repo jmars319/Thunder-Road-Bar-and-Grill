@@ -28,8 +28,8 @@ class UserRoutes {
      * Requires authentication
      */
     public function changePassword() {
-        // Authenticate user
-        $user = AdminAuthMiddleware::authenticate();
+        // Authenticate user (will exit with 401/403 if not authenticated)
+        $user = AdminAuthMiddleware::require();
 
         // Get request body
         $input = json_decode(file_get_contents('php://input'), true);
