@@ -134,6 +134,88 @@ class JobsRoutes {
     }
 
     /**
+     * Create a job position (admin)
+     */
+    public function createPosition() {
+        AdminAuthMiddleware::verify();
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $name = $input['name'] ?? '';
+        $isActive = isset($input['is_active']) ? ($input['is_active'] ? 1 : 0) : 1;
+
+        if (!trim($name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Position name is required']);
+            return;
+        }
+
+        try {
+            $id = $this->db->insert('INSERT INTO job_positions (name, is_active) VALUES (?, ?)', [$name, $isActive]);
+            echo json_encode(['id' => $id, 'message' => 'Position created']);
+        } catch (PDOException $e) {
+            Logger::error('Create position error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to create position']);
+        }
+    }
+
+    /**
+     * Update a job position (admin)
+     */
+    public function updatePosition($id) {
+        AdminAuthMiddleware::verify();
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $fields = [];
+        $params = [];
+
+        if (isset($input['name'])) {
+            $fields[] = 'name = ?';
+            $params[] = $input['name'];
+        }
+
+        if (isset($input['is_active'])) {
+            $fields[] = 'is_active = ?';
+            $params[] = $input['is_active'] ? 1 : 0;
+        }
+
+        if (count($fields) === 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No fields to update']);
+            return;
+        }
+
+        $params[] = $id;
+
+        try {
+            $sql = 'UPDATE job_positions SET ' . implode(', ', $fields) . ' WHERE id = ?';
+            $this->db->query($sql, $params);
+            echo json_encode(['message' => 'Position updated']);
+        } catch (PDOException $e) {
+            Logger::error('Update position error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to update position']);
+        }
+    }
+
+    /**
+     * Delete a job position (admin)
+     */
+    public function deletePosition($id) {
+        AdminAuthMiddleware::verify();
+
+        try {
+            $this->db->delete('DELETE FROM job_positions WHERE id = ?', [$id]);
+            echo json_encode(['message' => 'Position deleted']);
+        } catch (PDOException $e) {
+            Logger::error('Delete position error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to delete position']);
+        }
+    }
+
+    /**
      * Get all job applications (admin)
      */
     public function getAllApplications() {

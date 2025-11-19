@@ -79,6 +79,16 @@ $router->post('/dev-signin', function() use ($authRoutes) {
 });
 
 // ============================================
+// User Routes
+// ============================================
+require_once __DIR__ . '/routes/user.php';
+$userRoutes = new UserRoutes();
+
+$router->put('/user/password', function() use ($userRoutes) {
+    $userRoutes->changePassword();
+});
+
+// ============================================
 // Menu Routes
 // ============================================
 require_once __DIR__ . '/routes/menu.php';
@@ -260,6 +270,21 @@ $router->get('/job-positions', function() use ($jobsRoutes) {
     $jobsRoutes->getAllJobPositions();
 });
 
+$router->post('/job-positions', function() use ($jobsRoutes) {
+    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $jobsRoutes->createPosition();
+});
+
+$router->put('/job-positions/:id', function($id) use ($jobsRoutes) {
+    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $jobsRoutes->updatePosition($id);
+});
+
+$router->delete('/job-positions/:id', function($id) use ($jobsRoutes) {
+    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $jobsRoutes->deletePosition($id);
+});
+
 $router->get('/job-applications', function() use ($jobsRoutes) {
     $jobsRoutes->getAllApplications();
 });
@@ -289,12 +314,12 @@ $router->post('/reservations', function() use ($reservationsRoutes) {
 });
 
 $router->put('/reservations/:id', function($id) use ($reservationsRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    // No rate limit - admin auth required in route handler
     $reservationsRoutes->updateReservation($id);
 });
 
 $router->delete('/reservations/:id', function($id) use ($reservationsRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    // No rate limit - admin auth required in route handler
     $reservationsRoutes->deleteReservation($id);
 });
 
@@ -322,12 +347,12 @@ $router->post('/contact', function() use ($contactRoutes) {
 });
 
 $router->put('/contact/messages/:id', function($id) use ($contactRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    // No rate limit - admin auth required in route handler
     $contactRoutes->updateMessage($id);
 });
 
 $router->delete('/contact/messages/:id', function($id) use ($contactRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    // No rate limit - admin auth required in route handler
     $contactRoutes->deleteMessage($id);
 });
 
