@@ -19,14 +19,15 @@ RewriteRule ^(.*)$ index.php [QSA,L]
     # Prevent MIME type sniffing
     Header set X-Content-Type-Options "nosniff"
     
-    # Prevent clickjacking
-    Header set X-Frame-Options "DENY"
+    # Prevent clickjacking - SAMEORIGIN allows embedding on same domain
+    # This is needed for tools like geopeeker.com to work
+    Header set X-Frame-Options "SAMEORIGIN"
     
     # Referrer policy
-    Header set Referrer-Policy "no-referrer"
+    Header set Referrer-Policy "no-referrer-when-downgrade"
     
-    # Cross-Origin-Resource-Policy
-    Header set Cross-Origin-Resource-Policy "same-origin"
+    # Cross-Origin-Resource-Policy - cross-origin allows embedding
+    Header set Cross-Origin-Resource-Policy "cross-origin"
 </IfModule>
 
 # PHP settings

@@ -104,10 +104,22 @@ function InboxModule() {
   const deleteMessage = (id) => {
     if (window.confirm('Delete this message?')) {
       authenticatedFetch(`/contact/messages/${id}`, { method: 'DELETE' })
-        .then(() => {
+        .then(res => {
+          if (!res.ok) {
+            console.error('Delete failed with status:', res.status);
+            return res.json().then(err => {
+              alert(`Failed to delete: ${err.error || err.message || 'Unknown error'}`);
+            }).catch(() => {
+              alert('Failed to delete message');
+            });
+          }
           fetchMessages();
           setSelectedMessage(null);
-        }).catch(() => {});
+        })
+        .catch(err => {
+          console.error('Delete error:', err);
+          alert('Network error while deleting message');
+        });
     }
   };
 

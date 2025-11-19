@@ -81,7 +81,8 @@ export default function App() {
           </div>
         }>
           <AdminPanel 
-            user={currentUser} 
+            user={currentUser}
+            token={localStorage.getItem('authToken')}
             onLogout={handleLogout} 
             onBackToSite={() => setShowAdmin(false)} 
           />

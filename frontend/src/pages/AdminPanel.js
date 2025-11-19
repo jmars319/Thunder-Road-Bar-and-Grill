@@ -26,6 +26,7 @@ import ReservationsModule from '../components/admin/ReservationsModule';
 import JobsModule from '../components/admin/JobsModule';
 import MediaModule from '../components/admin/MediaModule';
 import SettingsModule from '../components/admin/SettingsModule';
+import PasswordChangeModule from '../components/admin/PasswordChangeModule';
 import NewsletterModule from '../components/admin/NewsletterModule';
 import Snackbar from '../components/ui/Snackbar';
 
@@ -41,10 +42,11 @@ const AdminModules = {
   jobs: { component: JobsModule, name: 'Jobs', icon: icons.Briefcase },
   media: { component: MediaModule, name: 'Media', icon: icons.Image },
   settings: { component: SettingsModule, name: 'Settings', icon: icons.Settings },
+  password: { component: PasswordChangeModule, name: 'Change Password', icon: icons.Key },
   // newsletters: { component: NewsletterModule, name: 'Newsletter', icon: icons.Mail }, // Hidden for now
 };
 
-export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => {}, onBackToSite = () => {} }) {
+export default function AdminPanel({ user = { name: 'Admin' }, token = null, onLogout = () => {}, onBackToSite = () => {} }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeModule, setActiveModule] = useState('dashboard');
 
@@ -158,7 +160,7 @@ export default function AdminPanel({ user = { name: 'Admin' }, onLogout = () => 
         </header>
 
   <section className="flex-1 overflow-auto p-8 admin-main__content">
-          {CurrentModule ? <CurrentModule /> : <div className="text-center py-12">Module not found</div>}
+          {CurrentModule ? <CurrentModule user={user} token={token} /> : <div className="text-center py-12">Module not found</div>}
   </section>
 
   {React.createElement(Snackbar)}

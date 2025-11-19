@@ -160,7 +160,7 @@ export default function HeroSection() {
           <img src={images[index].src} alt={images[index].alt || ''} className="sr-only" />
         )}
         <h1 className="hero-title text-4xl md:text-5xl font-heading font-extrabold mb-4">
-          Welcome to Thunder Road
+          Welcome to Thunder Road Bar and Grill
         </h1>
         <p className="hero-subtitle text-lg md:text-xl opacity-90 mb-6 max-w-2xl mx-auto">
           Great Food. Cold Drinks. Good Times.

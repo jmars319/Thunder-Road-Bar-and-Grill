@@ -51,7 +51,8 @@ import {
   Download,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Key
 } from 'lucide-react';
 
 // Re-export named symbols for backwards compatibility with existing imports
@@ -91,7 +92,8 @@ export {
   Download,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Key
 };
 
 // Note: keep this module intentionally thin — it's a single re-export layer
@@ -136,7 +138,8 @@ export const icons = {
   Download,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Key
 };
 
 export default icons;

@@ -214,15 +214,6 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
               Back to Website
             </button>
           </form>
-
-          {/* Demo Credentials (kept for local/dev environments) */}
-          <div className="mt-6 p-4 bg-surface-warm rounded-lg">
-            <p className="text-center text-sm text-text-primary">
-              <strong>Demo Credentials:</strong><br />
-              Username: admin<br />
-              Password: admin123
-            </p>
-          </div>
         </div>
       </div>
     </div>
