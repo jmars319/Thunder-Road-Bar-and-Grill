@@ -118,7 +118,22 @@ SELECT username, is_active FROM users WHERE username = 'admin';
 
 ## Phase 3: Upload PHP Backend
 
-### 3.1 Via FTP (FileZilla, Cyberduck)
+### 3.1 Prepare Files for Upload
+
+**IMPORTANT:** The repository does **NOT** include `vendor/`, `.env`, or `uploads/`. You must prepare these separately:
+
+```bash
+cd php-backend
+
+# Install composer dependencies
+composer install --no-dev --optimize-autoloader
+
+# Create production .env from example
+cp .env.production.example .env
+# Edit .env with actual production credentials (see section 1.1)
+```
+
+### 3.2 Via FTP (FileZilla, Cyberduck)
 
 1. **Connect to GoDaddy FTP:**
    - Host: `ftp.trbgmidway.com` (or IP from cPanel)
@@ -135,18 +150,27 @@ SELECT username, is_active FROM users WHERE username = 'admin';
    public_html/
    └── api/
        ├── .htaccess
-       ├── .env
+       ├── .env               (create from .env.production.example)
        ├── index.php
        ├── router.php
+       ├── composer.json
+       ├── composer.lock
+       ├── vendor/            (run composer install locally, then upload)
        ├── middleware/
        ├── routes/
        ├── utils/
-       ├── uploads/
-       ├── cache/
-       └── logs/
+       ├── uploads/           (create empty folder with 755 permissions)
+       ├── cache/             (create empty folder with 755 permissions)
+       └── logs/              (create empty folder with 755 permissions)
    ```
 
 5. **Verify `.env` uploaded** (critical for security)
+
+**Files to EXCLUDE from upload:**
+- `.env.example`, `.env.production.example` (documentation only)
+- `test-*.php` (test scripts)
+- `README.md`, `.gitignore` (development files)
+- `start-dev.sh`, `test-api.sh` (local dev scripts)
 
 ### 3.2 Via cPanel File Manager
 
@@ -159,7 +183,22 @@ SELECT username, is_active FROM users WHERE username = 'admin';
    - Wait for completion
 5. **Verify `.htaccess` visible** (enable "Show Hidden Files")
 
-### 3.3 Set File Permissions
+### 3.3 Via Composer on Server (Alternative)
+
+If your hosting supports SSH and composer:
+```bash
+# SSH into server
+ssh user@server
+
+# Navigate to api folder
+cd ~/public_html/api
+
+# Upload code files (excluding vendor/)
+# Then run composer on server:
+composer install --no-dev --optimize-autoloader
+```
+
+### 3.4 Set File Permissions
 
 Via FTP client or cPanel File Manager:
 ```
@@ -170,6 +209,7 @@ PHP files:      644
 uploads/:       755 (writable)
 cache/:         755 (writable)
 logs/:          755 (writable)
+vendor/:        755
 ```
 
 ---
@@ -377,16 +417,26 @@ mysqldump -h localhost -u username_dbuser -p username_thunder_road > backup.sql
 ### Update Deployment
 
 **Backend Updates:**
-1. Make changes locally
+1. Make changes locally in `php-backend/`
 2. Test with `php -S localhost:5001 router.php`
-3. Upload changed files via FTP/cPanel
-4. Check logs for errors
+3. Commit and push to GitHub: `git add . && git commit -m "..." && git push`
+4. If composer dependencies changed: run `composer install` locally
+5. Upload **only changed files** via FTP/cPanel (compare timestamps)
+6. If dependencies changed: upload new `vendor/` folder or run `composer install` on server
+7. Check logs for errors: `tail -f public_html/api/logs/app.log`
+
+**Important Notes:**
+- `.env` file should **never** be in git — edit it directly on server if needed
+- `vendor/` is not tracked in git — must be generated via `composer install`
+- `uploads/`, `cache/`, `logs/` are gitignored — preserve them on server during updates
 
 **Frontend Updates:**
-1. Make changes locally
-2. `npm run build`
-3. Upload new `build/` contents to `public_html/`
-4. Clear browser cache and test
+1. Make changes locally in `frontend/src/`
+2. Test with `npm start`
+3. Build: `npm run build`
+4. Commit and push to GitHub
+5. Upload new `build/` contents to `public_html/` (replace existing files)
+6. Clear browser cache and test (Cmd+Shift+R or Ctrl+Shift+F5)
 
 ---
 
