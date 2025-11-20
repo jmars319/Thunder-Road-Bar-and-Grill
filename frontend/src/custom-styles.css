@@ -488,7 +488,7 @@ h1, h2, h3, h4, h5, h6 {
   color: rgb(28 25 23 / 45%); /* slightly muted but readable */
 }
 
-/* Fix autofill styling to ensure good contrast */
+/* Fix autofill styling to ensure good contrast in light mode */
 .form-input:-webkit-autofill,
 .form-input:-webkit-autofill:hover,
 .form-input:-webkit-autofill:focus,
@@ -497,6 +497,28 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-text-fill-color: #292524 !important;
   box-shadow: 0 0 0 1000px #fff inset !important;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dark mode autofill - light text on dark background */
+@media (prefers-color-scheme: dark) {
+  .form-input:-webkit-autofill,
+  .form-input:-webkit-autofill:hover,
+  .form-input:-webkit-autofill:focus,
+  .form-input:-webkit-autofill:active {
+    /* stylelint-disable-next-line property-no-vendor-prefix */
+    -webkit-text-fill-color: #e6eef8 !important;
+    box-shadow: 0 0 0 1000px #0f1724 inset !important;
+  }
+}
+
+/* Manual dark theme override */
+:root[data-theme='dark'] .form-input:-webkit-autofill,
+:root[data-theme='dark'] .form-input:-webkit-autofill:hover,
+:root[data-theme='dark'] .form-input:-webkit-autofill:focus,
+:root[data-theme='dark'] .form-input:-webkit-autofill:active {
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-text-fill-color: #e6eef8 !important;
+  box-shadow: 0 0 0 1000px #0f1724 inset !important;
 }
 
 /* Price Badge */
