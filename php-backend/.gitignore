@@ -1,6 +1,9 @@
 # Environment configuration
 .env
 
+# Error logs
+error_log
+
 # Logs
 logs/
 *.log
