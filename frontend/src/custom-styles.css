@@ -488,9 +488,15 @@ h1, h2, h3, h4, h5, h6 {
   color: rgb(28 25 23 / 45%); /* slightly muted but readable */
 }
 
+/* Fix autofill styling to ensure good contrast */
 .form-input:-webkit-autofill,
-.form-input:-webkit-autofill:focus {
-  box-shadow: 0 0 0 1000px var(--surface-color) inset !important;
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-text-fill-color: #292524 !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Price Badge */
