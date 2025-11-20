@@ -1,20 +1,6 @@
-# Thunder Road Bar & Grill — Documentation
+# Thunder Road Bar & Grill
 
-All canonical project documentation lives in the `docs/` folder.
-
-Start here: `docs/INDEX.md`
-
-This repository intentionally keeps canonical docs under `docs/` so internal links and guides are grouped together. If you expected a top-level README, follow the link above.
-
-Last updated: 2025-10-25
-# Thunder Road Bar and Grill
-
-Purpose
-- Monorepo for the Thunder Road public website and admin panel. This README
-  contains high-level setup steps, API endpoint pointers, and a quick runbook
-  for local development.
-
-Complete restaurant management system with public website and admin panel.
+Complete restaurant management system with public website and admin panel, deployed on GoDaddy Deluxe hosting with PHP backend and React frontend.
 
 ## Features
 
@@ -36,9 +22,11 @@ Complete restaurant management system with public website and admin panel.
 
 ## Technology Stack
 
-- Frontend: React 18, Tailwind CSS, Lucide React
-- Backend: Node.js, Express
-- Database: MySQL
+- **Frontend:** React 18, Tailwind CSS, Lucide React icons
+- **Backend:** PHP 7.4+ REST API with custom router
+- **Database:** MySQL 5.7+ (MariaDB compatible)
+- **Hosting:** GoDaddy Deluxe (Apache + PHP + MySQL)
+- **Dependencies:** Composer (PHPMailer/SendGrid for emails)
 
 ## Documentation (canonical)
 
@@ -63,20 +51,22 @@ Complete restaurant management system with public website and admin panel.
 ### 2. Backend Setup
 
 ```bash
-cd backend
-npm install
-```
+cd php-backend
 
-Edit `backend/.env` and set your MySQL password:
+# Install composer dependencies
+composer install
 
-```
-DB_PASSWORD=your_actual_password
-```
+# Create .env from example
+cp .env.example .env
 
-Start backend server:
+# Edit .env and set your MySQL credentials
+# DB_HOST=localhost
+# DB_USER=root
+# DB_PASSWORD=your_password
+# DB_NAME=thunder_road
 
-```bash
-npm start
+# Start PHP dev server
+php -S localhost:5001 router.php
 ```
 
 Server runs on: `http://localhost:5001`
@@ -93,36 +83,48 @@ Website opens at: `http://localhost:3000`
 
 ## Admin Access
 
-- Username: `admin` (placeholder)
-- Password: `admin123` (placeholder)
+Default credentials (change immediately in production):
+- Username: `admin`
+- Password: Set in database during schema import
 
 Click "Admin" in the navbar to access the admin panel.
 
-> **⚠️ Security Warning**: The default admin credentials (`admin`/`admin123`) are for development only. **Before deploying to production**, you must:
-> 1. Create a new admin user with a strong password
-> 2. Delete or disable the default admin account
-> 3. Set a secure `JWT_SECRET` environment variable (not the default `dev-secret-change-in-production`)
-> 
-> See `backend/migrations/20251105_hash_admin_password.js` for password hashing examples.
+> **⚠️ Security Warning**: Before deploying to production:
+> 1. Change the admin password via the Admin Panel → Password Change
+> 2. Set a secure `JWT_SECRET` in `.env` (generate with: `openssl rand -base64 32`)
+> 3. Ensure `APP_ENV=production` and `APP_DEBUG=false` in production `.env`
+> 4. Never commit `.env` files to version control
 
 ## Project Structure
 
 ```
-thunder-road/
-├── backend/
-│   ├── server.js
-│   ├── routes/
-│   ├── uploads/
-│   └── package.json
-├── frontend/
+thunder-road-bar-and-grill-react/
+├── php-backend/           # PHP REST API
+│   ├── index.php         # Main entry point
+│   ├── router.php        # Dev server router
+│   ├── routes/           # API route handlers
+│   ├── middleware/       # Auth, CORS, rate limiting
+│   ├── utils/            # Database, JWT, validators
+│   ├── uploads/          # User uploaded files
+│   ├── cache/            # Rate limit & menu cache
+│   ├── logs/             # Application logs
+│   └── composer.json     # PHP dependencies
+├── frontend/             # React SPA
 │   ├── src/
 │   │   ├── App.js
-│   │   ├── pages/
-│   │   └── components/
+│   │   ├── pages/        # Page components
+│   │   ├── components/   # Reusable components
+│   │   └── lib/          # Utilities and helpers
+│   ├── build/            # Production build output
 │   └── package.json
-└── database/
-    └── schema.sql
+├── database/             # SQL schemas and migrations
+│   └── schema.sql        # Database structure
+├── docs/                 # Project documentation
+├── backend/              # Legacy Node.js backend (deprecated)
+└── DEPLOYMENT.md         # Production deployment guide
 ```
+
+> **Note:** The `backend/` folder contains a legacy Node.js backend that has been replaced by `php-backend/`. It's kept for reference but is no longer used in production.
 
 ## Developer quick links
 
@@ -142,20 +144,36 @@ CI=true npm test -- --watchAll=false --runInBand
 
 If you plan to contribute, see `docs/contributing/CONTRIBUTING.md` for the PR checklist and commit message conventions.
 
-## API Endpoints
+## API Documentation
 
-- `POST /api/login` - Admin login
+Key endpoints:
+
+**Public APIs:**
+- `GET /api/health` - Health check
 - `GET /api/menu` - Get menu with categories
+- `GET /api/job-positions/public` - Get open job positions
 - `POST /api/reservations` - Create reservation
-- `GET /api/reservations` - Get all reservations (admin)
-- `POST /api/jobs` - Submit job application
-- `POST /api/media/upload` - Upload media file (admin)
+- `POST /api/jobs/apply` - Submit job application
+- `POST /api/contact` - Submit contact message
+- `POST /api/newsletter/subscribe` - Subscribe to newsletter
 - `GET /api/site-settings` - Get site settings
-- `PUT /api/site-settings` - Update site settings (admin)
 - `GET /api/about` - Get about content
 - `GET /api/business-hours` - Get business hours
-- `GET /api/newsletter/subscribers` - Get subscribers (admin)
-- `POST /api/contact` - Submit contact message
+
+**Admin APIs (require JWT token):**
+- `POST /api/login` - Admin login
+- `PUT /api/user/password` - Change admin password
+- `GET /api/reservations` - Get all reservations
+- `PUT /api/reservations/:id` - Update reservation
+- `DELETE /api/reservations/:id` - Delete reservation
+- `POST /api/job-positions` - Create job position
+- `PUT /api/job-positions/:id` - Update job position
+- `DELETE /api/job-positions/:id` - Delete job position
+- `POST /api/media` - Upload media file
+- `PUT /api/site-settings` - Update site settings
+- `GET /api/newsletter/subscribers` - Get subscribers
+
+See `php-backend/README.md` for complete API documentation.
 
 ## Customizing for Other Businesses
 

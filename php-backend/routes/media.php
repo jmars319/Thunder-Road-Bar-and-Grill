@@ -16,6 +16,8 @@
 
 require_once __DIR__ . '/../utils/Database.php';
 require_once __DIR__ . '/../utils/Logger.php';
+require_once __DIR__ . '/../utils/Config.php';
+require_once __DIR__ . '/../utils/FileValidator.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 
 class MediaRoutes {
@@ -97,9 +99,64 @@ class MediaRoutes {
     public function uploadMedia() {
         AdminAuthMiddleware::verify();
         
-        // TODO: Implement file upload handling
-        http_response_code(501);
-        echo json_encode(['error' => 'Media upload not yet implemented']);
+        if (!isset($_FILES['file'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No file uploaded']);
+            return;
+        }
+        
+        $file = $_FILES['file'];
+        
+        // Validate file
+        $validator = new FileValidator();
+        if (!$validator->validate($file)) {
+            http_response_code(400);
+            echo json_encode(['error' => $validator->getError()]);
+            return;
+        }
+        
+        try {
+            // Generate unique filename
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $filename = uniqid('media_') . '.' . $ext;
+            $uploadDir = Config::get('UPLOAD_DIR', 'uploads');
+            $uploadPath = __DIR__ . '/../' . $uploadDir . '/' . $filename;
+            
+            // Move uploaded file
+            if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+                throw new Exception('Failed to move uploaded file');
+            }
+            
+            // Store metadata in database
+            $data = [
+                'filename' => $filename,
+                'original_filename' => $file['name'],
+                'file_size' => $file['size'],
+                'mime_type' => $file['type'],
+                'title' => $_POST['title'] ?? $file['name'],
+                'alt_text' => $_POST['alt_text'] ?? '',
+                'caption' => $_POST['caption'] ?? '',
+                'category' => $_POST['category'] ?? 'general',
+                'tags' => $_POST['tags'] ?? null
+            ];
+            
+            $id = $this->db->insert(
+                'INSERT INTO media_library (filename, original_filename, file_size, mime_type, title, alt_text, caption, category, tags) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                array_values($data)
+            );
+            
+            $data['id'] = $id;
+            $data['url'] = '/' . $uploadDir . '/' . $filename;
+            
+            http_response_code(201);
+            echo json_encode(['message' => 'File uploaded successfully', 'media' => $data]);
+            
+        } catch (Exception $e) {
+            Logger::error('Media upload failed', ['error' => $e->getMessage()]);
+            http_response_code(500);
+            echo json_encode(['error' => 'Upload failed: ' . $e->getMessage()]);
+        }
     }
 
     /**
