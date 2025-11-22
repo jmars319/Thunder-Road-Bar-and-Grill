@@ -170,6 +170,7 @@ router.get('/menu/admin', adminAuth, (req, res) => {
           name: row.category_name,
           description: row.category_description,
           image_url: row.category_image,
+          gallery_image_id: row.category_gallery_image_id || null,
           gallery_image_url: row.category_gallery_image || null,
           display_order: row.category_order,
           display_columns: row.category_display_columns || 1,
