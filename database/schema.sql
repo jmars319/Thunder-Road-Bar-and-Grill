@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS menu_categories (
   image_url VARCHAR(255),
   display_order INT DEFAULT 0,
   display_columns INT DEFAULT 1 COMMENT '1=single column, 2=two columns, 3=three columns',
+  hide_descriptions TINYINT(1) DEFAULT 0 COMMENT 'Hide item descriptions in menu display',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

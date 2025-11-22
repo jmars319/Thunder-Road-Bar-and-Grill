@@ -493,6 +493,19 @@ function MenuModule() {
                 </p>
               </div>
               <div>
+                <label className="inline-flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    checked={!!editingCategory.hide_descriptions} 
+                    onChange={(e) => setEditingCategory(c => ({ ...c, hide_descriptions: e.target.checked ? 1 : 0 }))} 
+                  />
+                  <span className="text-sm text-text-primary">Hide Item Descriptions</span>
+                </label>
+                <p className="text-xs text-text-muted mt-1">
+                  Useful for simple lists (e.g., ice cream flavors) where names and prices are sufficient
+                </p>
+              </div>
+              <div>
                   <label className="block text-sm font-medium text-text-primary mb-1">Image URL (optional)</label>
                 <div className="flex gap-2 items-center">
                   <input

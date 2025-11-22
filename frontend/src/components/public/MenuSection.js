@@ -203,7 +203,9 @@ export default function MenuSection() {
                       }>
                         <div className={category.display_columns >= 2 ? 'w-full' : 'flex-1'}>
                           <h4 className="text-base md:text-lg font-heading font-semibold text-text-primary">{item.name}</h4>
-                          <p className="text-text-secondary text-sm mt-1">{item.description}</p>
+                          {!category.hide_descriptions && item.description && (
+                            <p className="text-text-secondary text-sm mt-1">{item.description}</p>
+                          )}
                           {category.display_columns >= 2 && (
                             <div className="mt-2 flex flex-wrap gap-2">
                               {(typeof item.price === 'number' && Number(item.price) !== 0) ? (

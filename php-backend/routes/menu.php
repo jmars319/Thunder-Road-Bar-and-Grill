@@ -69,6 +69,7 @@ class MenuRoutes {
                 ml.file_url as category_gallery_image,
                 c.display_order as category_order,
                 c.display_columns as category_display_columns,
+                c.hide_descriptions as category_hide_descriptions,
                 i.id as item_id,
                 i.name as item_name,
                 i.description as item_description,
@@ -101,6 +102,7 @@ class MenuRoutes {
                     'gallery_image_url' => $row['category_gallery_image'],
                     'display_order' => (int)$row['category_order'],
                     'display_columns' => isset($row['category_display_columns']) ? (int)$row['category_display_columns'] : 1,
+                    'hide_descriptions' => isset($row['category_hide_descriptions']) ? (bool)$row['category_hide_descriptions'] : false,
                     'items' => []
                 ];
             }
@@ -151,6 +153,7 @@ class MenuRoutes {
                 ml.file_url as category_gallery_image,
                 c.display_order as category_order,
                 c.display_columns as category_display_columns,
+                c.hide_descriptions as category_hide_descriptions,
                 c.is_active as category_active,
                 i.id as item_id,
                 i.name as item_name,
@@ -183,6 +186,7 @@ class MenuRoutes {
                     'gallery_image_url' => $row['category_gallery_image'],
                     'display_order' => (int)$row['category_order'],
                     'display_columns' => isset($row['category_display_columns']) ? (int)$row['category_display_columns'] : 1,
+                    'hide_descriptions' => isset($row['category_hide_descriptions']) ? (bool)$row['category_hide_descriptions'] : false,
                     'is_active' => (bool)$row['category_active'],
                     'items' => []
                 ];
@@ -212,7 +216,7 @@ class MenuRoutes {
      */
     public function getCategories() {
         $results = $this->db->fetchAll(
-            'SELECT id, name, description, image_url, gallery_image_id, display_order, display_columns, is_active 
+            'SELECT id, name, description, image_url, gallery_image_id, display_order, display_columns, hide_descriptions, is_active 
              FROM menu_categories ORDER BY display_order'
         );
         echo json_encode($results);
@@ -242,6 +246,7 @@ class MenuRoutes {
         $galleryImageId = $input['gallery_image_id'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;
         $displayColumns = $input['display_columns'] ?? 1;
+        $hideDescriptions = $input['hide_descriptions'] ?? 0;
         $isActive = $input['is_active'] ?? 1;
 
         // Validate
@@ -258,9 +263,9 @@ class MenuRoutes {
         }
 
         $id = $this->db->insert(
-            'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, display_columns, is_active) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $isActive]
+            'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, display_columns, hide_descriptions, is_active) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $hideDescriptions, $isActive]
         );
 
         self::invalidateCache();
@@ -280,6 +285,7 @@ class MenuRoutes {
         $galleryImageId = $input['gallery_image_id'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;
         $displayColumns = $input['display_columns'] ?? 1;
+        $hideDescriptions = $input['hide_descriptions'] ?? 0;
         $isActive = $input['is_active'] ?? 1;
 
         // Validate
@@ -295,9 +301,9 @@ class MenuRoutes {
 
         $this->db->update(
             'UPDATE menu_categories 
-             SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, display_columns = ?, is_active = ? 
+             SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, display_columns = ?, hide_descriptions = ?, is_active = ? 
              WHERE id = ?',
-            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $isActive, $id]
+            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $hideDescriptions, $isActive, $id]
         );
 
         self::invalidateCache();
