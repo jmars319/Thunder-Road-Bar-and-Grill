@@ -447,7 +447,7 @@ function MenuModule() {
       {/* Category Editor Modal */}
       {editingCategory && (
         <div className="modal-backdrop flex items-center justify-center z-50">
-                <div className="bg-surface rounded-lg p-6 max-w-md w-full">
+                <div className="bg-surface rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4 text-text-primary">
               {editingCategory.id ? 'Edit' : 'Add'} Category
             </h3>
