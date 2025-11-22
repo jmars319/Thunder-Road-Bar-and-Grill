@@ -251,17 +251,26 @@ router.put('/menu/categories/:id',
   validateRequest,
   (req, res) => {
     const { id } = req.params;
-    const { name, description, image_url, gallery_image_id, display_order, display_columns, hide_descriptions } = req.body;
+    const { name, description, display_order, display_columns, hide_descriptions } = req.body;
     const is_active = typeof req.body.is_active !== 'undefined' && req.body.is_active !== null ? req.body.is_active : 1;
-    req.db.query(
-      'UPDATE menu_categories SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, display_columns = ?, hide_descriptions = ?, is_active = ? WHERE id = ?',
-      [name, description, image_url, gallery_image_id || null, display_order, display_columns || 1, hide_descriptions || 0, is_active, id],
-      (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        invalidateMenuCache();
-        res.json({ message: 'Category updated' });
-      }
-    );
+    
+    // Fetch existing category to preserve image fields if not provided
+    req.db.query('SELECT image_url, gallery_image_id FROM menu_categories WHERE id = ?', [id], (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      const existing = results[0] || {};
+      const image_url = 'image_url' in req.body ? req.body.image_url : existing.image_url;
+      const gallery_image_id = 'gallery_image_id' in req.body ? req.body.gallery_image_id : existing.gallery_image_id;
+      
+      req.db.query(
+        'UPDATE menu_categories SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, display_columns = ?, hide_descriptions = ?, is_active = ? WHERE id = ?',
+        [name, description, image_url, gallery_image_id || null, display_order, display_columns || 1, hide_descriptions || 0, is_active, id],
+        (err) => {
+          if (err) return res.status(500).json({ error: err.message });
+          invalidateMenuCache();
+          res.json({ message: 'Category updated' });
+        }
+      );
+    });
   }
 );
 

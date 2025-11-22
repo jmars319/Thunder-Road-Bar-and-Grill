@@ -281,12 +281,15 @@ class MenuRoutes {
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';
         $description = $input['description'] ?? '';
-        $imageUrl = $input['image_url'] ?? null;
-        $galleryImageId = $input['gallery_image_id'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;
         $displayColumns = $input['display_columns'] ?? 1;
         $hideDescriptions = $input['hide_descriptions'] ?? 0;
         $isActive = $input['is_active'] ?? 1;
+        
+        // Fetch existing category to preserve image fields if not provided
+        $existing = $this->db->fetchOne('SELECT image_url, gallery_image_id FROM menu_categories WHERE id = ?', [$id]);
+        $imageUrl = array_key_exists('image_url', $input) ? $input['image_url'] : ($existing['image_url'] ?? null);
+        $galleryImageId = array_key_exists('gallery_image_id', $input) ? $input['gallery_image_id'] : ($existing['gallery_image_id'] ?? null);
 
         // Validate
         $validator = new Validator();
