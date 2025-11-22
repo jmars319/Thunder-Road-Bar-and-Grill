@@ -125,12 +125,18 @@ function MenuModule() {
       is_active: editingCategory.is_active
     };
     
-    // Preserve image fields from original if not modified
-    if (originalCategory && editingCategory.id) {
-      payload.image_url = typeof editingCategory.image_url !== 'undefined' ? editingCategory.image_url : (originalCategory.image_url || null);
-      payload.gallery_image_id = typeof editingCategory.gallery_image_id !== 'undefined' ? editingCategory.gallery_image_id : (originalCategory.gallery_image_id || null);
+    // Include image fields only if explicitly modified or for new categories
+    // Compare with original to detect changes
+    if (originalCategory) {
+      // Only include if changed
+      if (editingCategory.image_url !== originalCategory.image_url) {
+        payload.image_url = editingCategory.image_url;
+      }
+      if (editingCategory.gallery_image_id !== originalCategory.gallery_image_id) {
+        payload.gallery_image_id = editingCategory.gallery_image_id;
+      }
     } else {
-      // New category or no original - use current values
+      // New category - include all image fields
       payload.image_url = editingCategory.image_url || null;
       payload.gallery_image_id = editingCategory.gallery_image_id || null;
     }
