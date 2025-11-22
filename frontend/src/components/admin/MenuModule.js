@@ -141,22 +141,10 @@ function MenuModule() {
       payload.gallery_image_id = editingCategory.gallery_image_id || null;
     }
 
-    // Debug logging
-    console.log('Saving category:', { 
-      id: editingCategory.id, 
-      name: editingCategory.name,
-      payload,
-      original: originalCategory ? { 
-        gallery_image_id: originalCategory.gallery_image_id,
-        image_url: originalCategory.image_url
-      } : null
-    });
-
     authenticatedFetch(url, {
       method,
       body: JSON.stringify(payload)
     }).then((response) => {
-      console.log('Save response:', response);
       fetchCategories();
       setEditingCategory(null);
       setOriginalCategory(null);

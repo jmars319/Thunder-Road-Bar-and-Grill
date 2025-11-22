@@ -202,7 +202,7 @@ router.get('/menu/admin', adminAuth, (req, res) => {
 
 // Get all categories (admin)
 router.get('/menu/categories', (req, res) => {
-  req.db.query('SELECT id, name, description, image_url, gallery_image_id, gallery_image_url, display_order, display_columns, hide_descriptions, is_active FROM menu_categories ORDER BY display_order', (err, results) => {
+  req.db.query('SELECT id, name, description, image_url, gallery_image_id, display_order, display_columns, hide_descriptions, is_active FROM menu_categories ORDER BY display_order', (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
