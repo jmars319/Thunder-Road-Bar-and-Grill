@@ -132,7 +132,7 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
         <div className="p-4 border-t border-divider space-y-2">
           <button
             onClick={onBackToSite}
-            className="w-full text-left px-3 py-2 rounded-lg border border-divider text-text-primary hover:bg-surface-warm"
+            className="w-full text-left px-3 py-2 rounded-lg border border-divider text-text-inverse hover:bg-surface-warm hover:text-text-primary"
           >
             Back to Site
           </button>

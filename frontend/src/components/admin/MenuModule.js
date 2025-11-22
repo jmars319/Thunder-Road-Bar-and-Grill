@@ -116,11 +116,18 @@ function MenuModule() {
       : `${API_BASE}/menu/categories`;
 
   // Preserve image fields if the admin didn't modify them
-  const payload = { ...editingCategory };
+  const payload = { 
+      ...editingCategory,
+      display_columns: editingCategory.display_columns || 1,
+      hide_descriptions: editingCategory.hide_descriptions || 0
+    };
+    
+    // Remove gallery_image_url from payload - backend doesn't use it, only gallery_image_id
+    delete payload.gallery_image_url;
+    
     if (originalCategory && editingCategory.id) {
       // For image fields: prefer explicit editingCategory values; if undefined, fall back to originalCategory.
       payload.image_url = typeof editingCategory.image_url !== 'undefined' ? editingCategory.image_url : (originalCategory.image_url || null);
-      payload.gallery_image_url = typeof editingCategory.gallery_image_url !== 'undefined' ? editingCategory.gallery_image_url : (originalCategory.gallery_image_url || null);
       // gallery_image_id should also be preserved unless explicitly changed
       payload.gallery_image_id = typeof editingCategory.gallery_image_id !== 'undefined' ? editingCategory.gallery_image_id : (originalCategory.gallery_image_id || null);
     }
