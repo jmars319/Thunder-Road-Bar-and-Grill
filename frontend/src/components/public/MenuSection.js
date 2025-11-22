@@ -158,17 +158,7 @@ export default function MenuSection() {
                 <div className="text-left">
                   <h3 className="text-xl md:text-2xl font-heading font-bold text-text-primary mb-1">{category.name}</h3>
                   {category.description && (
-                    category.display_columns >= 2 ? (
-                      <div className="text-text-secondary text-sm leading-snug mt-1 columns-2 md:columns-3 gap-4">
-                        {category.description.split('|').map((item, idx) => (
-                          <div key={idx} className="break-inside-avoid mb-1">
-                            {item.trim()}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-text-secondary text-sm leading-snug mt-1 whitespace-pre-line">{category.description}</p>
-                    )
+                    <p className="text-text-secondary text-sm leading-snug mt-1 whitespace-pre-line">{category.description}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-4">
