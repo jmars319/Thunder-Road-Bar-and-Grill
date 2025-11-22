@@ -1,42 +1,21 @@
 # Thunder Road Bar & Grill
 
-Complete restaurant management system with public website and admin panel, deployed on GoDaddy Deluxe hosting with PHP backend and React frontend.
+Complete restaurant management system with public website and admin panel.
+
+**Stack:** React 18 + PHP REST API + MySQL | **Hosting:** GoDaddy Deluxe (Apache + PHP)
 
 ## Features
 
-- Public Website
-  - Menu display with categories
-  - Online reservations
-  - About section with map
-  - Contact form
+**Public Website:** Menu, online reservations, about page, contact form  
+**Admin Panel:** Dashboard, inbox, menu/reservations/jobs management, media library, settings
 
-- Admin Panel
-  - Dashboard with metrics
-  - Inbox for messages
-  - Menu management
-  - Reservation management
-  - Job application reviews
-  - Media library
-  - Business settings
-  - Newsletter management
+## Documentation
 
-## Technology Stack
-
-- **Frontend:** React 18, Tailwind CSS, Lucide React icons
-- **Backend:** PHP 7.4+ REST API with custom router
-- **Database:** MySQL 5.7+ (MariaDB compatible)
-- **Hosting:** GoDaddy Deluxe (Apache + PHP + MySQL)
-- **Dependencies:** Composer (PHPMailer/SendGrid for emails)
-
-## Documentation (canonical)
-
-- Developer guide: `docs/notes/DEVELOPERS.md` — onboarding, architecture notes, and tips for making changes to the frontend and admin modules.
-- Developer notes: `docs/notes/DEVELOPER_NOTES.md` — repository housekeeping and special-case notes about nested package folders.
-- Testing: `docs/guides/TESTING.md` — how to run frontend unit tests and the backend integration script, plus aggregated logs in `test-logs/`.
-- Styling: `docs/guides/STYLING.md` — design-token philosophy, migration checklist, verification commands, and CI recommendations (self-contained).
-- Contributor docs: `docs/contributing/CONTRIBUTING.md` — how to contribute, commit message style, and PR checklist.
-- Frontend developer guide: `docs/frontend/DEVELOPER-GUIDE.md` — quick-start, linting, tests, and Tailwind notes.
-- Linting guidance: `docs/guides/LINTING.md` — ESLint and Stylelint instructions and Tailwind handling.
+- **Quick Start:** See setup instructions below
+- **Deployment:** `DEPLOYMENT.md` - Production deployment guide
+- **Security & Quality:** `AUDITS_CONSOLIDATION.md` - Security, accessibility, and SEO audits
+- **API Reference:** `php-backend/README.md` - Complete API documentation
+- **Developer Guides:** `docs/` - Architecture, testing, styling, contributing
 
 ## Setup Instructions
 
@@ -99,50 +78,32 @@ Click "Admin" in the navbar to access the admin panel.
 
 ```
 thunder-road-bar-and-grill-react/
-├── php-backend/           # PHP REST API
-│   ├── index.php         # Main entry point
-│   ├── router.php        # Dev server router
-│   ├── routes/           # API route handlers
-│   ├── middleware/       # Auth, CORS, rate limiting
-│   ├── utils/            # Database, JWT, validators
-│   ├── uploads/          # User uploaded files
-│   ├── cache/            # Rate limit & menu cache
-│   ├── logs/             # Application logs
-│   └── composer.json     # PHP dependencies
-├── frontend/             # React SPA
-│   ├── src/
-│   │   ├── App.js
-│   │   ├── pages/        # Page components
-│   │   ├── components/   # Reusable components
-│   │   └── lib/          # Utilities and helpers
-│   ├── build/            # Production build output
-│   └── package.json
-├── database/             # SQL schemas and migrations
-│   └── schema.sql        # Database structure
-├── docs/                 # Project documentation
-├── backend/              # Legacy Node.js backend (deprecated)
-└── DEPLOYMENT.md         # Production deployment guide
+├── php-backend/      # Primary PHP REST API (production)
+├── backend/          # Secondary Node.js API (alternative)
+├── frontend/         # React SPA
+│   ├── src/          # Application source
+│   └── build/        # Production build
+├── database/         # SQL schemas and migrations
+├── docs/             # Developer documentation
+└── DEPLOYMENT.md     # Production deployment guide
 ```
 
-> **Note:** The `backend/` folder contains a legacy Node.js backend that has been replaced by `php-backend/`. It's kept for reference but is no longer used in production.
-
-## Developer quick links
-
-Run these from the repository root when working locally:
+## Development Commands
 
 ```bash
-# Frontend
+# Frontend development
 cd frontend
-npm install
-npm run lint        # JS lint
-npm run lint:css    # CSS lint
-npm start           # start dev server
+npm start              # Dev server (port 3000)
+npm run build          # Production build
+npm test               # Run tests
+npm run lint           # ESLint
+npm run lint:css       # Stylelint
 
-# Run unit tests (CI style)
-CI=true npm test -- --watchAll=false --runInBand
+# Backend development
+cd php-backend
+php -S localhost:5001 router.php    # PHP dev server
+composer install                     # Install dependencies
 ```
-
-If you plan to contribute, see `docs/contributing/CONTRIBUTING.md` for the PR checklist and commit message conventions.
 
 ## API Documentation
 
@@ -175,19 +136,8 @@ Key endpoints:
 
 See `php-backend/README.md` for complete API documentation.
 
-## Customizing for Other Businesses
 
-This codebase is designed to be easily copied and customized:
 
-1. Copy the entire project folder
-2. Rename the folder (e.g., `bow-wows-spa`)
-3. Update `database/schema.sql` with new business name
-4. Run schema in MySQL Workbench
-5. Update site settings in admin panel
-6. Customize menu/services as needed
+---
 
-## Support
-
-For issues or questions, contact: info@thunderroad.com
-
-Last updated: 2025-10-21 — documentation sweep: clarified developer notes and added maintenance guidance.
+**Last updated:** November 22, 2025

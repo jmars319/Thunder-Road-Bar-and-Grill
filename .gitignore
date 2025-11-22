@@ -41,12 +41,15 @@ frontend/.stylelintrc.json
 # ignore backup files
 *.backup
 
-# Deployed API backup copy (local only)
-deployed-api-copy/
+# Archive folder for old documentation (local only)
+.archive/
 
 # Ignore favicon backup folders created during asset updates
 /frontend/public/favicon-backup*
+
 # Runtime logs
+*.log
+*.pid
 backend.log
 backend/*.log
 backend-start.log
