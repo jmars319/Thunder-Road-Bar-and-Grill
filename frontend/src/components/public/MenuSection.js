@@ -190,25 +190,49 @@ export default function MenuSection() {
                 aria-hidden={expandedCategory !== category.id}
               >
                 {Array.isArray(category.items) && category.items.length > 0 ? (
-                  <div className="divide-y divide-divider">
+                  <div className={
+                    category.display_columns === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-4 p-4' :
+                    category.display_columns === 3 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4' :
+                    'divide-y divide-divider'
+                  }>
                     {category.items.map(item => (
-                      <div key={item.id} className="p-4 md:p-6 flex justify-between items-start hover:bg-surface-warm transition">
-                        <div className="flex-1">
+                      <div key={item.id} className={
+                        category.display_columns >= 2 
+                          ? 'p-3 bg-surface rounded border border-divider hover:border-primary transition'
+                          : 'p-4 md:p-6 flex justify-between items-start hover:bg-surface-warm transition'
+                      }>
+                        <div className={category.display_columns >= 2 ? 'w-full' : 'flex-1'}>
                           <h4 className="text-base md:text-lg font-heading font-semibold text-text-primary">{item.name}</h4>
                           <p className="text-text-secondary text-sm mt-1">{item.description}</p>
-                        </div>
-                        <div className="ml-4 flex flex-col items-end">
-                          {(typeof item.price === 'number' && Number(item.price) !== 0) ? (
-                            <span className="price-badge" aria-label={`Price ${item.price}`}>
-                              {item.primary_quantity ? `${item.primary_quantity} · $${item.price.toFixed(2)}` : `$${item.price.toFixed(2)}`}
-                            </span>
-                          ) : null}
-                          {typeof item.secondary_price === 'number' && Number(item.secondary_price) !== 0 && (
-                            <span className="price-badge mt-2" aria-label={`Alternate price ${item.secondary_price}`}>
-                              {item.secondary_quantity ? `${item.secondary_quantity} · ` : ''}{`$${item.secondary_price.toFixed(2)}`}
-                            </span>
+                          {category.display_columns >= 2 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {(typeof item.price === 'number' && Number(item.price) !== 0) ? (
+                                <span className="price-badge" aria-label={`Price ${item.price}`}>
+                                  {item.primary_quantity ? `${item.primary_quantity} · $${item.price.toFixed(2)}` : `$${item.price.toFixed(2)}`}
+                                </span>
+                              ) : null}
+                              {typeof item.secondary_price === 'number' && Number(item.secondary_price) !== 0 && (
+                                <span className="price-badge" aria-label={`Alternate price ${item.secondary_price}`}>
+                                  {item.secondary_quantity ? `${item.secondary_quantity} · ` : ''}{`$${item.secondary_price.toFixed(2)}`}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
+                        {category.display_columns < 2 && (
+                          <div className="ml-4 flex flex-col items-end">
+                            {(typeof item.price === 'number' && Number(item.price) !== 0) ? (
+                              <span className="price-badge" aria-label={`Price ${item.price}`}>
+                                {item.primary_quantity ? `${item.primary_quantity} · $${item.price.toFixed(2)}` : `$${item.price.toFixed(2)}`}
+                              </span>
+                            ) : null}
+                            {typeof item.secondary_price === 'number' && Number(item.secondary_price) !== 0 && (
+                              <span className="price-badge mt-2" aria-label={`Alternate price ${item.secondary_price}`}>
+                                {item.secondary_quantity ? `${item.secondary_quantity} · ` : ''}{`$${item.secondary_price.toFixed(2)}`}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

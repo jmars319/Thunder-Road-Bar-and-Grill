@@ -200,6 +200,7 @@ function JobsModule() {
                 </p>
                 <p className="text-sm text-text-secondary">Email: {selectedApp.email}</p>
                 {selectedApp.phone && <p className="text-sm text-text-secondary">Phone: {selectedApp.phone}</p>}
+                {selectedApp.availability && <p className="text-sm text-text-secondary">Availability: {selectedApp.availability}</p>}
                 <p className="text-xs text-text-secondary mt-2">
                   {selectedApp.submitted_at ? new Date(selectedApp.submitted_at).toLocaleString() : ''}
                 </p>

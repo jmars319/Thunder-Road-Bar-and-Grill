@@ -478,6 +478,21 @@ function MenuModule() {
                 </label>
               </div>
               <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">Display Layout</label>
+                <select
+                  value={editingCategory.display_columns || 1}
+                  onChange={(e) => setEditingCategory({...editingCategory, display_columns: parseInt(e.target.value, 10)})}
+                  className="w-full form-input"
+                >
+                  <option value={1}>Single Column (Standard)</option>
+                  <option value={2}>Two Columns (Grid)</option>
+                  <option value={3}>Three Columns (Grid)</option>
+                </select>
+                <p className="text-xs text-text-muted mt-1">
+                  Grid layouts are ideal for items like ice cream flavors or cocktails
+                </p>
+              </div>
+              <div>
                   <label className="block text-sm font-medium text-text-primary mb-1">Image URL (optional)</label>
                 <div className="flex gap-2 items-center">
                   <input
