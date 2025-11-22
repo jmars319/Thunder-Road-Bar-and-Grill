@@ -223,6 +223,7 @@ router.get('/menu/categories/:categoryId/items', (req, res) => {
 
 // Create category
 router.post('/menu/categories',
+  adminAuth,
   body('name').trim().notEmpty().withMessage('Category name is required'),
   body('description').optional().trim(),
   body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
@@ -245,6 +246,7 @@ router.post('/menu/categories',
 
 // Update category
 router.put('/menu/categories/:id',
+  adminAuth,
   body('name').optional().trim().notEmpty().withMessage('Category name cannot be empty'),
   body('description').optional().trim(),
   body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
@@ -275,8 +277,70 @@ router.put('/menu/categories/:id',
   }
 );
 
+// Reorder categories
+router.put('/menu/categories/reorder', adminAuth, (req, res) => {
+  const { categories } = req.body;
+
+  if (!Array.isArray(categories) || categories.length === 0) {
+    return res.status(400).json({ error: 'Categories array is required' });
+  }
+
+  // Validate structure
+  for (const cat of categories) {
+    if (!cat.id || typeof cat.display_order === 'undefined') {
+      return res.status(400).json({ error: 'Each category must have id and display_order' });
+    }
+  }
+
+  // Begin transaction to update all categories atomically
+  req.db.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    connection.beginTransaction((err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ error: err.message });
+      }
+
+      let completed = 0;
+      let hasError = false;
+
+      categories.forEach((cat) => {
+        connection.query(
+          'UPDATE menu_categories SET display_order = ? WHERE id = ?',
+          [cat.display_order, cat.id],
+          (err) => {
+            if (err && !hasError) {
+              hasError = true;
+              return connection.rollback(() => {
+                connection.release();
+                res.status(500).json({ error: err.message });
+              });
+            }
+
+            completed++;
+            if (completed === categories.length && !hasError) {
+              connection.commit((err) => {
+                if (err) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    res.status(500).json({ error: err.message });
+                  });
+                }
+                connection.release();
+                invalidateMenuCache();
+                res.json({ message: 'Category order updated' });
+              });
+            }
+          }
+        );
+      });
+    });
+  });
+});
+
 // Delete category
-router.delete('/menu/categories/:id', (req, res) => {
+router.delete('/menu/categories/:id', adminAuth, (req, res) => {
   const { id } = req.params;
   req.db.query('DELETE FROM menu_categories WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -287,6 +351,7 @@ router.delete('/menu/categories/:id', (req, res) => {
 
 // Create menu item
 router.post('/menu/items',
+  adminAuth,
   body('category_id').isInt({ min: 1 }).withMessage('Valid category ID is required'),
   body('name').trim().notEmpty().withMessage('Item name is required'),
   body('description').optional().trim(),
@@ -310,6 +375,7 @@ router.post('/menu/items',
 
 // Update menu item
 router.put('/menu/items/:id',
+  adminAuth,
   body('name').optional().trim().notEmpty().withMessage('Item name cannot be empty'),
   body('description').optional().trim(),
   body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a non-negative number'),
@@ -331,7 +397,7 @@ router.put('/menu/items/:id',
 });
 
 // Delete menu item
-router.delete('/menu/items/:id', (req, res) => {
+router.delete('/menu/items/:id', adminAuth, (req, res) => {
   const { id } = req.params;
   req.db.query('DELETE FROM menu_items WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).json({ error: err.message });

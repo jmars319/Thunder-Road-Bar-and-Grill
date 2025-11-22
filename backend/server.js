@@ -201,18 +201,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting: apply a conservative global limit and stricter limits for write endpoints
+// Rate limiting: apply conservative limits only to public endpoints
+// Authenticated admin endpoints are protected by JWT auth and don't need rate limiting
 if (rateLimit) {
-  const globalLimiter = rateLimit({ windowMs: 60 * 1000, max: 300 }); // 300 requests per minute per IP
-  const strictPostLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: 'Too many requests, please try again later.' }); // 20 posts/min
+  const publicLimiter = rateLimit({ windowMs: 60 * 1000, max: 100 }); // 100 requests per minute for public endpoints
+  const strictPublicLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: 'Too many requests, please try again later.' }); // 20 posts/min for public submissions
 
-  // Apply global limiter to all /api routes
-  app.use('/api', globalLimiter);
-
-  // Apply stricter limiter to common write endpoints
-  app.use('/api/jobs', strictPostLimiter);
-  app.use('/api/reservations', strictPostLimiter);
-  app.use('/api/auth', strictPostLimiter);
+  // Apply limiter only to public submission endpoints
+  app.use('/api/jobs', strictPublicLimiter); // Job applications from public
+  app.use('/api/reservations', strictPublicLimiter); // Reservation submissions from public
+  app.use('/api/contact', strictPublicLimiter); // Contact form submissions
+  app.use('/api/newsletter/subscribe', strictPublicLimiter); // Newsletter subscriptions
+  
+  // Note: /api/auth (login) may benefit from rate limiting, but it has its own protection
+  // Admin authenticated endpoints (/api/menu/categories, /api/media, etc.) are protected by JWT
+  // and do not need additional rate limiting
 }
 
 // MySQL Connection - use a pool for better concurrency and resiliency
