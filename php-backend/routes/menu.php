@@ -68,6 +68,7 @@ class MenuRoutes {
                 c.gallery_image_id as category_gallery_image_id,
                 ml.file_url as category_gallery_image,
                 c.display_order as category_order,
+                c.display_columns as category_display_columns,
                 i.id as item_id,
                 i.name as item_name,
                 i.description as item_description,
@@ -99,6 +100,7 @@ class MenuRoutes {
                     'image_url' => $row['category_image'],
                     'gallery_image_url' => $row['category_gallery_image'],
                     'display_order' => (int)$row['category_order'],
+                    'display_columns' => isset($row['category_display_columns']) ? (int)$row['category_display_columns'] : 1,
                     'items' => []
                 ];
             }
@@ -148,6 +150,7 @@ class MenuRoutes {
                 c.gallery_image_id as category_gallery_image_id,
                 ml.file_url as category_gallery_image,
                 c.display_order as category_order,
+                c.display_columns as category_display_columns,
                 c.is_active as category_active,
                 i.id as item_id,
                 i.name as item_name,
@@ -179,6 +182,7 @@ class MenuRoutes {
                     'image_url' => $row['category_image'],
                     'gallery_image_url' => $row['category_gallery_image'],
                     'display_order' => (int)$row['category_order'],
+                    'display_columns' => isset($row['category_display_columns']) ? (int)$row['category_display_columns'] : 1,
                     'is_active' => (bool)$row['category_active'],
                     'items' => []
                 ];
@@ -208,7 +212,7 @@ class MenuRoutes {
      */
     public function getCategories() {
         $results = $this->db->fetchAll(
-            'SELECT id, name, description, image_url, gallery_image_id, display_order, is_active 
+            'SELECT id, name, description, image_url, gallery_image_id, display_order, display_columns, is_active 
              FROM menu_categories ORDER BY display_order'
         );
         echo json_encode($results);
@@ -237,6 +241,7 @@ class MenuRoutes {
         $imageUrl = $input['image_url'] ?? null;
         $galleryImageId = $input['gallery_image_id'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;
+        $displayColumns = $input['display_columns'] ?? 1;
         $isActive = $input['is_active'] ?? 1;
 
         // Validate
@@ -244,15 +249,18 @@ class MenuRoutes {
         $validator->required($name, 'name');
         $validator->integer($displayOrder, 'display_order');
         $validator->min($displayOrder, 0, 'display_order');
+        $validator->integer($displayColumns, 'display_columns');
+        $validator->min($displayColumns, 1, 'display_columns');
+        $validator->max($displayColumns, 3, 'display_columns');
 
         if ($validator->fails()) {
             ErrorHandler::validation($validator->getErrors());
         }
 
         $id = $this->db->insert(
-            'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, is_active) 
-             VALUES (?, ?, ?, ?, ?, ?)',
-            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $isActive]
+            'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, display_columns, is_active) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $isActive]
         );
 
         self::invalidateCache();
@@ -271,11 +279,15 @@ class MenuRoutes {
         $imageUrl = $input['image_url'] ?? null;
         $galleryImageId = $input['gallery_image_id'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;
+        $displayColumns = $input['display_columns'] ?? 1;
         $isActive = $input['is_active'] ?? 1;
 
         // Validate
         $validator = new Validator();
         $validator->required($name, 'name');
+        $validator->integer($displayColumns, 'display_columns');
+        $validator->min($displayColumns, 1, 'display_columns');
+        $validator->max($displayColumns, 3, 'display_columns');
 
         if ($validator->fails()) {
             ErrorHandler::validation($validator->getErrors());
@@ -283,9 +295,9 @@ class MenuRoutes {
 
         $this->db->update(
             'UPDATE menu_categories 
-             SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, is_active = ? 
+             SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, display_columns = ?, is_active = ? 
              WHERE id = ?',
-            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $isActive, $id]
+            [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $isActive, $id]
         );
 
         self::invalidateCache();
