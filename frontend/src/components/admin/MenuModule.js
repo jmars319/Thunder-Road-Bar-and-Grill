@@ -115,21 +115,24 @@ function MenuModule() {
       ? `${API_BASE}/menu/categories/${editingCategory.id}`
       : `${API_BASE}/menu/categories`;
 
-  // Preserve image fields if the admin didn't modify them
+  // Build payload with required fields
   const payload = { 
-      ...editingCategory,
-      display_columns: editingCategory.display_columns || 1,
-      hide_descriptions: editingCategory.hide_descriptions || 0
+      name: editingCategory.name,
+      description: editingCategory.description || '',
+      display_order: editingCategory.display_order || 0,
+      display_columns: 2, // Always use 2-column layout
+      hide_descriptions: editingCategory.hide_descriptions || 0,
+      is_active: editingCategory.is_active
     };
     
-    // Remove gallery_image_url from payload - backend doesn't use it, only gallery_image_id
-    delete payload.gallery_image_url;
-    
+    // Preserve image fields from original if not modified
     if (originalCategory && editingCategory.id) {
-      // For image fields: prefer explicit editingCategory values; if undefined, fall back to originalCategory.
       payload.image_url = typeof editingCategory.image_url !== 'undefined' ? editingCategory.image_url : (originalCategory.image_url || null);
-      // gallery_image_id should also be preserved unless explicitly changed
       payload.gallery_image_id = typeof editingCategory.gallery_image_id !== 'undefined' ? editingCategory.gallery_image_id : (originalCategory.gallery_image_id || null);
+    } else {
+      // New category or no original - use current values
+      payload.image_url = editingCategory.image_url || null;
+      payload.gallery_image_id = editingCategory.gallery_image_id || null;
     }
 
     // clean save path (no debug helpers)
@@ -477,27 +480,15 @@ function MenuModule() {
                   className="w-full form-input"
                   rows="3"
                 />
+                <p className="text-xs text-text-muted mt-1">
+                  Use pipe (|) to separate items for column layout. Example: Flavor 1 | Flavor 2 | Flavor 3
+                </p>
               </div>
               <div>
                 <label className="inline-flex items-center gap-2">
                   <input type="checkbox" checked={!!editingCategory.is_active} onChange={(e) => setEditingCategory(c => ({ ...c, is_active: e.target.checked ? 1 : 0 }))} />
                   <span className="text-sm text-text-primary">Active</span>
                 </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Display Layout</label>
-                <select
-                  value={editingCategory.display_columns || 1}
-                  onChange={(e) => setEditingCategory({...editingCategory, display_columns: parseInt(e.target.value, 10)})}
-                  className="w-full form-input"
-                >
-                  <option value={1}>Single Column (Standard)</option>
-                  <option value={2}>Two Columns (Grid)</option>
-                  <option value={3}>Three Columns (Grid)</option>
-                </select>
-                <p className="text-xs text-text-muted mt-1">
-                  Grid layouts are ideal for items like ice cream flavors or cocktails
-                </p>
               </div>
               <div>
                 <label className="inline-flex items-center gap-2">
@@ -509,7 +500,7 @@ function MenuModule() {
                   <span className="text-sm text-text-primary">Hide Item Descriptions</span>
                 </label>
                 <p className="text-xs text-text-muted mt-1">
-                  Useful for simple lists (e.g., ice cream flavors) where names and prices are sufficient
+                  Check this to hide menu item descriptions (useful for simple lists)
                 </p>
               </div>
               <div>
