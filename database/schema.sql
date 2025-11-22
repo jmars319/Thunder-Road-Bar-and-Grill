@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS menu_categories (
   description TEXT,
   image_url VARCHAR(255),
   display_order INT DEFAULT 0,
+  display_columns INT DEFAULT 1 COMMENT '1=single column, 2=two columns, 3=three columns',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -158,6 +159,7 @@ CREATE TABLE IF NOT EXISTS job_applications (
   phone VARCHAR(20),
   position VARCHAR(100) NOT NULL,
   experience TEXT,
+  availability VARCHAR(255),
   cover_letter TEXT,
   resume_url VARCHAR(255),
   status ENUM('new', 'reviewing', 'interviewed', 'hired', 'rejected') DEFAULT 'new',

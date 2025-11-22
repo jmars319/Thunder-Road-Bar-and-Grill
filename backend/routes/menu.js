@@ -63,6 +63,7 @@ router.get('/menu', (req, res) => {
       c.gallery_image_id as category_gallery_image_id,
       ml.file_url as category_gallery_image,
       c.display_order as category_order,
+      c.display_columns as category_display_columns,
       i.id as item_id,
       i.name as item_name,
       i.description as item_description,
@@ -95,6 +96,7 @@ router.get('/menu', (req, res) => {
           image_url: row.category_image,
           gallery_image_url: row.category_gallery_image || null,
           display_order: row.category_order,
+          display_columns: row.category_display_columns || 1,
           items: []
         };
       }
@@ -136,6 +138,7 @@ router.get('/menu/admin', adminAuth, (req, res) => {
       c.gallery_image_id as category_gallery_image_id,
       ml.file_url as category_gallery_image,
       c.display_order as category_order,
+      c.display_columns as category_display_columns,
       c.is_active as category_active,
       i.id as item_id,
       i.name as item_name,
@@ -166,6 +169,7 @@ router.get('/menu/admin', adminAuth, (req, res) => {
           image_url: row.category_image,
           gallery_image_url: row.category_gallery_image || null,
           display_order: row.category_order,
+          display_columns: row.category_display_columns || 1,
           is_active: row.category_active,
           items: []
         };
@@ -193,7 +197,7 @@ router.get('/menu/admin', adminAuth, (req, res) => {
 
 // Get all categories (admin)
 router.get('/menu/categories', (req, res) => {
-  req.db.query('SELECT id, name, description, image_url, gallery_image_id, gallery_image_url, display_order, is_active FROM menu_categories ORDER BY display_order', (err, results) => {
+  req.db.query('SELECT id, name, description, image_url, gallery_image_id, gallery_image_url, display_order, display_columns, is_active FROM menu_categories ORDER BY display_order', (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
@@ -217,13 +221,14 @@ router.post('/menu/categories',
   body('name').trim().notEmpty().withMessage('Category name is required'),
   body('description').optional().trim(),
   body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
+  body('display_columns').optional().isInt({ min: 1, max: 3 }).withMessage('Display columns must be 1, 2, or 3'),
   validateRequest,
   (req, res) => {
-    const { name, description, image_url, gallery_image_id, display_order } = req.body;
+    const { name, description, image_url, gallery_image_id, display_order, display_columns } = req.body;
     const is_active = typeof req.body.is_active !== 'undefined' && req.body.is_active !== null ? req.body.is_active : 1;
     req.db.query(
-      'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, is_active) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, description, image_url, gallery_image_id || null, display_order || 0, is_active],
+      'INSERT INTO menu_categories (name, description, image_url, gallery_image_id, display_order, display_columns, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, description, image_url, gallery_image_id || null, display_order || 0, display_columns || 1, is_active],
       (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         invalidateMenuCache();
@@ -238,14 +243,15 @@ router.put('/menu/categories/:id',
   body('name').optional().trim().notEmpty().withMessage('Category name cannot be empty'),
   body('description').optional().trim(),
   body('display_order').optional().isInt({ min: 0 }).withMessage('Display order must be a non-negative integer'),
+  body('display_columns').optional().isInt({ min: 1, max: 3 }).withMessage('Display columns must be 1, 2, or 3'),
   validateRequest,
   (req, res) => {
     const { id } = req.params;
-    const { name, description, image_url, gallery_image_id, display_order } = req.body;
+    const { name, description, image_url, gallery_image_id, display_order, display_columns } = req.body;
     const is_active = typeof req.body.is_active !== 'undefined' && req.body.is_active !== null ? req.body.is_active : 1;
     req.db.query(
-      'UPDATE menu_categories SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, is_active = ? WHERE id = ?',
-      [name, description, image_url, gallery_image_id || null, display_order, is_active, id],
+      'UPDATE menu_categories SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, display_columns = ?, is_active = ? WHERE id = ?',
+      [name, description, image_url, gallery_image_id || null, display_order, display_columns || 1, is_active, id],
       (err) => {
         if (err) return res.status(500).json({ error: err.message });
         invalidateMenuCache();
