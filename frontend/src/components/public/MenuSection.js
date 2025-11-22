@@ -49,6 +49,7 @@ export default function MenuSection() {
         if (mounted && cached) {
           const normalized = (Array.isArray(cached) ? cached : []).map(cat => ({
             ...cat,
+            display_columns: cat.display_columns || 2,
             gallery_image_url: makeAbsolute(cat.gallery_image_url || cat.image_url || ''),
           }));
           setCategories(normalized);
@@ -60,6 +61,7 @@ export default function MenuSection() {
         if (mounted) {
           const normalizedFresh = (Array.isArray(fresh) ? fresh : []).map(cat => ({
             ...cat,
+            display_columns: cat.display_columns || 2,
             gallery_image_url: makeAbsolute(cat.gallery_image_url || cat.image_url || ''),
           }));
           setCategories(normalizedFresh);
