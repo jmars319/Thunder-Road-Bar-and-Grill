@@ -481,7 +481,9 @@ function MenuModule() {
                   rows="3"
                 />
                 <p className="text-xs text-text-muted mt-1">
-                  Use pipe (|) to separate items for column layout. Example: Flavor 1 | Flavor 2 | Flavor 3
+                  Lines with pipes (|) display in columns. Lines without pipes display normally. Example:<br/>
+                  Current Flavors:<br/>
+                  Chocolate | Vanilla | Strawberry
                 </p>
               </div>
               <div>
