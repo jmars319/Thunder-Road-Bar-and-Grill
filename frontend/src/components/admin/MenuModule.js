@@ -141,18 +141,29 @@ function MenuModule() {
       payload.gallery_image_id = editingCategory.gallery_image_id || null;
     }
 
-    // clean save path (no debug helpers)
+    // Debug logging
+    console.log('Saving category:', { 
+      id: editingCategory.id, 
+      name: editingCategory.name,
+      payload,
+      original: originalCategory ? { 
+        gallery_image_id: originalCategory.gallery_image_id,
+        image_url: originalCategory.image_url
+      } : null
+    });
 
     authenticatedFetch(url, {
       method,
       body: JSON.stringify(payload)
-    }).then(() => {
+    }).then((response) => {
+      console.log('Save response:', response);
       fetchCategories();
       setEditingCategory(null);
       setOriginalCategory(null);
       setToast({ type: 'success', message: 'Category saved' });
       setTimeout(() => setToast(null), 3000);
-    }).catch(() => {
+    }).catch((error) => {
+      console.error('Save error:', error);
       setToast({ type: 'error', message: 'Failed to save category' });
       setTimeout(() => setToast(null), 3000);
     });
