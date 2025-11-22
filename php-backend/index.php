@@ -116,37 +116,30 @@ $router->get('/menu/categories/:id/items', function($id) use ($menuRoutes) {
 });
 
 $router->post('/menu/categories', function() use ($menuRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->createCategory();
 });
 
 $router->put('/menu/categories/reorder', function() use ($menuRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->reorderCategories();
 });
 
 $router->put('/menu/categories/:id', function($id) use ($menuRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->updateCategory($id);
 });
 
 $router->delete('/menu/categories/:id', function($id) use ($menuRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->deleteCategory($id);
 });
 
 $router->post('/menu/items', function() use ($menuRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->createItem();
 });
 
 $router->put('/menu/items/:id', function($id) use ($menuRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->updateItem($id);
 });
 
 $router->delete('/menu/items/:id', function($id) use ($menuRoutes) {
-    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $menuRoutes->deleteItem($id);
 });
 
