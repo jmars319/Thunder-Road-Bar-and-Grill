@@ -226,8 +226,8 @@ export default function MenuSection() {
                         <div className={category.display_columns >= 2 ? 'w-full' : 'flex-1'}>
                           <h4 className="text-base md:text-lg font-heading font-semibold text-text-primary">{item.name}</h4>
                           {!category.hide_descriptions && item.description && (
-                            item.description.includes('|') && category.display_columns >= 2 ? (
-                              <div className="text-text-secondary text-sm mt-2 columns-2 gap-3">
+                            item.description.includes('|') ? (
+                              <div className="text-text-secondary text-sm mt-2 columns-2 md:columns-3 gap-3">
                                 {item.description.split('|').map((text, idx) => (
                                   <div key={idx} className="break-inside-avoid mb-1">
                                     {text.trim()}

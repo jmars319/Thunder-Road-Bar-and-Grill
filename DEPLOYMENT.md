@@ -548,7 +548,7 @@ public_html/
 ### What Changed
 1. **Gallery Image ID Fix** - Menu categories properly preserve gallery images when edited
 2. **Rate Limiting Removed** - Admin endpoints no longer rate limited (JWT auth sufficient)
-3. **Smart Column Layout** - Category descriptions support pipe-separated columns
+3. **Smart Column Layout** - Category descriptions AND item descriptions support pipe-separated columns
 4. **Image Preservation** - Backend correctly preserves images when fields not provided
 5. **Node.js Backend Parity** - Both backends now have identical functionality
 
