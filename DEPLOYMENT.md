@@ -1,9 +1,12 @@
 # Thunder Road Bar & Grill - Deployment Guide
 
 **Deployment Strategy:** PHP Backend + React Frontend on GoDaddy Deluxe  
-**Last Updated:** November 14, 2025  
+**Last Updated:** November 24, 2025  
 **Total Monthly Cost:** $8/month (included in existing GoDaddy plan)  
-**Estimated Time:** 45 minutes
+**Estimated Time:** 15-20 minutes (updates), 45 minutes (fresh deployment)
+
+> **📌 PENDING DEPLOYMENT:** 5 commits from November 22, 2025 await deployment.  
+> See [November 22 Updates](#november-22-2025-pending-updates) section below for quick update instructions.
 
 ---
 
@@ -538,10 +541,58 @@ public_html/
 
 ---
 
+## November 22, 2025 - Pending Updates
+
+**Status:** 5 commits ready to deploy (tested locally, not yet on production)
+
+### What Changed
+1. **Gallery Image ID Fix** - Menu categories properly preserve gallery images when edited
+2. **Rate Limiting Removed** - Admin endpoints no longer rate limited (JWT auth sufficient)
+3. **Smart Column Layout** - Category descriptions support pipe-separated columns
+4. **Image Preservation** - Backend correctly preserves images when fields not provided
+5. **Node.js Backend Parity** - Both backends now have identical functionality
+
+### Quick Update Steps (15-20 minutes)
+
+#### 1. Backup Production (5 min)
+```bash
+# Via cPanel:
+# 1. Navigate to public_html/api/ → Compress → Download .zip
+# 2. phpMyAdmin → Export database → Save .sql
+```
+
+#### 2. Build & Upload (10 min)
+```bash
+# Local terminal:
+cd frontend && npm run build
+
+# Via cPanel File Manager:
+# 1. Upload php-backend/ files to public_html/api/ (exclude .env, uploads/, cache/, logs/)
+# 2. Upload frontend/build/ files to public_html/ (overwrite existing)
+```
+
+#### 3. Verify (5 min)
+```bash
+# Browser tests:
+https://trbgmidway.com/api/health
+https://trbgmidway.com/
+https://trbgmidway.com/admin
+```
+
+**Important Notes:**
+- ✅ No database changes required (all schema already up to date)
+- ✅ Backward compatible (old frontend works with new backend)
+- ✅ Production `.env` and `uploads/` stay untouched
+- ✅ Admin password unchanged
+
+For detailed rollback plan and troubleshooting, see commit history or contact developer.
+
+---
+
 ## Additional Resources
 
 - **PHP Backend README:** `/php-backend/README.md`
-- **Security Audit:** `/COMPREHENSIVE_AUDIT_2025.md`
+- **Security Audit:** `/AUDITS_CONSOLIDATION.md`
 - **GoDaddy Support:** 480-505-8877 (24/7)
 - **cPanel Guide:** https://www.godaddy.com/help/cpanel
 
