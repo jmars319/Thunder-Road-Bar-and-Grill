@@ -109,7 +109,17 @@ export default function PublicFooter({ onGoToAdmin }) {
 
           {/* compact center contact - stays to left group so right group stays flush right */}
             <div className="flex flex-col items-start md:items-start ml-3">
-            <div className="mb-1 text-xs text-text-secondary">© {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'}</div>
+            <div className="mb-1 text-xs text-text-secondary">
+              © {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'} · Powered by{' '}
+              <a 
+                href="https://jamarq.digital" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-text-muted hover:text-text-primary underline"
+              >
+                JAMARQ
+              </a>
+            </div>
             <div className="flex flex-col items-start gap-1">
               {siteSettings?.phone && (
                 <a href={`tel:${siteSettings.phone}`} className="text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.phone}</a>
