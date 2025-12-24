@@ -5,33 +5,37 @@ This page collects the most useful developer-facing docs in the repository and o
 Primary docs
 ------------
 - `INDEX.md` — docs index and high-level quick start (this file).
+- `CHANGELOG.md` — dated change log (doc moves, pipeline updates, infra tweaks).
+- `DEPLOYMENT.md` — GoDaddy deployment guide (zip upload + manual fallback).
+- `TRBG-Image-Pipeline-Spec.md` — authoritative image upload/variant spec for this project.
+- `Generic-Scripts-Reference.md` — how to run the dev/deploy scripts safely.
 - `contributing/CONTRIBUTING.md` — contribution workflow, commit message style, PR checklist.
 - `notes/DEVELOPERS.md` — onboarding, architecture notes, and frontend/admin guidance.
-- `notes/DEVELOPER_NOTES.md` — special-case notes and housekeeping guidance (e.g., accidental nested package folders).
+- `notes/DEVELOPER_NOTES.md` — special-case notes and housekeeping guidance.
 - `frontend/DEVELOPER-GUIDE.md` — frontend quick-start, tests and Tailwind notes.
-- `guides/LINTING.md` — ESLint and Stylelint setup, Tailwind handling, how to run and auto-fix linting.
-- `guides/STYLING.md` — design token philosophy, where tokens live, and verification commands.
-- `ops/MAINTENANCE.md` — release and tagging guidance, dependency update notes, and CI reminders.
-- `guides/TESTING.md` — test run instructions and locations for test logs.
+- `backend/README.md` — PHP API quick start, env vars, and route outline.
+- `guides/LINTING.md`, `guides/STYLING.md`, `guides/TESTING.md` — linting, styling, and testing guides.
+- `ops/MAINTENANCE.md` — release/tagging guidance and dependency update notes.
 
 Frontend-specific docs
 ----------------------
- - `docs/frontend/README.md` — create-react-app frontend quick start and stylelint notes.
- - `docs/frontend/scripts/README.md` — helper scripts for asset generation and checks.
- - `frontend/.stylelintrc.json` — local stylelint config (ignores Tailwind at-rules and includes targeted overrides).
- - `docs/frontend/DEVELOPER-GUIDE.md` — developer guide with common commands and tips.
+- `frontend/README.md` — CRA quick start and stylelint notes (mirrored in docs/frontend/README.md).
+- `frontend/.stylelintrc.json` — local stylelint config (ignores Tailwind at-rules and includes targeted overrides).
+- `frontend/scripts/README.md` and `docs/frontend/scripts/README.md` — asset generators + checks.
+- `frontend/DEVELOPER-GUIDE.md` — developer guide with common commands and tips.
 
 Backend-specific docs
 ---------------------
-- `backend/README.md` — backend quick start, env vars, routes, and operational notes.
+- `docs/backend/README.md` — PHP API setup, env vars, scripts, and operational notes.
+- `docs/TRBG-Image-Pipeline-Spec.md` — upload/variant pipeline, manifests, menus vs hero images.
 
 Release & verification
 ----------------------
-- `release/CHANGELOG.md` — changelog copy for discoverability (also at repo root).
-- `release/CHANGELOG-RELEASE-ENTRY.md` — per-release entry used for release automation.
+- `CHANGELOG.md` — changelog for all notable updates.
+- `release/CHANGELOG-RELEASE-ENTRY.md` — per-release entry used for automation.
 - `release/RELEASE_NOTES.md` — release summary and verification notes.
 - `release/2025-10-15-lint-cleanup.md` — specific release note included in `RELEASE_NOTES/`.
-- `ops/VERIFICATION_REPORT.md` — verification and audit summary for recent styling/tokenization work.
+- `ops/VERIFICATION_REPORT.md` — verification/audit summary for recent styling/tokenization work.
 
 How to use these docs (quick commands)
 -------------------------------------

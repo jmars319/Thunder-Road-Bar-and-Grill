@@ -1,5 +1,7 @@
 # 🎉 Low-Priority Items - COMPLETE!
 
+> _Historical note:_ This document tracks low-priority fixes from the retired Node/Express backend era. It remains here for archival reference and does not apply to the current PHP backend.
+
 **Date**: January 15, 2025  
 **Status**: ✅ **ALL 5 ITEMS COMPLETED**
 

@@ -1,103 +1,99 @@
-```markdown
-# Backend README — Thunder Road API
+# Backend README — Thunder Road API (PHP)
 
-This document describes the backend service located in `backend/`. It covers quick start, environment variables, available scripts, and where to find important files and routes.
+This document covers the PHP backend that lives under `backend/`. It explains how to run it locally, configure `.env`, where major routes live, and which helper scripts keep media/email behavior aligned with TRBG requirements.
 
-Purpose
--------
-- Provides the REST API used by the frontend and admin tools.
-- Handles uploads (images/videos), reservations, menu data, newsletter, contact messages, and simple admin authentication.
-
-Quick start (local)
--------------------
-From the repository root:
+## Quick start
 
 ```bash
 cd backend
-npm install
-# development with auto-reload
-npm run dev
-# or run the production entrypoint
-npm start
+composer install
+cp .env.example .env   # configure DB, JWT_SECRET, SendGrid, etc.
+php -S localhost:5001 router.php
 ```
 
-The server binds to `PORT` (default 5001) and mounts its API under `/api`.
+- The built-in PHP server serves from `router.php` and mounts all routes under `/api` (`backend/index.php:1-190`).
+- Health endpoint: `http://localhost:5001/api/health`.
+- When using the repo-level dev scripts, `scripts/dev-backend-start.sh` runs the exact command above, writes logs to `.dev/backend.log`, and waits for `/api/health` before declaring success.
 
-Environment variables
----------------------
-Provide these in a local `.env` file (do not commit secrets):
+## Directory layout
 
-- `PORT` — optional, defaults to `5001`.
-- `FRONTEND_URL` — allowed CORS origin (defaults to `http://localhost:3000`).
-- `DB_HOST` — MySQL host (defaults to `localhost`).
-- `DB_USER` — MySQL user (defaults to `root`).
-- `DB_PASSWORD` — MySQL password (required for production DBs).
-- `DB_NAME` — MySQL database name (defaults to `thunder_road`).
-- `DB_CONN_LIMIT` — connection pool size (defaults to `10`).
+| Path | Purpose |
+| --- | --- |
+| `backend/index.php` | Bootstraps config, middleware, router, and registers every `/api/*` route. |
+| `backend/router.php` | Entry point used by `php -S`; funnels all requests into `index.php`. |
+| `backend/routes/*.php` | Route handlers (menu, reservations, jobs, media, settings, newsletter, etc.). |
+| `backend/middleware/*.php` | Auth, rate limiting, error handling, CORS. |
+| `backend/utils/*.php` | Shared helpers (Config, Database, Logger, MediaPipeline, Email). |
+| `backend/scripts/` | Operational scripts (media rehydration, resume cleanup, test harness). |
+| `backend/uploads/` | Runtime storage for originals, variants, manifests (create + make writable in production). |
+| `backend/scripts/rehydrate_media_variants.php` | Regenerates manifests/variants for legacy rows. |
+| `backend/scripts/remove_resume_media.php` | Deletes legacy resume uploads/DB rows (category=resume). |
+| `backend/test-api.sh` | Curl-based smoke test against `/api`. |
 
-Middleware & limits
--------------------
-- Gzip/brotli compression enabled via `compression()`.
-- JSON body size limited to `1mb` to avoid large payloads.
-- File uploads use `multer` and are stored in `backend/uploads/`.
-  - Max file size: 5 MB
-  - Allowed mime types: JPEG, PNG, GIF, WEBP, MP4
+## Environment variables
 
-Scripts (from `backend/package.json`)
------------------------------------
-- `npm start` — run `node server.js` (production entrypoint)
-- `npm run dev` — run `nodemon server.js` (development with reload)
-- `npm run test:integration` — quick integration test runner (internal test file)
-- `npm run lint` — run ESLint across backend JS files
-- `npm run lint:fix` — run ESLint with `--fix`
+Defined in `backend/.env.example` and `backend/.env.production.example`. Key groups:
 
-Routes and API surface
-----------------------
-Routes are mounted under `/api` in `server.js`. Each route module exports an Express Router and is located in `backend/routes/`.
+- **Server & security:** `APP_ENV`, `APP_DEBUG`, `FORCE_HTTPS`, `JWT_SECRET`, `TRUST_PROXY`.
+- **Database:** `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`, `DB_CHARSET`.
+- **Uploads:** `UPLOAD_DIR`, `MAX_UPLOAD_SIZE`, `ALLOWED_FILE_TYPES` (JPEG/PNG/GIF/WebP by default).
+- **Caching / rate limits:** `CACHE_MENU`, `CACHE_MENU_TTL`, `RATE_LIMIT_*`.
+- **Email:** `SEND_EMAILS`, `SENDGRID_API_KEY`, `STAFF_EMAIL_TO`, `ALERTS_EMAIL_TO`, `EMAIL_FROM_NOTIFICATIONS`, `EMAIL_FROM_ALERTS`.
 
-Common route modules (mounted under `/api`):
-- `auth` — authentication endpoints
-- `menu` — menu data (menus, categories, items)
-- `reservations` — create/list reservations
-- `jobs` / `job-config` — job postings and configuration
-- `media` — upload and serve media items
-- `settings` — site-wide settings
-- `newsletter` — newsletter signup
-- `contact` — contact form submissions
+> **Email gating:** `backend/utils/Email.php` only contacts SendGrid when `APP_ENV=production`, `SEND_EMAILS=true`, and `SENDGRID_API_KEY` is set. Otherwise `[email:skip]` entries appear in the PHP error log and the call returns success. Recipients are validated before any HTTP request.
 
-Important files
----------------
-- `server.js` — express bootstrap and middleware wiring (source of truth for mounts and middleware)
-- `routes/` — all route handlers and business logic (keep complex logic out of `server.js`)
-- `middleware/` — reusable middleware such as auth checks
-- `uploads/` — runtime uploads directory (ensure it is writable by the server)
-- `.env` — local environment overrides (not committed)
+## Useful scripts
 
-Logs & local runtime
---------------------
-- The repository may include `backend-5001.log` and `backend-nohup.log` used during local runs; rotate or remove as needed.
+| Script | Description |
+| --- | --- |
+| `backend/start-dev.sh` | Convenience wrapper for `php -S` (used by some developers; superseded by repo-level scripts). |
+| `backend/scripts/rehydrate_media_variants.php` | Backfills manifests/srcsets for rows missing responsive variants. Run once after migrating legacy uploads. |
+| `backend/scripts/remove_resume_media.php` | Deletes any `media_library` rows with `category='resume'` and removes associated files from `backend/uploads/`. |
+| `backend/test-api.sh` | Curl-based smoke test covering `/api/health`, `/api/menu`, `/api/login` (expected failure), CORS preflight, and admin menu access. |
 
-Testing and linting
--------------------
-- Integration tests live under `backend/tests/` (see `test:integration` script).
-- Use `npm run lint` and `npm run lint:fix` to keep JS consistent.
+All scripts are plain PHP/ Bash and require nothing beyond PHP CLI + curl.
 
-Operational notes
------------------
-- CORS origin is controlled by `FRONTEND_URL`. Set this explicitly in production.
-- Sensitive values must be provided via environment variables. Do not commit credentials.
-- For production deployments, place this service behind a reverse proxy or CDN and add extra hardening (e.g., `helmet()`).
+## Routes (overview)
 
-Linking to repo docs
---------------------
-This project centralizes developer docs in `docs/`. See `docs/INDEX.md` for additional guides (linting, maintenance, frontend developer guide).
+Registered in `backend/index.php` via `Router`:
 
-Contributing
-------------
-Follow `../contributing/CONTRIBUTING.md` for PR workflow and code style. Keep `server.js` as the thin wiring layer and put complex logic in `routes/` or helper modules.
+- `auth.php` – login + dev signin
+- `user.php` – change password
+- `menu.php` – public + admin menu endpoints (categories/items)
+- `reservations.php` – POST `/api/reservations`, admin list/update/delete
+- `jobs.php` – job positions & applications
+- `media.php` – media library (upload, list, delete) using the MMH-style pipeline
+- `settings.php` – hero/menu images, navigation, about, business hours
+- `newsletter.php`, `contact.php` – subscription + contact form
 
-If you'd like, I can extend this README by auto-extracting available endpoints from `backend/routes/` and include an example `.env.example`.
+See each file under `backend/routes/` for validation rules and payloads.
 
-Last updated: 2025-10-25
+## Media pipeline
 
-```
+- Implementation lives in `backend/utils/MediaPipeline.php`, `MediaProfiles.php`, `MediaResponseBuilder.php`.
+- Storage layout bootstrapped automatically: `uploads/originals/`, `uploads/optimized/`, `uploads/webp/`, `uploads/variants/optimized`, `uploads/variants/webp`, `uploads/manifests/`.
+- Width profiles:
+  - Hero: 1600 / 3200 / 4800 px (plus WebP equivalents)
+  - Menu: 1440 / 2880 / 4320 px
+- Each upload emits deterministic manifest JSON (`{basename}.json`) consumed by the frontend.
+- Reference spec: `docs/TRBG-Image-Pipeline-Spec.md`.
+
+## Logging & runtime paths
+
+- `backend/logs/` – default log target (configure via `.env`).
+- `backend/cache/` – rate-limit cache files, safe to clear between deploys.
+- Ensure `backend/uploads/`, `backend/cache/`, and `backend/logs/` remain writable and are not replaced during deploys.
+
+## Deployment tips
+
+- Use `bash scripts/make-deploy-zips.sh` then `bash scripts/check-deploy-zips.sh` at repo root to prepare GoDaddy-friendly archives.
+- On the server: upload to `public_html/api/`, run `composer install --no-dev`, copy `.env`, and ensure `uploads/` exists with `755` permissions.
+- After copying legacy uploads, run `php scripts/rehydrate_media_variants.php` once to ensure manifests are present.
+
+## Testing & verification
+
+- Run `bash backend/test-api.sh` for a quick sanity check (expects the API at `http://localhost:5001/api`).
+- Repo-level `bash scripts/dev-verify.sh` starts/stops both backend and frontend, verifying `/api/health` and CRA proxy behavior.
+- There is no automated PHP test suite yet; rely on manual smoke tests plus frontend Jest coverage.
+
+_Last updated: 2025-12-24_

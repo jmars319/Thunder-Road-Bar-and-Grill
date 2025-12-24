@@ -1,7 +1,7 @@
 ```markdown
 Purpose:
 - Short per-release entry file used to stage changelog content for automated
-	release workflows. Keep this file concise and aligned with `CHANGELOG.md`.
+	release workflows. Keep this file concise and aligned with `../CHANGELOG.md`.
 
 Unreleased (docs & minor robustness) - 2025-10-14
 

@@ -1,56 +1,83 @@
 # Root .gitignore for Thunder Road project
 
-# Ignore copilot and styling instruction docs (keep them local/private)
+# ───────────────────────────
+# Local documentation / helpers
+# ───────────────────────────
 copilot-instructions/
 styling-instructions/
+.archive/
 
-# Node
-node_modules/
-
-# Build outputs
-/build
-
-# OS
-.DS_Store
-
-# Environment
+# ───────────────────────────
+# Environment & secrets
+# ───────────────────────────
 .env
-.env.local
-.env.*.local
-
-# Local frontend production env (contains production API urls and secrets)
+.env.*
+!.env.example
+!.env.production.example
 frontend/.env.production
 
-# Logs
+# ───────────────────────────
+# Dev script state
+# ───────────────────────────
+.dev/
+!.dev/.gitignore
+
+# ───────────────────────────
+# Deploy artifacts
+# ───────────────────────────
+deploy-*.zip
+
+# ───────────────────────────
+# Runtime uploads / incoming
+# ───────────────────────────
+backend/uploads/**
+!backend/uploads/.gitignore
+!backend/uploads/**/.gitignore
+!backend/uploads/**/.gitkeep
+!backend/uploads/.htaccess
+backend/incoming/**
+!backend/incoming/.gitignore
+!backend/incoming/.gitkeep
+
+# ───────────────────────────
+# Node / frontend
+# ───────────────────────────
+node_modules/
+frontend/node_modules/
+/build
+frontend/build/
+frontend/.stylelintrc.json
+
+# ───────────────────────────
+# Logs & coverage
+# ───────────────────────────
+*.log
+*.pid
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Editor
-.vscode/
-
-# Ignore backend uploads (backend/.gitignore already allows uploads/.gitkeep)
-backend/uploads/
-
-# Local stylelint config - keep it untracked
-frontend/.stylelintrc.json
-
-# Ignore temporary editor copies
-*.NEW
-
-# ignore backup files
-*.backup
-
-# Archive folder for old documentation (local only)
-.archive/
-
-# Ignore favicon backup folders created during asset updates
-/frontend/public/favicon-backup*
-
-# Runtime logs
-*.log
-*.pid
 backend.log
 backend/*.log
 backend-start.log
 test-logs/
+coverage/
+
+# ───────────────────────────
+# OS / editor files
+# ───────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ───────────────────────────
+# Misc temp files
+# ───────────────────────────
+*.NEW
+*.backup
+
+# ───────────────────────────
+# Public asset temp folders
+# ───────────────────────────
+/frontend/public/favicon-backup*

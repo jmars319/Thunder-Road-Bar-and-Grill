@@ -1,55 +1,54 @@
-TESTING
-=======
+# TESTING
 
-This repository includes both a frontend React app and a Node/Express backend. This short guide explains how to run unit tests and the simple integration script, and where test logs are stored.
+TRBG currently ships with a React frontend (Jest via `react-scripts`) and a PHP backend without an automated PHPUnit suite. This guide explains the supported testing commands plus the manual smoke tests maintained in the repo.
 
-Files with aggregated logs
-- `test-logs/frontend-tests.log` — captured output from running the frontend Jest test suite via `react-scripts`.
-- `test-logs/backend-integration.log` — captured output from the backend integration script `backend/tests/menu.integration.test.js`.
+## Frontend (React + Jest)
 
-Run frontend tests
-
-From the repository root or inside `frontend/` you can run the project test runner. The project uses `react-scripts` and includes a `test:ci` script which runs Jest in single-threaded mode.
-
-In zsh:
+Run from repository root or inside `frontend/`:
 
 ```bash
-cd "$(pwd)"/frontend
-# run using react-scripts (recommended; handles Babel/ESM transforms)
-CI=true npm test -- --watchAll=false --runInBand
-
-# OR use the project's convenience script (uses jest directly):
-npm run test:ci
+cd frontend
+npm test                     # interactive mode
+CI=true npm test -- --watchAll=false --runInBand   # single pass (CI style)
+npm run test:ci              # wrapper around the command above
 ```
 
-Run backend integration test
+Logs (if you capture them) typically live in `test-logs/frontend-tests.log`.
 
-The backend integration script makes HTTP requests against a running API. Start your backend server (in another terminal) and then run the integration script — do not let the test script try to start or stop your running server.
+## Backend smoke tests (PHP)
 
-Default API endpoint:
-
-- `http://localhost:5001/api` (the test script uses `API_BASE` environment variable if set)
-
-In zsh:
+There is no PHPUnit suite yet, but `backend/test-api.sh` performs curl-based checks against a running server:
 
 ```bash
-# ensure your backend server is running (e.g. `npm run dev` in backend/) then:
-cd "$(pwd)"/backend
-npm run test:integration
+# ensure php -S localhost:5001 router.php is running
+bash backend/test-api.sh
 ```
 
-Notes
-- The frontend tests are run with the project's Babel/CRA setup so ESM and JSX are supported out of the box.
-- The backend integration test requires a reachable server and a configured database. The integration script will fail if the API is unreachable or the DB is misconfigured.
-- Captured logs are stored in `test-logs/`. If you prefer not to commit logs, remove or ignore them in `.gitignore`.
+What it covers:
+- `/api/health`
+- `/api/menu`
+- `/api/login` (expected invalid credentials response)
+- CORS preflight headers
+- Admin menu access when `X-Admin-Auth: admin` header is provided (dev-only)
 
-See also
+Logs/output are printed to stdout; capture them if needed for audits.
 
-- `../INDEX.md` — docs index and high-level project overview.
-- `../notes/DEVELOPERS.md` — developer onboarding and deeper frontend/admin guidance.
+## Full-stack verification
 
-Suggested next steps
-- Convert the integration script into a Jest-managed integration test for easier CI integration and to allow running everything under a single test runner.
-- Add a short section in `docs/INDEX.md` linking to this `TESTING.md`.
+`scripts/dev-verify.sh` runs the orchestrated workflow:
 
-Last updated: 2025-10-24
+1. Stops any running dev servers.
+2. Starts backend + frontend via `scripts/dev-start.sh`.
+3. Hits backend health, frontend root, and proxy (`/api/health` through CRA).
+4. Restarts the stack (`scripts/dev-restart.sh`).
+5. Repeats checks, then stops both services.
+
+Use this before large refactors or when validating changes to the dev scripts.
+
+## Suggested next steps
+
+- Add a lightweight PHPUnit smoke suite for critical routes once time allows.
+- Expand `backend/test-api.sh` to cover media upload/delete once the pipeline is finalized.
+- Integrate `scripts/dev-verify.sh` into CI for pre-merge validation.
+
+_Last updated: 2025-12-24_
