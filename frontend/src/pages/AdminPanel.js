@@ -56,10 +56,10 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
 
   useEffect(() => {
     let mounted = true;
-    fetch(`${API_BASE}/site-settings`)
+    fetch(`${API_BASE}/settings`)
       .then((r) => (r.ok ? r.json() : {}))
-      .then((s) => {
-        if (mounted) setSiteSettings(s || {});
+      .then((payload) => {
+        if (mounted) setSiteSettings(payload?.settings || {});
       })
       .catch(() => {});
 
@@ -168,4 +168,3 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
     </div>
   );
 }
-

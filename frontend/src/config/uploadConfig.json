@@ -1,14 +1,6 @@
 {
-  "resume": {
-    "maxBytes": 3145728,
-    "types": [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ]
-  },
   "image": {
-    "maxBytes": 5242880,
+    "maxBytes": 8388608,
     "types": [
       "image/jpeg",
       "image/png",
@@ -16,17 +8,23 @@
       "image/webp"
     ]
   },
-  "general": {
-    "maxBytes": 10485760,
+  "logo": {
+    "maxBytes": 2097152,
     "types": [
       "image/jpeg",
       "image/png",
       "image/gif",
       "image/webp",
-      "video/mp4",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      "image/svg+xml"
+    ]
+  },
+  "general": {
+    "maxBytes": 8388608,
+    "types": [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp"
     ]
   }
 }

@@ -38,8 +38,11 @@ export default function usePaginatedResource(baseUrl, { limit = 24 } = {}) {
       if (!res.ok) throw new Error('Failed to fetch');
       const totalHeader = res.headers.get('X-Total-Count');
       setTotal(totalHeader ? parseInt(totalHeader, 10) : null);
-      const data = await res.json();
-      setItems(prev => append ? [...prev, ...(Array.isArray(data) ? data : [])] : (Array.isArray(data) ? data : []));
+      const payload = await res.json();
+      const list = Array.isArray(payload)
+        ? payload
+        : (Array.isArray(payload?.media) ? payload.media : []);
+      setItems(prev => append ? [...prev, ...list] : list);
       offsetRef.current = offset + limit;
     } catch (err) {
       setError(err.message || 'Failed');

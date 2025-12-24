@@ -22,7 +22,7 @@ import { authenticatedFetch, API_BASE } from '../../utils/api';
   - Admin area to manage global site settings, the About content, and business hours.
 
   API expectations:
-  - GET /api/site-settings -> { ... }
+  - GET /api/settings -> { ... }
   - PUT /api/site-settings
   - GET /api/about -> { header, paragraph, map_embed_url }
   - PUT /api/about
@@ -48,15 +48,16 @@ function SettingsModule() {
     const loadAll = async () => {
       try {
         const [siteRes, aboutRes, hoursRes] = await Promise.all([
-          authenticatedFetch('/site-settings'),
+          authenticatedFetch('/settings'),
           authenticatedFetch('/about'),
           authenticatedFetch('/business-hours')
         ]);
 
         if (siteRes.ok) {
           const siteData = await siteRes.json();
-          setSiteSettings(siteData || {});
-          originalSettingsRef.current = siteData || {};
+          const settingsPayload = siteData?.settings || {};
+          setSiteSettings(settingsPayload);
+          originalSettingsRef.current = settingsPayload;
         }
 
         if (aboutRes.ok) {
@@ -119,7 +120,7 @@ function SettingsModule() {
       });
       if (res.ok) {
         // Clear cached entries that depend on site-settings and menu so public UI updates immediately
-        clearCacheFor(`${API_BASE}/site-settings`);
+        clearCacheFor(`${API_BASE}/settings`);
         clearCacheFor(`${API_BASE}/menu`);
         // Emit window events so other tabs/components can respond
         try {

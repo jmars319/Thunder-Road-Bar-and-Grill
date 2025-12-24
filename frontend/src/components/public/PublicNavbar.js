@@ -26,13 +26,14 @@ const OrderModal = React.lazy(() => import('./OrderModal'));
 /*
   PublicNavbar
 
+
   Purpose:
-  - Site navigation used by the public website. Loads `site-settings` and
+  - Site navigation used by the public website. Loads `settings` and
     `navigation` from the backend and renders responsive navigation.
 
   Contract:
   - Props: { onGoToAdmin?: function }
-  - Data: expects GET /api/site-settings and GET /api/navigation endpoints.
+  - Data: expects GET /api/settings and GET /api/navigation endpoints.
 
   Accessibility & logo notes:
   - If the configured `siteSettings.logo_url` points to an SVG file, this
@@ -62,9 +63,9 @@ export default function PublicNavbar({ onGoToAdmin }) {
 
   useEffect(() => {
     // Load site-level settings (logo, name, tagline). Keep errors silent for now.
-    fetch(`${API_BASE}/site-settings`)
+    fetch(`${API_BASE}/settings`)
       .then(res => res.json())
-      .then(data => setSiteSettings(data))
+      .then(payload => setSiteSettings(payload?.settings || {}))
       .catch(() => {});
 
     // Load the navigation payload (array of { id, label, url }).

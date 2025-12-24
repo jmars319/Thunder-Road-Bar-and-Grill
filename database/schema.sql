@@ -178,11 +178,26 @@ CREATE TABLE IF NOT EXISTS media_library (
   file_name VARCHAR(255) NOT NULL,
   file_type VARCHAR(50),
   file_size INT,
+  width INT,
+  height INT,
+  checksum VARCHAR(64),
   title VARCHAR(200),
   alt_text VARCHAR(200),
+  caption VARCHAR(255),
   category VARCHAR(50),
+  optimized_path VARCHAR(255),
+  webp_path VARCHAR(255),
+  optimized_srcset TEXT,
+  webp_srcset TEXT,
+  responsive_variants LONGTEXT,
+  manifest_path VARCHAR(255),
+  uploader VARCHAR(100),
+  status VARCHAR(50) DEFAULT 'ready',
+  processing_notes TEXT,
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_category (category)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_category (category),
+  INDEX idx_uploaded_at (uploaded_at)
 );
 
 -- ============================================

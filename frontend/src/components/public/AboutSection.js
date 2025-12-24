@@ -44,11 +44,11 @@ export default function AboutSection() {
       try {
         const [aboutRes, siteRes] = await Promise.all([
           fetch(`${API_BASE}/about`).then(r => r.ok ? r.json() : null).catch(() => null),
-          cachedFetch(`${API_BASE}/site-settings`).catch(() => null)
+          cachedFetch(`${API_BASE}/settings`).catch(() => null)
         ]);
 
         setAbout(aboutRes || null);
-        setSiteSettings(siteRes || null);
+        setSiteSettings(siteRes?.settings || null);
       } catch {
         setAbout(null);
         setSiteSettings(null);

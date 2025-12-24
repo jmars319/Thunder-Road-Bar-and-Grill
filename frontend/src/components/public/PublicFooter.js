@@ -48,17 +48,17 @@ export default function PublicFooter({ onGoToAdmin }) {
       }
 
       try {
-        const s = await cachedFetch(`${API_BASE}/site-settings`);
-        setSiteSettings(s || {});
+        const s = await cachedFetch(`${API_BASE}/settings`);
+        setSiteSettings(s?.settings || {});
       } catch (e) {
         setSiteSettings({});
       }
     })();
 
     const handler = () => {
-      clearCacheFor(`${API_BASE}/site-settings`);
+      clearCacheFor(`${API_BASE}/settings`);
       clearCacheFor(`${API_BASE}/footer-columns`);
-      cachedFetch(`${API_BASE}/site-settings`).then(s => setSiteSettings(s || {}));
+      cachedFetch(`${API_BASE}/settings`).then(s => setSiteSettings(s?.settings || {}));
       cachedFetch(`${API_BASE}/footer-columns`).then(cols => setColumns(Array.isArray(cols) ? cols : []));
     };
 

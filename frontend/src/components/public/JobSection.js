@@ -3,25 +3,20 @@
 
   Purpose:
   - Public job application UI. Fetches open positions and optional dynamic
-    application fields, allows applicants to submit a form and upload a resume.
+    application fields, allows applicants to submit a form and optionally add a resume/portfolio link.
 
   Contract:
-  - Submits POST /api/jobs. Uploads resume via POST /api/media/upload when present.
+  - Submits POST /api/jobs with form fields plus an optional resume_url string.
 
   Notes:
-  - Performs client-side validation and uses XHR for upload progress feedback.
-    Keep MAX_FILE_BYTES and ALLOWED_TYPES in sync with server-side limits.
+  - Performs client-side validation and focuses invalid fields for accessibility.
 */
 
 import { useState, useRef, useEffect } from 'react';
 import Toast from '../ui/Toast';
-// Shared upload configuration (synced at build time)
-import uploadConfig from '../../config/uploadConfig.json';
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-void Toast;
 
 // Public-facing job application form (frontend-only integration)
-// Submits to POST /api/jobs and uploads resume via /api/media/upload when present
 export default function JobSection() {
   const [positions, setPositions] = useState([]);
   const [fields, setFields] = useState(null); // optional dynamic application fields from admin
@@ -33,22 +28,14 @@ export default function JobSection() {
     position: '',
     availability: '',
     experience: '',
-    cover_letter: ''
+    cover_letter: '',
+    resume_url: ''
   });
-  const [resumeFile, setResumeFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const fileInputRef = useRef(null);
   const inputRefs = useRef({});
-  const uploadXhrRef = useRef(null);
-  const [previewWarning, setPreviewWarning] = useState(null);
-
-  // Validation rules (imported from shared config)
-  const MAX_FILE_BYTES = (uploadConfig && uploadConfig.resume && uploadConfig.resume.maxBytes) || 3 * 1024 * 1024; // 3 MB
-  const ALLOWED_TYPES = (uploadConfig && uploadConfig.resume && uploadConfig.resume.types) || ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -64,95 +51,6 @@ export default function JobSection() {
     setMessage(null);
   }
 
-  function handleFileChange(e) {
-    const file = e.target.files?.[0] || null;
-    // Pre-upload validation: size + type
-    if (file) {
-      if (file.size > MAX_FILE_BYTES) {
-        setFieldErrors((errs) => ({ ...errs, resume: 'Resume must be 3 MB or smaller' }));
-        setResumeFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
-      }
-      if (ALLOWED_TYPES.indexOf(file.type) === -1) {
-        setFieldErrors((errs) => ({ ...errs, resume: 'Resume must be PDF or Word document' }));
-        setResumeFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
-      }
-    }
-
-    // valid
-    setFieldErrors((errs) => {
-      const next = { ...errs };
-      delete next.resume;
-      return next;
-    });
-    setResumeFile(file);
-    // non-blocking preview warning for large (but acceptable) files (>800 KB)
-    if (file && file.size > 800 * 1024 && file.size <= MAX_FILE_BYTES) {
-      setPreviewWarning('Large file: upload may take longer. Consider optimizing your resume PDF.');
-    } else {
-      setPreviewWarning(null);
-    }
-  }
-
-  // Upload using XMLHttpRequest to provide progress feedback
-  function uploadResume(file) {
-    if (!file) return Promise.resolve(null);
-
-    return new Promise((resolve, reject) => {
-      const xhr = new window.XMLHttpRequest();
-      // keep reference so upload can be cancelled
-      uploadXhrRef.current = xhr;
-      const fd = new FormData();
-  fd.append('file', file);
-  // Inform the server this is a resume so server-side rules are applied
-  fd.append('category', 'resume');
-
-  // Use a query param so the backend can pick up category before multer runs
-  xhr.open('POST', `${API_BASE}/media/upload?category=resume`);
-
-      xhr.upload.onprogress = function (e) {
-        if (e.lengthComputable) {
-          const pct = Math.round((e.loaded / e.total) * 100);
-          setUploadProgress(pct);
-        }
-      };
-
-      xhr.onload = function () {
-        setUploadProgress(100);
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            uploadXhrRef.current = null;
-            resolve(data.file_url || null);
-          } catch (err) {
-            uploadXhrRef.current = null;
-            reject(new Error('Invalid upload response'));
-          }
-        } else {
-          uploadXhrRef.current = null;
-          reject(new Error('Resume upload failed'));
-        }
-      };
-
-      xhr.onerror = function () {
-        uploadXhrRef.current = null;
-        reject(new Error('Network error during upload'));
-      };
-      xhr.send(fd);
-    });
-  }
-
-  function cancelUpload() {
-    if (uploadXhrRef.current) {
-      try { uploadXhrRef.current.abort(); } catch (e) {}
-      uploadXhrRef.current = null;
-      setUploadProgress(0);
-      setError('Upload cancelled');
-    }
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -169,9 +67,13 @@ export default function JobSection() {
       // Phone simple validation (digits, spaces, dashes, parentheses)
       if (form.phone && !/^[0-9()+\-\s]+$/.test(form.phone)) errs.phone = 'Please enter a valid phone number';
 
-      if (resumeFile) {
-        if (resumeFile.size > MAX_FILE_BYTES) errs.resume = 'Resume must be 3 MB or smaller';
-        if (ALLOWED_TYPES.indexOf(resumeFile.type) === -1) errs.resume = 'Resume must be PDF or Word document';
+      if (form.resume_url && form.resume_url.trim()) {
+        const trimmed = form.resume_url.trim();
+        if (!/^https?:\/\//i.test(trimmed)) {
+          errs.resume_url = 'Enter the full URL (https://...)';
+        } else if (trimmed.length > 255) {
+          errs.resume_url = 'Resume link must be 255 characters or less';
+        }
       }
 
       if (fields && Array.isArray(fields)) {
@@ -193,11 +95,6 @@ export default function JobSection() {
       }
       setFieldErrors({});
 
-      let resume_url = null;
-      if (resumeFile) {
-        resume_url = await uploadResume(resumeFile);
-      }
-
       const payload = {
         name: form.name,
         email: form.email,
@@ -207,7 +104,7 @@ export default function JobSection() {
         experience: form.experience,
         availability: form.availability,
         cover_letter: form.cover_letter,
-        resume_url
+        resume_url: form.resume_url && form.resume_url.trim() ? form.resume_url.trim() : null
       };
 
   const res = await fetch(`${API_BASE}/jobs`, {
@@ -240,10 +137,7 @@ export default function JobSection() {
   setMessage('Application submitted — thank you!');
   // reset to a sensible default: first available position name or empty string
   const defaultPos = positions && positions.length ? (positions[0].name || positions[0] || '') : '';
-  setForm({ name: '', email: '', phone: '', position: defaultPos, availability: '', experience: '', cover_letter: '' });
-      setResumeFile(null);
-      setUploadProgress(0);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+  setForm({ name: '', email: '', phone: '', position: defaultPos, availability: '', experience: '', cover_letter: '', resume_url: '' });
     } catch (err) {
       setError(err.message || 'Submission failed');
     } finally {
@@ -344,7 +238,21 @@ export default function JobSection() {
             <textarea name="cover_letter" value={form.cover_letter} onChange={handleChange} rows="4" className="form-input" />
           </label>
 
-          {/* Resume upload temporarily disabled - will be added in a future update */}
+          <label className="flex flex-col">
+            <span className="text-sm mb-1">Resume / portfolio link (optional)</span>
+            <input
+              id="resume_url"
+              ref={el => { inputRefs.current.resume_url = el; }}
+              name="resume_url"
+              value={form.resume_url}
+              onChange={handleChange}
+              className="form-input"
+              placeholder="https://example.com/resume.pdf"
+              aria-invalid={!!fieldErrors.resume_url}
+              aria-describedby={fieldErrors.resume_url ? 'err-resume-url' : undefined}
+            />
+            {fieldErrors.resume_url && <div id="err-resume-url" className="text-sm text-red-600 mt-1">{fieldErrors.resume_url}</div>}
+          </label>
           {error && <Toast type="error">{error}</Toast>}
           {message && <Toast type="success">{message}</Toast>}
 

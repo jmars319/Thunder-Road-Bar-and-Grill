@@ -1,0 +1,87 @@
+<?php
+
+require_once __DIR__ . '/MediaPipeline.php';
+require_once __DIR__ . '/Database.php';
+
+class MediaResponseBuilder {
+    private static function decodeVariants($value) {
+        if (!$value) {
+            return null;
+        }
+        if (is_array($value)) {
+            return $value;
+        }
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private static function buildSrcsetFromVariants($variants) {
+        if (!is_array($variants) || empty($variants)) {
+            return '';
+        }
+        $parts = [];
+        foreach ($variants as $variant) {
+            if (isset($variant['url'], $variant['width'])) {
+                $parts[] = $variant['url'] . ' ' . $variant['width'] . 'w';
+            }
+        }
+        return implode(', ', $parts);
+    }
+
+    private static function resolveVariants($row) {
+        $variants = self::decodeVariants($row['responsive_variants'] ?? null);
+        if ($variants) {
+            return $variants;
+        }
+        $manifest = MediaPipeline::readManifest($row['manifest_path'] ?? null);
+        if ($manifest && isset($manifest['variants'])) {
+            return $manifest['variants'];
+        }
+        return [
+            'optimized' => [],
+            'webp' => []
+        ];
+    }
+
+    public static function hydrateRow($row) {
+        if (!$row) {
+            return null;
+        }
+        $variants = self::resolveVariants($row);
+        $row['responsive_variants'] = $variants;
+        $row['image_variants'] = $variants;
+        $row['fallback_original'] = $row['file_url'];
+
+        if (empty($row['optimized_srcset'])) {
+            $row['optimized_srcset'] = self::buildSrcsetFromVariants($variants['optimized'] ?? []);
+        }
+        if (empty($row['webp_srcset'])) {
+            $row['webp_srcset'] = self::buildSrcsetFromVariants($variants['webp'] ?? []);
+        }
+
+        return $row;
+    }
+
+    public static function hydrateRows($rows) {
+        if (!is_array($rows)) {
+            return [];
+        }
+        return array_map(function ($row) {
+            return self::hydrateRow($row);
+        }, $rows);
+    }
+
+    public static function hydrateByIds($db, $ids) {
+        if (!$ids) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT * FROM media_library WHERE id IN ($placeholders)";
+        $rows = $db->fetchAll($sql, $ids);
+        $hydrated = [];
+        foreach ($rows as $row) {
+            $hydrated[$row['id']] = self::hydrateRow($row);
+        }
+        return $hydrated;
+    }
+}

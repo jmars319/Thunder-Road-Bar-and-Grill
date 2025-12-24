@@ -41,6 +41,7 @@ function MenuModule() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [originalCategory, setOriginalCategory] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [processingUpload, setProcessingUpload] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState(null);
   const uploadXhr = useRef(null);
@@ -52,8 +53,8 @@ function MenuModule() {
   const [draggingCategory, setDraggingCategory] = useState(null);
   const MEDIA_LIMIT_MENU = 24;
 
-  // paginated gallery media hook (infinite scroll sentinel provided by hook)
-  const { items: pagedMedia, loading: pagedLoading, total: pagedTotal, sentinelRef, fetchPage, reset } = usePaginatedResource(`${API_BASE}/media?category=gallery`, { limit: MEDIA_LIMIT_MENU });
+  // paginated menu-media hook (infinite scroll sentinel provided by hook)
+  const { items: pagedMedia, loading: pagedLoading, total: pagedTotal, sentinelRef, fetchPage, reset } = usePaginatedResource(`${API_BASE}/media?category=menu`, { limit: MEDIA_LIMIT_MENU });
   const [selectedMediaId, setSelectedMediaId] = useState(null);
   const [toast, setToast] = useState(null);
   const [showZeroPriceConfirm, setShowZeroPriceConfirm] = useState(false);
@@ -163,15 +164,20 @@ function MenuModule() {
     return new Promise((resolve, reject) => {
       setUploading(true);
       setUploadProgress(0);
+      setProcessingUpload(false);
       setUploadError(null);
       const xhr = new window.XMLHttpRequest();
       uploadXhr.current = xhr;
       const fd = new FormData();
       fd.append('file', file);
-      // Allow callers to specify a category (logo, hero, gallery, resume, general)
+      // Allow callers to specify a category (logo, hero, menu, general)
       fd.append('category', category);
 
-      xhr.open('POST', `${API_BASE}/media/upload`);
+      xhr.open('POST', `${API_BASE}/media`);
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
@@ -179,28 +185,32 @@ function MenuModule() {
           setUploadProgress(pct);
         }
       };
+      xhr.upload.onload = () => setProcessingUpload(true);
 
       xhr.onload = () => {
         uploadXhr.current = null;
         setUploading(false);
+        setProcessingUpload(false);
         setUploadProgress(100);
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
-            resolve(data.file_url || null);
+            resolve(data?.media?.file_url || data?.file_url || null);
           } catch (err) {
             setUploadError('Invalid server response');
             reject(new Error('Invalid response'));
           }
         } else {
-          setUploadError('Upload failed');
-          reject(new Error('Upload failed'));
-        }
+        setProcessingUpload(false);
+        setUploadError('Upload failed');
+        reject(new Error('Upload failed'));
+      }
       };
 
       xhr.onerror = () => {
         uploadXhr.current = null;
         setUploading(false);
+        setProcessingUpload(false);
         setUploadError('Network error');
         reject(new Error('Network error'));
       };
@@ -536,15 +546,15 @@ function MenuModule() {
                         return;
                       }
                       try {
-                        // Use the 'gallery' category for category images so they are
-                        // discoverable in the gallery listing and treated with gallery rules.
-                        const url = await uploadFile(f, 'gallery');
+                        // Use the 'menu' category for category images so they are
+                        // discoverable in the menu media listing and treated with menu rules.
+                        const url = await uploadFile(f, 'menu');
                         if (url) setEditingCategory(c => ({ ...c, image_url: url }));
                       } catch (err) {
                         // error state is handled by uploadError
                       }
                     }} />
-                    {uploading ? `Uploading ${uploadProgress}%` : 'Upload'}
+                    {uploading ? (processingUpload ? 'Processing images…' : `Uploading ${uploadProgress}%`) : 'Upload'}
                   </label>
                 </div>
                 {uploadError && <Toast type="error" onClose={() => setUploadError(null)}>{uploadError}</Toast>}

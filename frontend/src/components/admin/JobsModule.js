@@ -251,15 +251,15 @@ function JobsModule() {
 
               {selectedApp.resume_url && (
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-2">Resume</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Resume / portfolio link</label>
                   <a
-                      href={selectedApp.resume_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-text-primary hover:underline"
-                    >
-                      View Resume
-                    </a>
+                    href={selectedApp.resume_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-text-primary hover:underline break-words"
+                  >
+                    {selectedApp.resume_url}
+                  </a>
                 </div>
               )}
             </div>

@@ -37,7 +37,7 @@ void __usedMediaCardSkeleton;
 
 // Implementation of AllUploadsGrid using the paginated hook. Placed here so
 // it can be a top-level component and keep hooks usage valid.
-function AllUploadsGridComponent({ mediaLimit = 48, copyUrl, deleteMedia, openGalleryPicker, copiedId }) {
+function AllUploadsGridComponent({ mediaLimit = 48, copyUrl, deleteMedia, openMenuImagePicker, copiedId }) {
   const { items: pagedAll, loading: pagedAllLoading, total: pagedAllTotal, sentinelRef: allSentinel, fetchPage: fetchAllPage, reset } = usePaginatedResource(`${API_BASE}/media?`, { limit: mediaLimit });
 
   // load first page on mount; reset on unmount so reopening the section
@@ -101,8 +101,8 @@ function AllUploadsGridComponent({ mediaLimit = 48, copyUrl, deleteMedia, openGa
                       </>
                     )}
                   </button>
-                  {item.category === 'gallery' && (
-                    <button type="button" onClick={() => openGalleryPicker(item)} className="bg-surface-warm text-text-primary py-1 px-2 rounded text-xs hover:bg-surface transition">Use as gallery</button>
+                  {item.category === 'menu' && (
+                    <button type="button" onClick={() => openMenuImagePicker(item)} className="bg-surface-warm text-text-primary py-1 px-2 rounded text-xs hover:bg-surface transition">Use for menu</button>
                   )}
                   <button type="button" onClick={() => deleteMedia(item.id)} className="bg-surface-warm text-error py-1 px-2 rounded text-xs hover:bg-surface transition"><icons.Trash2 size={12} /></button>
                 </div>
@@ -132,7 +132,7 @@ void __usedAllUploadsGridComponent;
 
   API expectations:
   - GET  /api/media -> [ { id, title, file_name, file_url, file_type }, ... ]
-  - POST /api/media/upload (multipart/form-data)
+  - POST /api/media (multipart/form-data)
   - DELETE /api/media/:id
 
   Developer notes:
@@ -154,13 +154,16 @@ void __usedAllUploadsGridComponent;
 function MediaModule() {
   const MEDIA_LIMIT = 48;
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [processingUpload, setProcessingUpload] = useState(false);
+  const uploadXhrRef = useRef(null);
   const [copiedId, setCopiedId] = useState(null);
-  const [sections, setSections] = useState({ logos: true, hero: true, gallery: true, all: false });
+  const [sections, setSections] = useState({ logos: true, hero: true, menu: true, all: false });
   const [siteSettings, setSiteSettings] = useState(null);
   // selectedHeroes holds ordered hero slide objects: { id, file_url, title, alt_text }
   const [selectedHeroes, setSelectedHeroes] = useState([]);
-  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
-  const [galleryItem, setGalleryItem] = useState(null);
+  const [showMenuPicker, setShowMenuPicker] = useState(false);
+  const [menuImage, setMenuImage] = useState(null);
   const [categoriesList, setCategoriesList] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -168,21 +171,22 @@ function MediaModule() {
   // Paginated resources for specific categories to avoid loading all media
   const { items: logoItems, loading: logoLoading, total: logoTotal, sentinelRef: logoSentinel, fetchPage: fetchLogoPage, reset: resetLogo } = usePaginatedResource(`${API_BASE}/media?category=logo`, { limit: MEDIA_LIMIT });
   const { items: heroItems, loading: heroLoading, total: heroTotal, sentinelRef: heroSentinel, fetchPage: fetchHeroPage, reset: resetHero } = usePaginatedResource(`${API_BASE}/media?category=hero`, { limit: MEDIA_LIMIT });
-  const { items: galleryItems, loading: galleryLoading, total: galleryTotal, sentinelRef: gallerySentinel, fetchPage: fetchGalleryPage, reset: resetGallery } = usePaginatedResource(`${API_BASE}/media?category=gallery`, { limit: MEDIA_LIMIT });
+  const { items: menuImages, loading: menuLoading, total: menuTotal, sentinelRef: menuSentinel, fetchPage: fetchMenuPage, reset: resetMenuList } = usePaginatedResource(`${API_BASE}/media?category=menu`, { limit: MEDIA_LIMIT });
 
   useEffect(() => {
     fetchMedia();
-    authenticatedFetch('/site-settings').then(r => r.ok ? r.json() : {}).then(s => {
-      setSiteSettings(s || {});
-      if (Array.isArray(s?.hero_images) && s.hero_images.length) setSelectedHeroes(s.hero_images);
+    authenticatedFetch('/settings').then(r => r.ok ? r.json() : {}).then(payload => {
+      const settings = payload?.settings || {};
+      setSiteSettings(settings);
+      if (Array.isArray(settings?.hero_images) && settings.hero_images.length) setSelectedHeroes(settings.hero_images);
     }).catch(() => {});
     // Ensure paginated category lists fetch their first page on mount so the
     // Logos and Gallery grids are populated. We call these independently so
     // they can paginate separately via their sentinels.
     try { fetchLogoPage(0, false).catch(() => {}); } catch (e) {}
     try { fetchHeroPage(0, false).catch(() => {}); } catch (e) {}
-    try { fetchGalleryPage(0, false).catch(() => {}); } catch (e) {}
-  }, [fetchLogoPage, fetchHeroPage, fetchGalleryPage, resetLogo, resetHero, resetGallery]);
+    try { fetchMenuPage(0, false).catch(() => {}); } catch (e) {}
+  }, [fetchLogoPage, fetchHeroPage, fetchMenuPage, resetLogo, resetHero, resetMenuList]);
 
   const fetchMedia = (category, limit, offset) => {
     // fallback fetch used for uncategorized requests; paginated hooks handle category-specific lists
@@ -196,25 +200,60 @@ function MediaModule() {
         if (!res.ok) throw new Error('Failed to fetch media');
         const totalHeader = res.headers.get('X-Total-Count');
         const total = totalHeader ? parseInt(totalHeader, 10) : null;
-        return res.json().then(data => ({ data, total }));
+        return res.json().then(payload => {
+          const list = Array.isArray(payload) ? payload : Array.isArray(payload?.media) ? payload.media : [];
+          return { data: list, total };
+        });
       })
-    .catch(() => ({ data: [], total: null }));
+      .catch(() => ({ data: [], total: null }));
   };
-  // generic upload used by section-specific handlers. category string is optional.
-  const handleUpload = async (file, category = 'general') => {
-    if (!file) return;
+  const uploadMediaFile = (file, category = 'general') => new Promise((resolve, reject) => {
     setUploading(true);
+    setUploadProgress(0);
+    setProcessingUpload(false);
+    const xhr = new window.XMLHttpRequest();
+    uploadXhrRef.current = xhr;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', file.name);
     formData.append('category', category);
+    xhr.open('POST', `${API_BASE}/media`);
+    const token = localStorage.getItem('authToken');
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        setUploadProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+    xhr.upload.onload = () => setProcessingUpload(true);
+    xhr.onerror = () => {
+      uploadXhrRef.current = null;
+      setUploading(false);
+      setProcessingUpload(false);
+      reject(new Error('Upload failed'));
+    };
+    xhr.onload = () => {
+      uploadXhrRef.current = null;
+      setUploading(false);
+      setProcessingUpload(false);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch (err) {
+          reject(err);
+        }
+      } else {
+        reject(new Error('Upload failed'));
+      }
+    };
+    xhr.send(formData);
+  });
 
+  // generic upload used by section-specific handlers. category string is optional.
+  const handleUpload = async (file, category = 'general') => {
+    if (!file) return;
     try {
-      await authenticatedFetch(`/media/upload?category=${encodeURIComponent(category)}`, {
-          method: 'POST',
-          headers: {}, // Override to not set Content-Type for FormData
-          body: formData
-        });
+      await uploadMediaFile(file, category);
       // refresh the relevant paginated list (and notify All uploads)
       if (category === 'logo') {
         resetLogo();
@@ -222,9 +261,9 @@ function MediaModule() {
       } else if (category === 'hero') {
         resetHero();
         fetchHeroPage(0, false).catch(() => {});
-      } else if (category === 'gallery') {
-        resetGallery();
-        fetchGalleryPage(0, false).catch(() => {});
+      } else if (category === 'menu') {
+        resetMenuList();
+        fetchMenuPage(0, false).catch(() => {});
       } else {
         // fallback: refresh legacy media list
         await fetchMedia();
@@ -233,9 +272,6 @@ function MediaModule() {
     } catch (err) {
       console.error('upload failed', err);
       try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Upload failed' })); } catch (e) {}
-    } finally {
-      setUploading(false);
-      // nothing else to do; paginated lists were refreshed above where applicable
     }
   };
 
@@ -252,7 +288,7 @@ function MediaModule() {
       return [
         ...logoItems,
         ...heroItems,
-        ...galleryItems
+        ...menuImages
       ].find(x => String(x.id) === String(mid));
     };
     setSelectedHeroes(s => {
@@ -353,7 +389,7 @@ function MediaModule() {
       // Refresh all category lists to reflect the change
       try { resetLogo(); fetchLogoPage(0, false).catch(() => {}); } catch (e) {}
       try { resetHero(); fetchHeroPage(0, false).catch(() => {}); } catch (e) {}
-      try { resetGallery(); fetchGalleryPage(0, false).catch(() => {}); } catch (e) {}
+      try { resetMenuList(); fetchMenuPage(0, false).catch(() => {}); } catch (e) {}
       try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
       try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Category updated' })); } catch (e) {}
     } catch (err) {
@@ -370,7 +406,7 @@ function MediaModule() {
           fetchMedia();
           try { resetLogo(); fetchLogoPage(0, false).catch(() => {}); } catch (e) {}
           try { resetHero(); fetchHeroPage(0, false).catch(() => {}); } catch (e) {}
-          try { resetGallery(); fetchGalleryPage(0, false).catch(() => {}); } catch (e) {}
+          try { resetMenuList(); fetchMenuPage(0, false).catch(() => {}); } catch (e) {}
           try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
         }).catch(() => {});
     }
@@ -403,20 +439,20 @@ function MediaModule() {
     }
   };
 
-  const openGalleryPicker = (item) => {
-    setGalleryItem(item);
+  const openMenuImagePicker = (item) => {
+    setMenuImage(item);
     setSelectedCategoryId(null);
-  setCategoriesLoading(true);
+    setCategoriesLoading(true);
     authenticatedFetch('/menu/categories')
       .then(r => r.json())
-  .then(d => setCategoriesList(Array.isArray(d) ? d : []))
-  .catch(() => setCategoriesList([]))
-  .finally(() => setCategoriesLoading(false));
-    setShowGalleryPicker(true);
+      .then(d => setCategoriesList(Array.isArray(d) ? d : []))
+      .catch(() => setCategoriesList([]))
+      .finally(() => setCategoriesLoading(false));
+    setShowMenuPicker(true);
   };
 
-  const confirmSetGallery = async () => {
-    if (!galleryItem || !selectedCategoryId) {
+  const confirmSetMenuImage = async () => {
+    if (!menuImage || !selectedCategoryId) {
       try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Select a category' })); } catch (e) {}
       return;
     }
@@ -425,12 +461,12 @@ function MediaModule() {
       try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Category not found' })); } catch (e) {}
       return;
     }
-    const absolute = `${API_BASE.replace(/\/api$/, '')}${galleryItem.file_url}`;
+    const absolute = `${API_BASE.replace(/\/api$/, '')}${menuImage.file_url}`;
     const payload = {
       name: cat.name,
       description: cat.description,
       image_url: cat.image_url,
-      gallery_image_id: galleryItem.id,
+      gallery_image_id: menuImage.id,
       gallery_image_url: absolute, // keep URL for preview/backcompat
       display_order: cat.display_order,
       is_active: cat.is_active
@@ -438,12 +474,12 @@ function MediaModule() {
     try {
       const res = await authenticatedFetch(`/menu/categories/${cat.id}`, { method: 'PUT', body: JSON.stringify(payload) });
       if (!res.ok) throw new Error('Failed to update category');
-      setShowGalleryPicker(false);
-      setGalleryItem(null);
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Gallery image applied to category' })); } catch (e) {}
+      setShowMenuPicker(false);
+      setMenuImage(null);
+  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Menu image applied to category' })); } catch (e) {}
     } catch (err) {
-      console.error('Failed to set gallery image', err);
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Failed to set gallery image' })); } catch (e) {}
+      console.error('Failed to set menu image', err);
+  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Failed to set menu image' })); } catch (e) {}
     }
   };
 
@@ -454,6 +490,11 @@ function MediaModule() {
   return (
     <>
       <div className="space-y-6">
+        {uploading && (
+          <div className="text-sm text-text-secondary px-4">
+            {processingUpload ? 'Processing images…' : `Uploading ${uploadProgress}%`}
+          </div>
+        )}
       {/* Section: Logos */}
       <div className="bg-surface rounded-lg shadow">
         <button type="button" className="w-full flex items-center justify-between p-4" onClick={() => setSections(s => ({ ...s, logos: !s.logos }))} aria-expanded={sections.logos}>
@@ -489,7 +530,7 @@ function MediaModule() {
                       >
                         <option value="logo">Logo</option>
                         <option value="hero">Hero</option>
-                        <option value="gallery">Gallery</option>
+                        <option value="menu">Menu</option>
                       </select>
                       <div className="flex gap-2 justify-between">
                         <button type="button" onClick={() => setAsLogo(item)} className="text-xs px-2 py-1 bg-primary text-text-inverse rounded">Use</button>
@@ -546,7 +587,7 @@ function MediaModule() {
                       >
                         <option value="logo">Logo</option>
                         <option value="hero">Hero</option>
-                        <option value="gallery">Gallery</option>
+                        <option value="menu">Menu</option>
                       </select>
                       <div className="flex gap-2 justify-between">
                         <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
@@ -589,39 +630,39 @@ function MediaModule() {
         )}
       </div>
 
-      {/* Section: Gallery */}
+      {/* Section: Menu Images */}
       <div className="bg-surface rounded-lg shadow">
-        <button type="button" className="w-full flex items-center justify-between p-4" onClick={() => setSections(s => ({ ...s, gallery: !s.gallery }))} aria-expanded={sections.gallery}>
+        <button type="button" className="w-full flex items-center justify-between p-4" onClick={() => setSections(s => ({ ...s, menu: !s.menu }))} aria-expanded={sections.menu}>
           <div className="flex items-center gap-3">
             <icons.Image size={20} />
-            <h3 className="text-lg font-medium">Gallery</h3>
+            <h3 className="text-lg font-medium">Menu Images</h3>
           </div>
-          <div>{sections.gallery ? <icons.ChevronUp /> : <icons.ChevronDown />}</div>
+          <div>{sections.menu ? <icons.ChevronUp /> : <icons.ChevronDown />}</div>
         </button>
-        {sections.gallery && (
+        {sections.menu && (
           <div className="p-4 border-t border-divider">
-            <p className="text-sm text-text-secondary mb-2">Upload gallery images</p>
+            <p className="text-sm text-text-secondary mb-2">Upload menu images</p>
             <label className={`px-3 py-2 rounded cursor-pointer text-sm ${uploading ? 'opacity-60 pointer-events-none' : 'bg-surface'}`}>
-              <input type="file" accept="image/*" className="hidden" onChange={makeUploadHandler('gallery')} />
+              <input type="file" accept="image/*" className="hidden" onChange={makeUploadHandler('menu')} />
               {uploading ? 'Uploading…' : 'Choose file'}
             </label>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {galleryLoading && galleryItems.length === 0 ? (
+              {menuLoading && menuImages.length === 0 ? (
                 <MediaCardSkeleton count={8} />
               ) : (
-                galleryItems.map(item => (
+                menuImages.map(item => (
                   <div key={item.id} className="bg-surface rounded overflow-hidden border border-divider">
                     <img loading="lazy" src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-24 object-cover" />
                     <div className="p-2 space-y-2">
                       <div className="text-xs truncate font-medium">{item.title}</div>
                       <select
-                        value={item.category || 'gallery'}
+                        value={item.category || 'menu'}
                         onChange={(e) => changeMediaCategory(item.id, e.target.value)}
                         className="w-full text-xs p-1 rounded border text-gray-900 bg-white"
                       >
                         <option value="logo">Logo</option>
                         <option value="hero">Hero</option>
-                        <option value="gallery">Gallery</option>
+                        <option value="menu">Menu</option>
                       </select>
                       <div className="flex gap-2 justify-between">
                         <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
@@ -632,10 +673,10 @@ function MediaModule() {
                 ))
               )}
             </div>
-            {galleryTotal !== null && galleryTotal > galleryItems.length && (
+            {menuTotal !== null && menuTotal > menuImages.length && (
               <div className="mt-4 text-center">
-                <div ref={gallerySentinel} aria-hidden="true" className="h-6" />
-                {galleryLoading && <div className="mt-2"><Spinner size={18} /></div>}
+                <div ref={menuSentinel} aria-hidden="true" className="h-6" />
+                {menuLoading && <div className="mt-2"><Spinner size={18} /></div>}
               </div>
             )}
           </div>
@@ -655,38 +696,38 @@ function MediaModule() {
           <div className="p-4 border-t border-divider">
             <p className="text-sm text-text-secondary mb-2">All uploaded media (latest first)</p>
                   <div className="mt-4">
-                    <AllUploadsGridComponent mediaLimit={MEDIA_LIMIT} copyUrl={copyUrl} deleteMedia={deleteMedia} openGalleryPicker={openGalleryPicker} copiedId={copiedId} />
+                    <AllUploadsGridComponent mediaLimit={MEDIA_LIMIT} copyUrl={copyUrl} deleteMedia={deleteMedia} openMenuImagePicker={openMenuImagePicker} copiedId={copiedId} />
                   </div>
           </div>
         )}
       </div>
       </div>
-      {/* Gallery picker modal */}
-      {showGalleryPicker && (
-      <div className="modal-backdrop flex items-center justify-center z-50">
-        <div className="bg-surface rounded-lg p-4 max-w-lg w-full">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold">Apply as gallery image</h3>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setShowGalleryPicker(false)} className="px-2 py-1 rounded">Cancel</button>
-              <button type="button" onClick={confirmSetGallery} className="px-2 py-1 rounded bg-primary text-text-inverse">Apply</button>
+      {/* Menu picker modal */}
+      {showMenuPicker && (
+        <div className="modal-backdrop flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-4 max-w-lg w-full">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold">Apply as menu image</h3>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowMenuPicker(false)} className="px-2 py-1 rounded">Cancel</button>
+                <button type="button" onClick={confirmSetMenuImage} className="px-2 py-1 rounded bg-primary text-text-inverse">Apply</button>
+              </div>
             </div>
+            {categoriesLoading ? <p>Loading categories…</p> : (
+              <div className="space-y-2">
+                {categoriesList.map(c => (
+                  <label key={c.id} className={`flex items-center gap-3 p-2 rounded cursor-pointer ${String(selectedCategoryId) === String(c.id) ? 'ring-2 ring-primary' : 'hover:bg-surface-warm'}`}>
+                    <input type="radio" name="menu-cat" checked={String(selectedCategoryId) === String(c.id)} onChange={() => setSelectedCategoryId(c.id)} />
+                    <div className="flex-1">
+                      <div className="font-medium">{c.name}</div>
+                      <div className="text-sm text-text-secondary">{c.description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
-          {categoriesLoading ? <p>Loading categories…</p> : (
-            <div className="space-y-2">
-              {categoriesList.map(c => (
-                <label key={c.id} className={`flex items-center gap-3 p-2 rounded cursor-pointer ${String(selectedCategoryId) === String(c.id) ? 'ring-2 ring-primary' : 'hover:bg-surface-warm'}`}>
-                  <input type="radio" name="gallery-cat" checked={String(selectedCategoryId) === String(c.id)} onChange={() => setSelectedCategoryId(c.id)} />
-                  <div className="flex-1">
-                    <div className="font-medium">{c.name}</div>
-                    <div className="text-sm text-text-secondary">{c.description}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
       )}
     </>
   );

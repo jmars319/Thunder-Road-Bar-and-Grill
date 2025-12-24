@@ -40,7 +40,7 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
   const [logoSvg, setLogoSvg] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/site-settings`).then(r => r.ok ? r.json() : {}).then(s => setSiteSettings(s || {})).catch(() => {});
+    fetch(`${API_BASE}/settings`).then(r => r.ok ? r.json() : {}).then(payload => setSiteSettings(payload?.settings || {})).catch(() => {});
     const handler = (e) => setSiteSettings(e?.detail || {});
     window.addEventListener('siteSettingsUpdated', handler);
     return () => window.removeEventListener('siteSettingsUpdated', handler);
@@ -219,4 +219,3 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
     </div>
   );
 }
-
