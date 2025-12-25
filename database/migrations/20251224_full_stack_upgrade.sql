@@ -33,12 +33,29 @@ SET @media_sql := IF(
       ADD COLUMN uploader VARCHAR(100) NULL AFTER manifest_path,
       ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT ''ready'' AFTER uploader,
       ADD COLUMN processing_notes TEXT NULL AFTER status,
-      ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER uploaded_at;
-    ALTER TABLE media_library ADD INDEX idx_uploaded_at (uploaded_at);',
+      ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER uploaded_at;',
   'SELECT ''media columns already present'';'
 );
 
 PREPARE stmt FROM @media_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_uploaded_idx := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'media_library'
+    AND INDEX_NAME = 'idx_uploaded_at'
+);
+
+SET @add_uploaded_idx_sql := IF(
+  @has_uploaded_idx = 0,
+  'ALTER TABLE media_library ADD INDEX idx_uploaded_at (uploaded_at);',
+  'SELECT ''idx_uploaded_at already exists'';'
+);
+
+PREPARE stmt FROM @add_uploaded_idx_sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
