@@ -252,6 +252,48 @@ CALL upsert_job_position('Shift Lead', 'Help manage teams on busy nights, coach 
 DROP PROCEDURE IF EXISTS upsert_job_position;
 
 /* ------------------------------------------------------------
+   3e) Menu category/item enhancements
+------------------------------------------------------------- */
+SET @has_gallery_image_id := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'menu_categories'
+    AND COLUMN_NAME = 'gallery_image_id'
+);
+
+SET @add_gallery_image_sql := IF(
+  @has_gallery_image_id = 0,
+  'ALTER TABLE menu_categories ADD COLUMN gallery_image_id INT NULL DEFAULT NULL AFTER image_url;',
+  'SELECT ''menu_categories.gallery_image_id already exists'';'
+);
+
+PREPARE stmt FROM @add_gallery_image_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_primary_quantity := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'menu_items'
+    AND COLUMN_NAME = 'primary_quantity'
+);
+
+SET @add_primary_quantity_sql := IF(
+  @has_primary_quantity = 0,
+  'ALTER TABLE menu_items
+      ADD COLUMN primary_quantity VARCHAR(64) DEFAULT NULL AFTER price,
+      ADD COLUMN secondary_quantity VARCHAR(64) DEFAULT NULL AFTER primary_quantity,
+      ADD COLUMN secondary_price DECIMAL(10,2) DEFAULT NULL AFTER secondary_quantity;',
+  'SELECT ''menu_items quantity columns already exist'';'
+);
+
+PREPARE stmt FROM @add_primary_quantity_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+/* ------------------------------------------------------------
    4) UTF-8 (utf8mb4) conversion
 ------------------------------------------------------------- */
 ALTER DATABASE thunder_road CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
