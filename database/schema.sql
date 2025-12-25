@@ -4,8 +4,10 @@
 -- ============================================
 
 -- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS thunder_road;
+CREATE DATABASE IF NOT EXISTS thunder_road CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE thunder_road;
+ALTER DATABASE thunder_road CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET NAMES utf8mb4;
 
 -- ============================================
 -- AUTHENTICATION & USERS
@@ -21,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   last_login TIMESTAMP NULL
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default admin user (username: admin, password: admin123)
 -- Password is bcrypt-hashed (cost factor 10)
@@ -45,13 +47,75 @@ CREATE TABLE IF NOT EXISTS site_settings (
   phone VARCHAR(20),
   email VARCHAR(100),
   address TEXT,
+  hero_title VARCHAR(255),
+  hero_subtitle VARCHAR(255),
+  hero_cta_primary_label VARCHAR(150),
+  hero_cta_primary_href VARCHAR(255),
+  hero_cta_secondary_label VARCHAR(150),
+  hero_cta_secondary_href VARCHAR(255),
+  hero_slideshow_speed INT DEFAULT 6000,
+  menu_heading VARCHAR(255),
+  menu_intro TEXT,
+  reservations_heading VARCHAR(255),
+  reservations_intro TEXT,
+  reservations_success_copy TEXT,
+  reservations_error_copy TEXT,
+  about_heading VARCHAR(255),
+  about_intro TEXT,
+  jobs_heading VARCHAR(255),
+  jobs_intro TEXT,
+  jobs_success_copy TEXT,
+  jobs_error_copy TEXT,
+  jobs_sidebar_heading VARCHAR(255),
+  jobs_sidebar_intro TEXT,
+  jobs_sidebar_benefits TEXT,
+  jobs_positions_label VARCHAR(255),
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default settings
-INSERT INTO site_settings (id, business_name, tagline, phone, email, address)
-VALUES (1, 'Thunder Road Bar and Grill', 'Great Food. Cold Drinks. Good Times.', 
-        '(555) 123-4567', 'info@thunderroad.com', '123 Main Street, Anytown, USA 12345')
+INSERT INTO site_settings (
+  id, business_name, tagline, phone, email, address,
+  hero_title, hero_subtitle, hero_cta_primary_label, hero_cta_primary_href,
+  hero_cta_secondary_label, hero_cta_secondary_href,
+  hero_slideshow_speed,
+  menu_heading, menu_intro,
+  reservations_heading, reservations_intro, reservations_success_copy, reservations_error_copy,
+  about_heading, about_intro,
+  jobs_heading, jobs_intro, jobs_success_copy, jobs_error_copy,
+  jobs_sidebar_heading, jobs_sidebar_intro, jobs_sidebar_benefits, jobs_positions_label
+)
+VALUES (
+  1,
+  'Thunder Road Bar and Grill',
+  'Great Food. Cold Drinks. Good Times.',
+  '(555) 123-4567',
+  'info@thunderroad.com',
+  '123 Main Street, Anytown, USA 12345',
+  'Welcome to Thunder Road Bar and Grill',
+  'Great Food. Cold Drinks. Good Times.',
+  'View Menu',
+  '#menu',
+  'Make a Reservation',
+  '#reservations',
+  6000,
+  'Our Menu',
+  'Our kitchen serves scratch-made favorites with seasonal ingredients. Browse by category for details and prices.',
+  'Make a Reservation',
+  'Let us know when you are planning to visit and we''ll confirm as soon as possible.',
+  'Reservation submitted! We''ll contact you to confirm.',
+  'We could not submit your reservation. Please fix the highlighted fields.',
+  'About Us',
+  'Thunder Road Bar & Grill is your neighborhood spot for live music, great drinks, and a welcoming crowd.',
+  'Join our team',
+  'We''re hiring friendly, reliable people. Fill out the short form below to apply.',
+  'Application submitted — thank you!',
+  'Submission failed. Please fix the highlighted fields.',
+  'Work with the Thunder Road crew',
+  'Our team brings the energy every night. Here are a few reasons people love working here:',
+  '<ul><li>Shift meals + staff discounts</li><li>Flexible scheduling</li><li>Room to grow into bar, kitchen, or management roles</li></ul>',
+  'Open Positions'
+)
 ON DUPLICATE KEY UPDATE id = id;
 
 -- NOTE: If you're upgrading an existing database, run the following ALTER statements
@@ -69,7 +133,7 @@ CREATE TABLE IF NOT EXISTS navigation_links (
   url VARCHAR(255) NOT NULL,
   display_order INT DEFAULT 0,
   is_active BOOLEAN DEFAULT true
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default navigation
 INSERT INTO navigation_links (label, url, display_order) VALUES
@@ -94,7 +158,7 @@ CREATE TABLE IF NOT EXISTS menu_categories (
   hide_descriptions TINYINT(1) DEFAULT 0 COMMENT 'Hide item descriptions in menu display',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS menu_items (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -107,7 +171,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
   is_available BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (category_id) REFERENCES menu_categories(id) ON DELETE CASCADE
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Sample menu data
 INSERT INTO menu_categories (name, description, display_order) VALUES
@@ -147,7 +211,7 @@ CREATE TABLE IF NOT EXISTS reservations (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_date (reservation_date),
   INDEX idx_status (status)
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
 -- JOB APPLICATIONS
@@ -166,7 +230,7 @@ CREATE TABLE IF NOT EXISTS job_applications (
   status ENUM('new', 'reviewing', 'interviewed', 'hired', 'rejected') DEFAULT 'new',
   submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_status (status)
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
 -- MEDIA LIBRARY
@@ -198,7 +262,7 @@ CREATE TABLE IF NOT EXISTS media_library (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_category (category),
   INDEX idx_uploaded_at (uploaded_at)
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
 -- NEWSLETTER
@@ -212,7 +276,7 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   unsubscribed_at TIMESTAMP NULL,
   INDEX idx_active (is_active)
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
 -- CONTACT MESSAGES
@@ -228,7 +292,7 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   is_read BOOLEAN DEFAULT false,
   submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_read (is_read)
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
 -- BUSINESS HOURS
@@ -240,7 +304,7 @@ CREATE TABLE IF NOT EXISTS business_hours (
   opening_time TIME,
   closing_time TIME,
   is_closed BOOLEAN DEFAULT false
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default business hours
 INSERT INTO business_hours (day_of_week, opening_time, closing_time, is_closed) VALUES
@@ -266,7 +330,7 @@ CREATE TABLE IF NOT EXISTS about_content (
   address TEXT,
   map_embed_url TEXT,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default about content
 INSERT INTO about_content (id, header, paragraph, phone, email, address, map_embed_url)
@@ -289,7 +353,7 @@ CREATE TABLE IF NOT EXISTS footer_columns (
   id INT PRIMARY KEY AUTO_INCREMENT,
   column_title VARCHAR(100) NOT NULL,
   display_order INT DEFAULT 0
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS footer_links (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -298,7 +362,7 @@ CREATE TABLE IF NOT EXISTS footer_links (
   url VARCHAR(255) NOT NULL,
   display_order INT DEFAULT 0,
   FOREIGN KEY (column_id) REFERENCES footer_columns(id) ON DELETE CASCADE
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default footer structure
 INSERT INTO footer_columns (column_title, display_order) VALUES
