@@ -90,7 +90,9 @@ class MenuRoutes {
      */
     public function getMenu() {
         // Always serve fresh data; public menu needs immediate updates
-        header('Cache-Control: no-store, no-cache, must-revalidate');
+        // Menu payload is public content. Allow a short-lived cache to reduce
+        // backend load without risking stale admin edits.
+        header('Cache-Control: public, max-age=60, stale-while-revalidate=30');
         header('Pragma: no-cache');
         header('Expires: 0');
 
