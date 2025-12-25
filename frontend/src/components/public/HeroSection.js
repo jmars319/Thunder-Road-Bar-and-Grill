@@ -48,7 +48,7 @@ export default function HeroSection() {
             .map((hero) => ({
               id: hero.id,
               alt: hero.alt_text || hero.title || '',
-              variant: buildImageVariant(hero, { sizes: '(max-width: 1280px) 100vw, 1280px' })
+              variant: buildImageVariant(hero, { sizes: '100vw' })
             }))
             .filter((entry) => entry.variant);
           if (normalized.length) {
@@ -68,7 +68,7 @@ export default function HeroSection() {
           const variants = filtered.map((entry) => ({
             id: entry.id,
             alt: entry.alt_text || entry.title || '',
-            variant: buildImageVariant(entry, { sizes: '(max-width: 1280px) 100vw, 1280px' })
+            variant: buildImageVariant(entry, { sizes: '100vw' })
           })).filter((img) => img.variant);
           setImages(variants);
         }
