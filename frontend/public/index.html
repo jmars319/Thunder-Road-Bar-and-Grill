@@ -147,7 +147,8 @@
     href="%PUBLIC_URL%/fonts/Merriweather-Variable.woff2"
     crossorigin
   />
-  <link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
+  <link rel="preload" as="style" href="%PUBLIC_URL%/fonts/fonts.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" /></noscript>
   <!-- Device-specific iOS startup images (sized for common iPhones/iPads) -->
   <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash/apple-splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
   <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash/apple-splash-1668x2224.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" />
