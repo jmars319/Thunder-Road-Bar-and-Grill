@@ -20,15 +20,7 @@ OUT_DIR = os.path.join(REPO_ROOT, 'frontend', 'public', 'og')
 
 SIZES = [
     (1200, 630, 'og-image-1200x630-with-badge.png'),
-    (1200, 1200, 'og-1200x1200.png'),
     (1024, 1024, 'og-1024x1024.png'),
-    (600, 315, 'og-600x315.png'),
-    # Additional common social sizes
-    (1080, 1080, 'og-1080x1080.png'),        # Instagram square
-    (1584, 396, 'og-1584x396.png'),         # LinkedIn banner
-    (1000, 1500, 'og-1000x1500.png'),       # Pinterest tall
-    (1280, 720, 'og-1280x720.png'),         # YouTube/thumbnail
-    (1200, 627, 'og-1200x627.png'),         # Alternate Twitter/LinkedIn variant
 ]
 
 # Logo placement params

@@ -23,11 +23,19 @@
 // eslint-disable-next-line no-unused-vars
 import { Helmet } from 'react-helmet-async';
 
+const DEFAULT_OG_IMAGE = 'https://trbgmidway.com/og/og-image-1200x630-with-badge.png';
+const DEFAULT_OG_IMAGE_SQUARE = 'https://trbgmidway.com/og/og-1024x1024.png';
+
 function SEO({
   title = '',
   description = 'Thunder Road Bar & Grill — Midway, NC',
   keywords = 'Thunder Road, Bar and Grill, Midway NC, restaurant, bar, American food, live music',
-  image = 'https://trbgmidway.com/og/og-1200x627.png',
+  image = DEFAULT_OG_IMAGE,
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageSquare = DEFAULT_OG_IMAGE_SQUARE,
+  imageSquareWidth = 1024,
+  imageSquareHeight = 1024,
   url = '',
   type = 'website',
 }) {
@@ -50,6 +58,15 @@ function SEO({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
+      <meta property="og:image:width" content={imageWidth} />
+      <meta property="og:image:height" content={imageHeight} />
+      {imageSquare && imageSquare !== image && (
+        <>
+          <meta property="og:image" content={imageSquare} />
+          <meta property="og:image:width" content={imageSquareWidth} />
+          <meta property="og:image:height" content={imageSquareHeight} />
+        </>
+      )}
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
