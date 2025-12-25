@@ -81,3 +81,15 @@ Thumbs.db
 # Public asset temp folders
 # ───────────────────────────
 /frontend/public/favicon-backup*
+
+# ───────────────────────────
+# Backend runtime cache (must not be committed)
+# ───────────────────────────
+backend/cache/
+!backend/cache/.gitignore
+
+# ───────────────────────────
+# PHP / hosting noise
+# ───────────────────────────
+*.phar
+*.cache
