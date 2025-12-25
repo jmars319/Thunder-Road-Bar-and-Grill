@@ -65,6 +65,7 @@ export default function PublicSite({ onGoToAdmin }) {
         url="https://trbgmidway.com/"
       />
       <div className="min-h-screen bg-background">
+        <div id="top" />
         {/* Skip link for keyboard users */}
         <a href="#site-main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:bg-surface focus:text-text-primary focus:px-2 focus:py-1 rounded">Skip to main content</a>
         <PublicNavbar onGoToAdmin={onGoToAdmin} />

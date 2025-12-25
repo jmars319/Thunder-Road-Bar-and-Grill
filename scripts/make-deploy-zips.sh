@@ -62,8 +62,11 @@ log "Creating frontend zip"
 
 log "Zip summaries"
 ls -lh "$BACKEND_ZIP" "$FRONTEND_ZIP"
+# Temporarily disable pipefail so previewing with head doesn't cause a non-zero exit
+set +o pipefail
 unzip -l "$BACKEND_ZIP" | head -n 20
 unzip -l "$FRONTEND_ZIP" | head -n 20
+set -o pipefail
 
 log "Sanity check: backend zip should not include runtime cache/log artifacts"
 if unzip -l "$BACKEND_ZIP" | rg -q 'cache/(error-alerts|ratelimit)|cache/email-previews\.log|logs/|logs/app\.log'; then
