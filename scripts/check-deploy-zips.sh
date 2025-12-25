@@ -34,19 +34,19 @@ zip_contains() {
 
 check_backend_zip() {
   log "Validating backend zip"
-  if ! zip_contains "$BACKEND_ZIP" 'backend/index.php'; then
-    err "backend/index.php not found in backend zip"
+  if ! zip_contains "$BACKEND_ZIP" 'index.php'; then
+    err "backend zip missing index.php"
     exit 1
   fi
-  if ! zip_contains "$BACKEND_ZIP" 'backend/router.php'; then
-    err "backend/router.php not found in backend zip"
+  if ! zip_contains "$BACKEND_ZIP" 'router.php'; then
+    err "backend zip missing router.php"
     exit 1
   fi
-  if zip_contains "$BACKEND_ZIP" 'backend/.env'; then
+  if zip_contains "$BACKEND_ZIP" '.env'; then
     err "backend zip contains .env files"
     exit 1
   fi
-  if zip_contains "$BACKEND_ZIP" 'backend/uploads/'; then
+  if zip_contains "$BACKEND_ZIP" 'uploads/'; then
     err "backend zip should not include uploads/"
     exit 1
   fi
@@ -55,17 +55,17 @@ check_backend_zip() {
 
 check_frontend_zip() {
   log "Validating frontend zip"
-  if ! zip_contains "$FRONTEND_ZIP" 'frontend/build/index.html'; then
-    err "frontend/build/index.html missing from frontend zip"
+  if ! zip_contains "$FRONTEND_ZIP" 'index.html'; then
+    err "frontend zip missing index.html"
     exit 1
   fi
-  if ! zip_contains "$FRONTEND_ZIP" 'frontend/build/static/'; then
-    err "frontend/build/static/ missing from frontend zip"
+  if ! zip_contains "$FRONTEND_ZIP" 'static/'; then
+    err "frontend zip missing static/ assets"
     exit 1
   fi
   if [[ "$REQUIRE_FRONTEND_HTACCESS" -eq 1 ]]; then
-    if ! zip_contains "$FRONTEND_ZIP" 'frontend/build/.htaccess'; then
-      err "frontend/build/.htaccess missing from frontend zip"
+    if ! zip_contains "$FRONTEND_ZIP" '.htaccess'; then
+      err "frontend zip missing .htaccess"
       exit 1
     fi
   fi
