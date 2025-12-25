@@ -132,26 +132,22 @@
   <!-- iOS PWA meta for better install / splash behavior -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <!-- Font loading: preconnect & preload to avoid layout shift -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Preload locally hosted fonts -->
   <link
     rel="preload"
-    as="style"
-    href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500;700&family=Pacifico&display=swap"
+    as="font"
+    type="font/woff2"
+    href="%PUBLIC_URL%/fonts/Roboto-Variable.woff2"
+    crossorigin
   />
   <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500;700&family=Pacifico&display=swap"
-    media="print"
-    onload="this.media='all'"
+    rel="preload"
+    as="font"
+    type="font/woff2"
+    href="%PUBLIC_URL%/fonts/Merriweather-Variable.woff2"
+    crossorigin
   />
-  <noscript>
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500;700&family=Pacifico&display=swap"
-    />
-  </noscript>
+  <link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
   <!-- Device-specific iOS startup images (sized for common iPhones/iPads) -->
   <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash/apple-splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
   <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash/apple-splash-1668x2224.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" />
