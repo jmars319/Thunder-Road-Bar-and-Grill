@@ -152,10 +152,9 @@ class MenuRoutes {
                     'name' => $row['category_name'],
                     'description' => HtmlSanitizer::sanitizeRichText($row['category_description'] ?? ''),
                     'image_url' => $row['category_image'],
-                    'gallery_image_url' => $row['category_gallery_image'],
-                    'display_order' => (int)$row['category_order'],
-                    'display_columns' => isset($row['category_display_columns']) ? (int)$row['category_display_columns'] : 1,
-                    'hide_descriptions' => isset($row['category_hide_descriptions']) ? (bool)$row['category_hide_descriptions'] : false,
+                    'display_order' => (int) $row['category_order'],
+                    'display_columns' => isset($row['category_display_columns']) ? (int) $row['category_display_columns'] : 1,
+                    'hide_descriptions' => isset($row['category_hide_descriptions']) ? (bool) $row['category_hide_descriptions'] : false,
                     'items' => []
                 ];
                 $mediaId = $row['category_gallery_image_id'] ?? null;
@@ -164,7 +163,6 @@ class MenuRoutes {
                     if ($media) {
                         $categories[$catId]['gallery_image_url'] = $media['fallback_original'];
                         $categories[$catId]['gallery_image_responsive'] = $media;
-                        $categories[$catId]['gallery_image_variants'] = $media['responsive_variants'];
                     }
                 }
             }
