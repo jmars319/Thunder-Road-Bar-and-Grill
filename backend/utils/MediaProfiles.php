@@ -3,9 +3,10 @@
 require_once __DIR__ . '/Config.php';
 
 class MediaProfiles {
-    public const HERO_PROFILE = [1600, 3200, 4800];
-    public const MENU_PROFILE = [1440, 2880, 4320];
-    public const DEFAULT_PROFILE = [480, 768, 1024, 1600];
+    private const BASE_PROFILE = [768, 1536, 2304];
+    public const HERO_PROFILE = self::BASE_PROFILE;
+    public const MENU_PROFILE = self::BASE_PROFILE;
+    public const DEFAULT_PROFILE = self::BASE_PROFILE;
 
     private static $envProfiles;
 
@@ -41,7 +42,7 @@ class MediaProfiles {
 
         $unique = array_values(array_unique($valid));
         sort($unique);
-        return $unique;
+        return array_slice($unique, 0, 3);
     }
 
     public static function getVariantWidths($category) {

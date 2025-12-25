@@ -252,17 +252,31 @@ class MediaPipeline {
         ];
 
         $variantWidths = MediaProfiles::getVariantWidths($category);
+        if (!is_array($variantWidths) || empty($variantWidths)) {
+            $variantWidths = MediaProfiles::getVariantWidths('gallery');
+        }
+        $variantWidths = array_values(array_filter(array_map(function ($value) {
+            $int = (int) $value;
+            return $int > 0 ? $int : null;
+        }, $variantWidths)));
+        if (empty($variantWidths)) {
+            $variantWidths = [768, 1536, 2304];
+        }
         $optimizedVariants = [];
         $webpVariants = [];
         $optimizedExt = in_array($mimeType, ['image/png', 'image/gif'], true) ? '.png' : '.jpg';
 
-        foreach ($variantWidths as $width) {
+        $suffixes = ['1x', '2x', '3x'];
+        foreach ($variantWidths as $index => $width) {
+            if ($index >= 3) {
+                break;
+            }
+            $suffix = $suffixes[$index] ?? ($index + 1) . 'x';
             $resized = self::resizeImage($image, $width, $mimeType);
             if (!$resized) {
                 continue;
             }
-
-            $optimizedFilename = $basename . '-w' . $width . $optimizedExt;
+            $optimizedFilename = $basename . '-' . $suffix . $optimizedExt;
             $optimizedPath = self::uploadRoot() . '/variants/optimized/' . $optimizedFilename;
             if (self::saveOptimizedVariant($resized, $optimizedPath, $optimizedExt)) {
                 $optimizedVariants[] = [
@@ -272,7 +286,7 @@ class MediaPipeline {
                 ];
             }
 
-            $webpFilename = $basename . '-w' . $width . '.webp';
+            $webpFilename = $basename . '-' . $suffix . '.webp';
             $webpPath = self::uploadRoot() . '/variants/webp/' . $webpFilename;
             if (self::saveWebpVariant($resized, $webpPath)) {
                 $webpVariants[] = [
