@@ -34,10 +34,23 @@ log "Creating backend zip"
   cd "$ROOT_DIR"
   zip -r "$BACKEND_ZIP" backend \
     -x 'backend/uploads/*' 'backend/uploads/**' \
+       'backend/incoming/*' 'backend/incoming/**' \
+       'backend/cache/*' 'backend/cache/**' \
+       'backend/logs/*' 'backend/logs/**' \
+       'backend/*.log' 'backend/**/*.log' \
        'backend/.env' 'backend/.env.*' \
-       'backend/.dev/*' 'backend/.git/*' 'backend/.git/**' \
+       'backend/.dev/*' 'backend/.dev/**' \
+       'backend/.git/*' 'backend/.git/**' \
        'backend/.DS_Store' 'backend/**/*.DS_Store' \
        'backend/.vscode/*' 'backend/.vscode/**'
+
+  # Add back only the safety placeholders we want to ship (empty cache dir + deny listing)
+  if [[ -f 'backend/cache/.gitignore' ]]; then
+    zip -u "$BACKEND_ZIP" 'backend/cache/.gitignore'
+  fi
+  if [[ -f 'backend/cache/.htaccess' ]]; then
+    zip -u "$BACKEND_ZIP" 'backend/cache/.htaccess'
+  fi
 )
 
 log "Creating frontend zip"
@@ -51,3 +64,9 @@ log "Zip summaries"
 ls -lh "$BACKEND_ZIP" "$FRONTEND_ZIP"
 unzip -l "$BACKEND_ZIP" | head -n 20
 unzip -l "$FRONTEND_ZIP" | head -n 20
+
+log "Sanity check: backend zip should not include runtime cache/log artifacts"
+if unzip -l "$BACKEND_ZIP" | rg -q 'backend/cache/(error-alerts|ratelimit)|backend/cache/email-previews\.log|backend/logs/|backend/logs/app\.log'; then
+  err "Backend zip includes runtime cache/log artifacts (cache/, logs/, previews). Fix exclusions before deploying."
+  exit 1
+fi
