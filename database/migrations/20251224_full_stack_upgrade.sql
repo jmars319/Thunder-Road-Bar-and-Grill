@@ -171,7 +171,29 @@ SET hero_slideshow_speed = COALESCE(hero_slideshow_speed, 6000)
 WHERE id = 1;
 
 /* ------------------------------------------------------------
-   3c) Default job positions content
+   3c) Ensure job_positions/application_fields tables exist
+------------------------------------------------------------- */
+CREATE TABLE IF NOT EXISTS job_positions (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(150) NOT NULL,
+  description TEXT,
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS application_fields (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  field_name VARCHAR(150) NOT NULL,
+  field_type VARCHAR(50) DEFAULT 'text',
+  required BOOLEAN DEFAULT FALSE,
+  options TEXT,
+  display_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+/* ------------------------------------------------------------
+   3d) Default job positions content
 ------------------------------------------------------------- */
 DROP PROCEDURE IF EXISTS upsert_job_position;
 DELIMITER $$
