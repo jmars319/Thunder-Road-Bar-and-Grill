@@ -6,8 +6,8 @@
 /* CSS Variables (matching PHP project) */
 :root {
   /* Colors */
-  --primary-color: #dc2626;
-  --primary-dark: #b91c1c;
+  --primary-color: #b11111; /* darker red improves contrast vs white text */
+  --primary-dark: #8b0d0d;
   --secondary-color: #92400e;
   --accent-color: #f59e0b;
   --success-color: #059669;
@@ -67,8 +67,9 @@
   object-fit: contain;
 }
 
+
 .reservation-copy-block {
-  min-height: 4.25rem; /* reserve space for heading/intro copy */
+  min-height: 4.25rem;
   margin-bottom: 1.5rem;
 }
 
@@ -81,6 +82,31 @@
   height: 100%;
   display: flex;
   align-items: center;
+}
+
+.navbar-link,
+.navbar-link:link,
+.navbar-link:visited {
+  position: relative;
+  padding: 0.75rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.navbar-link:hover,
+.navbar-link:focus-visible {
+  color: var(--text-primary);
+}
+
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0.5rem 0;
 }
 
 /* Responsive sizing of the badge is handled by the .logo-badge width/height
@@ -97,8 +123,8 @@
     --surface-dark: #03050a;  /* deepest surface for nav/admin chrome */
 
     /* Keep brand colors but slightly tone down accents for dark */
-    --primary-color: #ef4444; /* slightly brighter on dark */
-    --primary-dark: #dc2626;
+    --primary-color: #c81a1a;
+    --primary-dark: #a30f0f;
     --secondary-color: #b45309;
     --accent-color: #f59e0b;
   --text-primary: #e6eef8; /* near white */
@@ -130,8 +156,8 @@
   --surface-color: #0f1724;
   --surface-warm: #111827;
   --surface-dark: #03050a;
-  --primary-color: #ef4444;
-  --primary-dark: #dc2626;
+  --primary-color: #c81a1a;
+  --primary-dark: #a30f0f;
   --secondary-color: #b45309;
   --accent-color: #f59e0b;
   --text-primary: #e6eef8;
@@ -153,8 +179,8 @@
   --surface-color: #fff;
   --surface-warm: #fff7f2;
   --surface-dark: #111827;
-  --primary-color: #dc2626;
-  --primary-dark: #b91c1c;
+  --primary-color: #b11111;
+  --primary-dark: #8b0d0d;
   --secondary-color: #92400e;
   --accent-color: #f59e0b;
   --text-primary: #1c1917;

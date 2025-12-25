@@ -167,7 +167,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
           </div>
 
           {/* Desktop navigation */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2">
             {/**
              * Small mapping: treat an incoming 'Contact' navigation item as the
              * public-facing careers link and map 'About' to the About section.
@@ -192,7 +192,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                     key={link.id}
                     href={renderUrl}
                     onClick={(e) => handleNavClick(e, renderUrl)}
-                    className="text-text-secondary hover:text-text-primary font-medium transition"
+                    className="navbar-link font-medium"
                   >
                     {renderLabel}
                   </a>
@@ -205,7 +205,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
               type="button"
               onClick={() => setOrderOpen(true)}
               title="Order Online - coming soon"
-              className="bg-primary text-text-inverse px-3 py-1 rounded-lg hover:bg-primary-dark transition text-sm font-semibold"
+              className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm font-semibold"
             >
               Order Online
             </button>

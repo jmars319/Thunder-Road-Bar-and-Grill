@@ -271,10 +271,10 @@ export default function PublicFooter({ onGoToAdmin }) {
             {/* match quick-links sizing to keep the footer visually consistent */}
             <ul className="space-y-0.5 text-[11px] leading-tight">
               <li>
-                <a href="/privacy" className="text-text-muted hover:text-text-primary transition tracking-tight">Privacy Policy</a>
+                <a href="/privacy" className="footer-link text-text-muted hover:text-text-primary transition tracking-tight">Privacy Policy</a>
               </li>
               <li>
-                <a href="/terms" className="text-text-muted hover:text-text-primary transition tracking-tight">Terms &amp; Conditions</a>
+                <a href="/terms" className="footer-link text-text-muted hover:text-text-primary transition tracking-tight">Terms &amp; Conditions</a>
               </li>
             </ul>
 
@@ -293,7 +293,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     window.location.href = '/admin';
                   }
                 }}
-                className="text-text-muted hover:text-text-primary tracking-tight text-[11px] leading-tight"
+                className="footer-link text-text-muted hover:text-text-primary tracking-tight text-[11px] leading-tight"
               >
                 Admin
               </a>
