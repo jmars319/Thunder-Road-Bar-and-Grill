@@ -19,15 +19,6 @@ class Config {
 
         $envFile = __DIR__ . '/../.env';
 
-        // TEMPORARY DEBUG - REMOVE AFTER TESTING
-        error_log("Looking for .env at: " . $envFile);
-        error_log("File exists: " . (file_exists($envFile) ? 'YES' : 'NO'));
-        if (file_exists($envFile)) {
-            error_log("File is readable: " . (is_readable($envFile) ? 'YES' : 'NO'));
-            error_log("File contents: " . file_get_contents($envFile));
-        }
-        // END DEBUG
-
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             foreach ($lines as $line) {

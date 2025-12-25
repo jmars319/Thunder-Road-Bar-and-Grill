@@ -22,6 +22,8 @@
 require_once __DIR__ . '/../utils/Database.php';
 require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
+require_once __DIR__ . '/../middleware/ErrorHandler.php';
+require_once __DIR__ . '/../utils/Emailer.php';
 
 class JobsRoutes {
     private $db;
@@ -35,12 +37,14 @@ class JobsRoutes {
      */
     public function getPublicJobPositions() {
         try {
-            $results = $this->db->fetchAll('SELECT * FROM job_positions ORDER BY id');
-            header('Cache-Control: public, max-age=300');
+            $results = $this->db->fetchAll('SELECT id, name, description, display_order FROM job_positions WHERE is_active = 1 ORDER BY display_order, id');
+            header('Cache-Control: no-store, max-age=0, must-revalidate');
+            header('Pragma: no-cache');
             echo json_encode($results);
         } catch (PDOException $e) {
             Logger::warning('Job positions query failed: ' . $e->getMessage());
-            header('Cache-Control: public, max-age=300');
+            header('Cache-Control: no-store, max-age=0, must-revalidate');
+            header('Pragma: no-cache');
             echo json_encode([]);
         }
     }
@@ -76,22 +80,31 @@ class JobsRoutes {
         $resumeUrl = $input['resume_url'] ?? null;
 
         // Basic validation
+        $errors = [];
         if (!$name || !trim($name)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Name is required', 'errors' => [['field' => 'name', 'error' => 'Name is required']]]);
-            return;
+            $errors['name'] = 'Name is required';
         }
         
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Valid email is required', 'errors' => [['field' => 'email', 'error' => 'Valid email is required']]]);
-            return;
+            $errors['email'] = 'Valid email is required';
         }
         
         if (!$phone || !trim($phone)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Phone is required', 'errors' => [['field' => 'phone', 'error' => 'Phone is required']]]);
-            return;
+            $errors['phone'] = 'Phone is required';
+        }
+
+        if (!empty($errors)) {
+            $errorsList = [];
+            foreach ($errors as $field => $message) {
+                $errorsList[] = ['field' => $field, 'error' => $message];
+            }
+
+            ErrorHandler::respond('Validation failed', 400, [
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $errors,
+                'errorsList' => $errorsList
+            ]);
         }
         
         try {
@@ -105,13 +118,26 @@ class JobsRoutes {
             
             // Send email notification
             try {
-                require_once __DIR__ . '/../utils/Email.php';
-                Email::sendJobApplicationNotification([
-                    'name' => $name,
-                    'email' => $email,
-                    'phone' => $phone,
-                    'position' => $position
-                ]);
+                Emailer::sendOpsNotification(
+                    'Job Application',
+                    [
+                        'Name' => $name,
+                        'Email' => $email,
+                        'Phone' => $phone,
+                        'Position' => $position ?: 'Not specified',
+                        'Availability' => $availability ?: 'Not provided',
+                        'Experience' => $experience ?: 'Not provided',
+                        'Cover Letter' => $coverLetter ?: 'Not provided',
+                        'Resume URL' => $resumeUrl ?: 'Not provided',
+                    ],
+                    [
+                        'requestId' => RequestContext::getRequestId(),
+                        'path' => $_SERVER['REQUEST_URI'] ?? '/api/jobs',
+                        'method' => $_SERVER['REQUEST_METHOD'] ?? 'POST',
+                        'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                    ],
+                    $email ?: null
+                );
                 Logger::info('Job application email sent', ['id' => $id]);
             } catch (Exception $e) {
                 Logger::error('Job application email failed', ['error' => $e->getMessage()]);
@@ -122,12 +148,10 @@ class JobsRoutes {
         } catch (PDOException $e) {
             if (strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing job_applications table');
-                http_response_code(503);
-                echo json_encode(['error' => 'Job applications are currently unavailable']);
+                ErrorHandler::respond('Job applications are currently unavailable', 503);
             } else {
                 Logger::error('Job application error: ' . $e->getMessage());
-                http_response_code(500);
-                echo json_encode(['error' => 'Failed to submit application']);
+                ErrorHandler::respond('Failed to submit application', 500);
             }
         }
     }
@@ -158,9 +182,7 @@ class JobsRoutes {
         $isActive = isset($input['is_active']) ? ($input['is_active'] ? 1 : 0) : 1;
 
         if (!trim($name)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Position name is required']);
-            return;
+            ErrorHandler::respond('Position name is required', 400);
         }
 
         try {
@@ -168,8 +190,7 @@ class JobsRoutes {
             echo json_encode(['id' => $id, 'message' => 'Position created']);
         } catch (PDOException $e) {
             Logger::error('Create position error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to create position']);
+            ErrorHandler::respond('Failed to create position', 500);
         }
     }
 
@@ -195,9 +216,7 @@ class JobsRoutes {
         }
 
         if (count($fields) === 0) {
-            http_response_code(400);
-            echo json_encode(['error' => 'No fields to update']);
-            return;
+            ErrorHandler::respond('No fields to update', 400);
         }
 
         $params[] = $id;
@@ -208,8 +227,7 @@ class JobsRoutes {
             echo json_encode(['message' => 'Position updated']);
         } catch (PDOException $e) {
             Logger::error('Update position error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to update position']);
+            ErrorHandler::respond('Failed to update position', 500);
         }
     }
 
@@ -224,8 +242,7 @@ class JobsRoutes {
             echo json_encode(['message' => 'Position deleted']);
         } catch (PDOException $e) {
             Logger::error('Delete position error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to delete position']);
+            ErrorHandler::respond('Failed to delete position', 500);
         }
     }
 
@@ -234,20 +251,84 @@ class JobsRoutes {
      */
     public function getAllApplications() {
         AdminAuthMiddleware::verify();
-        
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
+        $offset = ($page - 1) * $perPage;
+
+        $allowedSort = [
+            'submitted_at' => 'submitted_at',
+            'name' => 'name',
+            'status' => 'status',
+            'position' => 'position'
+        ];
+        $sortBy = strtolower($_GET['sort_by'] ?? 'submitted_at');
+        $sortColumn = $allowedSort[$sortBy] ?? 'submitted_at';
+        $sortDir = strtoupper($_GET['sort_dir'] ?? 'DESC');
+        if (!in_array($sortDir, ['ASC', 'DESC'], true)) {
+            $sortDir = 'DESC';
+        }
+
+        $where = [];
+        $params = [];
+        $status = isset($_GET['status']) ? trim($_GET['status']) : null;
+
+        if ($status && $status !== 'all') {
+            $where[] = 'status = ?';
+            $params[] = $status;
+        }
+
+        $search = isset($_GET['search']) ? trim($_GET['search']) : null;
+        if ($search !== null && $search !== '') {
+            $where[] = '(name LIKE ? OR email LIKE ? OR position LIKE ?)';
+            $needle = '%' . $search . '%';
+            $params[] = $needle;
+            $params[] = $needle;
+            $params[] = $needle;
+        }
+
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+
         try {
+            $totalRow = $this->db->fetchOne('SELECT COUNT(*) as count FROM job_applications' . $whereSql, $params);
+            $total = (int)($totalRow['count'] ?? 0);
+
             $results = $this->db->fetchAll(
-                'SELECT * FROM job_applications ORDER BY submitted_at DESC'
+                'SELECT * FROM job_applications' . $whereSql . " ORDER BY {$sortColumn} {$sortDir} LIMIT ? OFFSET ?",
+                array_merge($params, [$perPage, $offset])
             );
-            echo json_encode($results);
+
+            echo json_encode([
+                'data' => $results,
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $perPage
+            ]);
         } catch (PDOException $e) {
             if (strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing job_applications table');
-                echo json_encode([]);
+                echo json_encode(['data' => [], 'total' => 0, 'page' => $page, 'per_page' => $perPage]);
             } else {
                 throw $e;
             }
         }
+    }
+
+    /**
+     * PUT /api/jobs/:id - Update job application status
+     */
+    public function updateApplication($id) {
+        AdminAuthMiddleware::verify();
+        $input = json_decode(file_get_contents('php://input'), true);
+        $status = isset($input['status']) ? trim($input['status']) : null;
+        $allowed = ['new', 'reviewing', 'interviewed', 'hired', 'rejected', 'archived'];
+
+        if (!$status || !in_array($status, $allowed, true)) {
+            ErrorHandler::respond('Invalid status', 400);
+        }
+
+        $this->db->update('UPDATE job_applications SET status = ? WHERE id = ?', [$status, $id]);
+        echo json_encode(['message' => 'Application updated']);
     }
 
     /**
@@ -261,8 +342,7 @@ class JobsRoutes {
             echo json_encode(['message' => 'Application deleted']);
         } catch (PDOException $e) {
             Logger::error('Delete application error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to delete application']);
+            ErrorHandler::respond('Failed to delete application', 500);
         }
     }
 }

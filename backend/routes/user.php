@@ -47,39 +47,31 @@ class UserRoutes {
 
         // Validate new password strength
         if (strlen($newPassword) < 8) {
-            http_response_code(400);
-            echo json_encode([
+            ErrorHandler::respond('Password must be at least 8 characters long', 400, [
                 'success' => false,
                 'message' => 'Password must be at least 8 characters long'
             ]);
-            return;
         }
 
         if (!preg_match('/[A-Z]/', $newPassword)) {
-            http_response_code(400);
-            echo json_encode([
+            ErrorHandler::respond('Password must contain at least one uppercase letter', 400, [
                 'success' => false,
                 'message' => 'Password must contain at least one uppercase letter'
             ]);
-            return;
         }
 
         if (!preg_match('/[a-z]/', $newPassword)) {
-            http_response_code(400);
-            echo json_encode([
+            ErrorHandler::respond('Password must contain at least one lowercase letter', 400, [
                 'success' => false,
                 'message' => 'Password must contain at least one lowercase letter'
             ]);
-            return;
         }
 
         if (!preg_match('/[0-9]/', $newPassword)) {
-            http_response_code(400);
-            echo json_encode([
+            ErrorHandler::respond('Password must contain at least one number', 400, [
                 'success' => false,
                 'message' => 'Password must contain at least one number'
             ]);
-            return;
         }
 
         try {
@@ -90,32 +82,26 @@ class UserRoutes {
             );
 
             if (!$dbUser) {
-                http_response_code(404);
-                echo json_encode([
+                ErrorHandler::respond('User not found', 404, [
                     'success' => false,
                     'message' => 'User not found'
                 ]);
-                return;
             }
 
             // Verify current password
             if (!password_verify($currentPassword, $dbUser['password_hash'])) {
-                http_response_code(401);
-                echo json_encode([
+                ErrorHandler::respond('Current password is incorrect', 401, [
                     'success' => false,
                     'message' => 'Current password is incorrect'
                 ]);
-                return;
             }
 
             // Check if new password is same as current
             if (password_verify($newPassword, $dbUser['password_hash'])) {
-                http_response_code(400);
-                echo json_encode([
+                ErrorHandler::respond('New password must be different from current password', 400, [
                     'success' => false,
                     'message' => 'New password must be different from current password'
                 ]);
-                return;
             }
 
             // Hash new password
@@ -136,8 +122,7 @@ class UserRoutes {
 
         } catch (Exception $e) {
             Logger::error('Password change error', ['error' => $e->getMessage(), 'user_id' => $user['id']]);
-            http_response_code(500);
-            echo json_encode([
+            ErrorHandler::respond('An error occurred while changing password', 500, [
                 'success' => false,
                 'message' => 'An error occurred while changing password'
             ]);

@@ -1,9 +1,5 @@
 <?php
-/**
- * Simple Router
- * 
- * Handles URL routing and method dispatching
- */
+require_once __DIR__ . '/../middleware/ErrorHandler.php';
 
 class Router {
     private $routes = [];
@@ -107,9 +103,7 @@ class Router {
         }
 
         // No route matched - 404
-        http_response_code(404);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Not found']);
+        ErrorHandler::respond('Not found', 404);
     }
 
     /**

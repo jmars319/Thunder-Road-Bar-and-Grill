@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/Config.php';
+require_once __DIR__ . '/RequestContext.php';
 
 class Logger {
     const DEBUG = 'debug';
@@ -36,6 +37,10 @@ class Logger {
         }
 
         $timestamp = date('Y-m-d H:i:s');
+        if (!isset($context['requestId'])) {
+            $context['requestId'] = RequestContext::getRequestId();
+        }
+
         $contextStr = !empty($context) ? json_encode($context) : '';
         
         $logMessage = sprintf(

@@ -80,7 +80,7 @@ class MediaPipeline {
         return strtolower(trim($category));
     }
 
-    private static function absolutePathFromUrl($url) {
+    public static function absolutePathFromUrl($url) {
         if (!$url) {
             return null;
         }
@@ -95,6 +95,14 @@ class MediaPipeline {
             return $real;
         }
         return $candidate;
+    }
+
+    public static function fileExistsByUrl($url) {
+        if (!$url) {
+            return false;
+        }
+        $absolute = self::absolutePathFromUrl($url);
+        return $absolute && file_exists($absolute);
     }
 
     private static function createImageResource($path, $mime) {
@@ -257,7 +265,7 @@ class MediaPipeline {
                 ];
             }
 
-            imagedestroy($resized);
+            self::destroyImage($resized);
         }
 
         $originalMeta = [
@@ -271,7 +279,7 @@ class MediaPipeline {
 
         $manifestPath = self::writeManifest($basename, $category, $originalMeta, $optimizedVariants, $webpVariants);
 
-        imagedestroy($image);
+        self::destroyImage($image);
 
         return [
             'metadata' => $metadata,
@@ -281,6 +289,17 @@ class MediaPipeline {
             'webp_srcset' => self::buildSrcset($webpVariants),
             'manifest_path' => $manifestPath
         ];
+    }
+
+    private static function destroyImage($resource) {
+        if (PHP_VERSION_ID >= 80500) {
+            return;
+        }
+
+        $isGdObject = class_exists('GdImage', false) && $resource instanceof \GdImage;
+        if ((is_resource($resource) || $isGdObject) && function_exists('imagedestroy')) {
+            imagedestroy($resource);
+        }
     }
 
     public static function processUploadedFile($tmpPath, $originalName, $mimeType, $fileSize, $category) {

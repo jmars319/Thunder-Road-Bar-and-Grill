@@ -141,7 +141,7 @@ CACHE_MENU_TTL=300              # Cache TTL (seconds)
 ## Media Pipeline (MMH Spec)
 
 - **Upload validation:** `/api/media` accepts JPEG/PNG/GIF/WebP images up to `IMAGE_UPLOAD_MAX_BYTES` (default 8 MB). MIME types are verified by magic bytes + `getimagesize`.
-- **Variant profiles:** Hero images generate `[1600, 3200, 4800]` widths, menu images `[1440, 2880, 4320]`, logos `[160, 320, 640]`, and other categories default to `[480, 768, 1024, 1600]`. Override via the `RESPONSIVE_IMAGE_WIDTH_PROFILES` JSON env var.
+- **Variant profiles:** Hero images generate `[1600, 3200, 4800]` widths, menu images `[1440, 2880, 4320]`, and other categories default to `[480, 768, 1024, 1600]`. Logos are static assets served from `/public/assets/logo`. Override sizes via the `RESPONSIVE_IMAGE_WIDTH_PROFILES` JSON env var.
 - **Derivatives:** Every upload writes optimized JPEG/PNG plus WebP variants, srcset strings, and a manifest (`/uploads/manifests/{basename}.json`). Originals stay in `/uploads/`.
 - **Directory layout:** `backend/uploads/` contains immutable structure (`incoming/`, `variants/optimized`, `variants/webp`, `manifests/`, etc.) protected by `.htaccess`. Keep this directory writable and excluded from deployments.
 - **Responsive responses:** `GET /api/media` and `GET /api/settings` return `responsive_variants`, `image_variants`, `optimized_srcset`, `webp_srcset`, and `fallback_original` so the React frontend can render `<picture>` tags deterministically.
@@ -239,7 +239,7 @@ DB_HOST=localhost
 DB_USER=<godaddy-mysql-user>
 DB_PASSWORD=<godaddy-mysql-password>
 DB_NAME=thunder_road
-FRONTEND_URL=https://trbgmidway.com,https://www.trbgmidway.com
+FRONTEND_URL=https://trbgmidway.com
 ```
 
 #### 2. Database Setup

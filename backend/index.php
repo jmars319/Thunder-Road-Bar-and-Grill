@@ -14,6 +14,7 @@ ob_start();
 
 // Load utilities
 require_once __DIR__ . '/utils/Config.php';
+require_once __DIR__ . '/utils/RequestContext.php';
 require_once __DIR__ . '/utils/Logger.php';
 require_once __DIR__ . '/utils/Database.php';
 require_once __DIR__ . '/utils/Router.php';
@@ -23,8 +24,15 @@ require_once __DIR__ . '/middleware/ErrorHandler.php';
 require_once __DIR__ . '/middleware/CorsMiddleware.php';
 require_once __DIR__ . '/middleware/RateLimitMiddleware.php';
 
-// Setup error handling
+// Initialize request context & setup error handling
+RequestContext::init();
 ErrorHandler::setup();
+
+// Ensure PHP upload limits line up with our pipeline limit (default 8MB)
+$uploadLimitBytes = (int) Config::get('IMAGE_UPLOAD_MAX_BYTES', 8388608);
+$uploadLimitMb = max(8, (int) ceil($uploadLimitBytes / 1048576));
+@ini_set('upload_max_filesize', $uploadLimitMb . 'M');
+@ini_set('post_max_size', max($uploadLimitMb * 2, $uploadLimitMb + 2) . 'M');
 
 // Log request
 Logger::info('Request received', [
@@ -52,6 +60,13 @@ RateLimitMiddleware::global($ip);
 // Initialize router
 $router = new Router();
 $router->setPrefix('/api');
+
+// Dev-only diagnostic routes
+if (Config::get('APP_ENV', 'production') !== 'production') {
+    $router->get('/dev/trigger-error', function() {
+        throw new Exception('Intentional debug failure', 500);
+    });
+}
 
 // ============================================
 // Health Check
@@ -197,6 +212,31 @@ $router->put('/about', function() use ($settingsRoutes) {
 });
 
 // ============================================
+// Navigation Admin Routes
+// ============================================
+require_once __DIR__ . '/routes/navigation.php';
+$navigationRoutes = new NavigationRoutes();
+
+$router->get('/navigation/admin', function() use ($navigationRoutes) {
+    $navigationRoutes->list();
+});
+
+$router->post('/navigation', function() use ($navigationRoutes) {
+    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $navigationRoutes->create();
+});
+
+$router->put('/navigation/:id', function($id) use ($navigationRoutes) {
+    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $navigationRoutes->update($id);
+});
+
+$router->delete('/navigation/:id', function($id) use ($navigationRoutes) {
+    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $navigationRoutes->delete($id);
+});
+
+// ============================================
 // Media Routes
 // ============================================
 require_once __DIR__ . '/routes/media.php';
@@ -286,6 +326,11 @@ $router->get('/jobs', function() use ($jobsRoutes) {
     $jobsRoutes->getAllApplications();
 });
 
+$router->put('/jobs/:id', function($id) use ($jobsRoutes) {
+    RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    $jobsRoutes->updateApplication($id);
+});
+
 $router->delete('/jobs/:id', function($id) use ($jobsRoutes) {
     RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $jobsRoutes->deleteApplication($id);
@@ -314,6 +359,66 @@ $router->put('/reservations/:id', function($id) use ($reservationsRoutes) {
 $router->delete('/reservations/:id', function($id) use ($reservationsRoutes) {
     // No rate limit - admin auth required in route handler
     $reservationsRoutes->deleteReservation($id);
+});
+
+// ============================================
+// Admin utilities
+// ============================================
+require_once __DIR__ . '/utils/Emailer.php';
+
+$router->post('/admin/test-email', function() {
+    require_once __DIR__ . '/middleware/AdminAuthMiddleware.php';
+
+    $env = Config::get('APP_ENV', 'production');
+    if ($env === 'production' && !Config::getBool('ALLOW_PROD_TEST_EMAIL', false)) {
+        ErrorHandler::respond('Test email endpoint is disabled in production', 403);
+    }
+
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    if (!RateLimitMiddleware::check('test_email_ip_' . $ip, 5, 60)) {
+        ErrorHandler::respond('Too many test email attempts. Please slow down.', 429);
+    }
+
+    $user = AdminAuthMiddleware::require(['allow_dev_bypass' => false]);
+    $userKey = 'test_email_user_' . ($user['id'] ?? 'unknown');
+    if (!RateLimitMiddleware::check($userKey, 20, 3600)) {
+        ErrorHandler::respond('Too many test email attempts for this account.', 429);
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $type = strtolower($input['type'] ?? 'ops');
+    $requestId = RequestContext::getRequestId();
+
+    if ($type === 'alert') {
+        Emailer::sendAlert([
+            'status' => 500,
+            'message' => 'Admin-triggered alert test',
+            'requestId' => $requestId,
+            'timestampUTC' => gmdate('c'),
+            'method' => $_SERVER['REQUEST_METHOD'] ?? 'POST',
+            'path' => $_SERVER['REQUEST_URI'] ?? '/api/admin/test-email',
+            'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+            'ip' => $ip,
+        ]);
+        echo json_encode(['success' => true, 'type' => 'alert', 'requestId' => $requestId]);
+        return;
+    }
+
+    Emailer::sendOpsNotification(
+        'Admin Test Notification',
+        [
+            'Triggered By' => sprintf('Admin user %s', $user['username'] ?? 'unknown'),
+            'Purpose' => 'Verify SendGrid ops delivery',
+        ],
+        [
+            'requestId' => $requestId,
+            'path' => $_SERVER['REQUEST_URI'] ?? '/api/admin/test-email',
+            'method' => $_SERVER['REQUEST_METHOD'] ?? 'POST',
+        ],
+        null
+    );
+
+    echo json_encode(['success' => true, 'type' => 'ops', 'requestId' => $requestId]);
 });
 
 // ============================================

@@ -47,12 +47,11 @@ class AuthRoutes {
 
         // Check if account is locked due to failed attempts
         if (RateLimitMiddleware::isAccountLocked($username)) {
-            http_response_code(429);
-            echo json_encode([
+            $message = 'Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.';
+            ErrorHandler::respond($message, 429, [
                 'success' => false,
-                'message' => 'Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.'
+                'message' => $message
             ]);
-            return;
         }
 
         try {
@@ -68,22 +67,18 @@ class AuthRoutes {
                 // Track failed attempt
                 RateLimitMiddleware::trackFailedLogin($username);
                 
-                http_response_code(401);
-                echo json_encode([
+                ErrorHandler::respond('Invalid credentials', 401, [
                     'success' => false,
                     'message' => 'Invalid credentials'
                 ]);
-                return;
             }
 
             // Check if user is active
             if (!$user['is_active']) {
-                http_response_code(401);
-                echo json_encode([
+                ErrorHandler::respond('Account is disabled', 401, [
                     'success' => false,
                     'message' => 'Account is disabled'
                 ]);
-                return;
             }
 
             // Verify password with bcrypt
@@ -97,12 +92,10 @@ class AuthRoutes {
                     $message .= ". Warning: {$remaining} attempts remaining before account lockout.";
                 }
                 
-                http_response_code(401);
-                echo json_encode([
+                ErrorHandler::respond($message, 401, [
                     'success' => false,
                     'message' => $message
                 ]);
-                return;
             }
 
             // Clear failed login attempts on successful login
@@ -136,8 +129,7 @@ class AuthRoutes {
 
         } catch (Exception $e) {
             Logger::error('Login error', ['error' => $e->getMessage()]);
-            http_response_code(500);
-            echo json_encode([
+            ErrorHandler::respond('An error occurred during login', 500, [
                 'success' => false,
                 'message' => 'An error occurred during login'
             ]);

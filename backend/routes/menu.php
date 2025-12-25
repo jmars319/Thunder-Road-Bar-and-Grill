@@ -26,6 +26,7 @@ require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
+require_once __DIR__ . '/../utils/HtmlSanitizer.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 
@@ -39,8 +40,29 @@ class MenuRoutes {
         self::$cacheTTL = Config::getInt('CACHE_MENU_TTL', 300); // 5 minutes default
     }
 
+    private function isDebugRequest() {
+        if (Config::getBool('DEBUG_MENU_COLUMNS', false)) {
+            return true;
+        }
+        if (isset($_GET['debug'])) {
+            $value = strtolower((string) $_GET['debug']);
+            return !in_array($value, ['0', 'false', 'off'], true);
+        }
+        return false;
+    }
+
+    private function debugLog($label, array $data = []) {
+        if (!$this->isDebugRequest()) {
+            return;
+        }
+        Logger::info('[menu-debug] ' . $label, $data);
+    }
+
     private function simplifyMedia($media) {
         if (!$media) {
+            return null;
+        }
+        if (!empty($media['missing_file']) || empty($media['fallback_original'])) {
             return null;
         }
         return [
@@ -67,15 +89,10 @@ class MenuRoutes {
      * GET /api/menu - Public menu with active categories and available items
      */
     public function getMenu() {
-        // Serve from cache if available
-        if (Config::getBool('CACHE_MENU', true) && 
-            self::$cache['payload'] && 
-            time() < self::$cache['expires']) {
-            header('X-Cache: HIT');
-            header('Cache-Control: public, max-age=300, s-maxage=600');
-            echo json_encode(self::$cache['payload']);
-            return;
-        }
+        // Always serve fresh data; public menu needs immediate updates
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
 
         $query = "
             SELECT 
@@ -108,6 +125,15 @@ class MenuRoutes {
         $galleryIds = [];
         foreach ($results as $row) {
             if (!empty($row['category_gallery_image_id'])) {
+                $galleryIds[(int)$row['category_gallery_image_id']] = true;
+            }
+        }
+        $mediaMap = $galleryIds
+            ? MediaResponseBuilder::hydrateByIds($this->db, array_keys($galleryIds))
+            : [];
+        $galleryIds = [];
+        foreach ($results as $row) {
+            if (!empty($row['category_gallery_image_id'])) {
                 $galleryIds[(int) $row['category_gallery_image_id']] = true;
             }
         }
@@ -124,7 +150,7 @@ class MenuRoutes {
                 $categories[$catId] = [
                     'id' => $catId,
                     'name' => $row['category_name'],
-                    'description' => $row['category_description'],
+                    'description' => HtmlSanitizer::sanitizeRichText($row['category_description'] ?? ''),
                     'image_url' => $row['category_image'],
                     'gallery_image_url' => $row['category_gallery_image'],
                     'display_order' => (int)$row['category_order'],
@@ -157,17 +183,10 @@ class MenuRoutes {
         }
 
         $output = array_values($categories);
-
-        // Store in cache
-        if (Config::getBool('CACHE_MENU', true)) {
-            self::$cache = [
-                'payload' => $output,
-                'expires' => time() + self::$cacheTTL
-            ];
-        }
-
-        header('X-Cache: MISS');
-        header('Cache-Control: public, max-age=300, s-maxage=600');
+        $this->debugLog('api.menu.response.sample', [
+            'count' => count($output),
+            'first_category' => $output[0] ?? null
+        ]);
         echo json_encode($output);
     }
 
@@ -215,7 +234,7 @@ class MenuRoutes {
                 $categories[$catId] = [
                     'id' => $catId,
                     'name' => $row['category_name'],
-                    'description' => $row['category_description'],
+                    'description' => HtmlSanitizer::sanitizeRichText($row['category_description'] ?? ''),
                     'image_url' => $row['category_image'],
                     'gallery_image_id' => $row['category_gallery_image_id'] !== null ? (int)$row['category_gallery_image_id'] : null,
                     'gallery_image_url' => $row['category_gallery_image'],
@@ -225,13 +244,21 @@ class MenuRoutes {
                     'is_active' => (bool)$row['category_active'],
                     'items' => []
                 ];
+                $mediaId = $row['category_gallery_image_id'] ?? null;
+                if ($mediaId && isset($mediaMap[$mediaId])) {
+                    $media = $this->simplifyMedia($mediaMap[$mediaId]);
+                    if ($media) {
+                        $categories[$catId]['gallery_image_responsive'] = $media;
+                        $categories[$catId]['gallery_image_variants'] = $media['responsive_variants'];
+                    }
+                }
             }
 
             if ($row['item_id']) {
-                $categories[$catId]['items'][] = [
-                    'id' => (int)$row['item_id'],
-                    'name' => $row['item_name'],
-                    'description' => $row['item_description'],
+                    $categories[$catId]['items'][] = [
+                        'id' => (int)$row['item_id'],
+                        'name' => $row['item_name'],
+                        'description' => HtmlSanitizer::sanitizeRichText($row['item_description'] ?? ''),
                     'price' => $row['item_price'] !== null ? (float)$row['item_price'] : null,
                     'primary_quantity' => $row['item_primary_quantity'],
                     'secondary_quantity' => $row['item_secondary_quantity'],
@@ -254,6 +281,9 @@ class MenuRoutes {
             'SELECT id, name, description, image_url, gallery_image_id, display_order, display_columns, hide_descriptions, is_active 
              FROM menu_categories ORDER BY display_order'
         );
+        foreach ($results as &$row) {
+            $row['description'] = HtmlSanitizer::sanitizeRichText($row['description'] ?? '');
+        }
         echo json_encode($results);
     }
 
@@ -265,6 +295,9 @@ class MenuRoutes {
             'SELECT * FROM menu_items WHERE category_id = ? ORDER BY display_order',
             [$categoryId]
         );
+        foreach ($results as &$item) {
+            $item['description'] = HtmlSanitizer::sanitizeRichText($item['description'] ?? '');
+        }
         echo json_encode($results);
     }
 
@@ -276,7 +309,7 @@ class MenuRoutes {
 
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';
-        $description = $input['description'] ?? '';
+        $description = HtmlSanitizer::sanitizeRichText($input['description'] ?? '');
         $imageUrl = $input['image_url'] ?? null;
         $galleryImageId = $input['gallery_image_id'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;
@@ -303,6 +336,20 @@ class MenuRoutes {
             [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $hideDescriptions, $isActive]
         );
 
+        if ($this->isDebugRequest()) {
+            $this->debugLog('category.create.input', [
+                'name' => $name,
+                'gallery_image_id' => $galleryImageId,
+                'description' => $description
+            ]);
+            $saved = $this->db->fetchOne('SELECT description, gallery_image_id FROM menu_categories WHERE id = ?', [$id]);
+            $this->debugLog('category.create.persisted', [
+                'id' => $id,
+                'gallery_image_id' => $saved['gallery_image_id'] ?? null,
+                'description' => $saved['description'] ?? null
+            ]);
+        }
+
         self::invalidateCache();
         echo json_encode(['id' => $id, 'message' => 'Category created']);
     }
@@ -315,7 +362,7 @@ class MenuRoutes {
 
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';
-        $description = $input['description'] ?? '';
+        $description = HtmlSanitizer::sanitizeRichText($input['description'] ?? '');
         $displayOrder = $input['display_order'] ?? 0;
         $displayColumns = $input['display_columns'] ?? 1;
         $hideDescriptions = $input['hide_descriptions'] ?? 0;
@@ -337,12 +384,29 @@ class MenuRoutes {
             ErrorHandler::validation($validator->getErrors());
         }
 
+        if ($this->isDebugRequest()) {
+            $this->debugLog('category.update.input', [
+                'id' => $id,
+                'gallery_image_id' => $galleryImageId,
+                'description' => $description
+            ]);
+        }
+
         $this->db->update(
             'UPDATE menu_categories 
              SET name = ?, description = ?, image_url = ?, gallery_image_id = ?, display_order = ?, display_columns = ?, hide_descriptions = ?, is_active = ? 
              WHERE id = ?',
             [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $hideDescriptions, $isActive, $id]
         );
+
+        if ($this->isDebugRequest()) {
+            $saved = $this->db->fetchOne('SELECT description, gallery_image_id FROM menu_categories WHERE id = ?', [$id]);
+            $this->debugLog('category.update.persisted', [
+                'id' => $id,
+                'gallery_image_id' => $saved['gallery_image_id'] ?? null,
+                'description' => $saved['description'] ?? null
+            ]);
+        }
 
         self::invalidateCache();
         echo json_encode(['message' => 'Category updated']);
@@ -407,7 +471,7 @@ class MenuRoutes {
         $input = json_decode(file_get_contents('php://input'), true);
         $categoryId = $input['category_id'] ?? 0;
         $name = $input['name'] ?? '';
-        $description = $input['description'] ?? '';
+        $description = HtmlSanitizer::sanitizeRichText($input['description'] ?? '');
         $price = $input['price'] ?? null;
         $imageUrl = $input['image_url'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;
@@ -448,7 +512,7 @@ class MenuRoutes {
 
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';
-        $description = $input['description'] ?? '';
+        $description = HtmlSanitizer::sanitizeRichText($input['description'] ?? '');
         $price = $input['price'] ?? null;
         $imageUrl = $input['image_url'] ?? null;
         $displayOrder = $input['display_order'] ?? 0;

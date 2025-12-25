@@ -9,6 +9,7 @@
 require_once __DIR__ . '/../utils/JWT.php';
 require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../utils/Logger.php';
+require_once __DIR__ . '/ErrorHandler.php';
 
 class AdminAuthMiddleware {
     /**
@@ -16,7 +17,7 @@ class AdminAuthMiddleware {
      * 
      * @return array|null User data if authenticated, null otherwise
      */
-    public static function verify() {
+    public static function verify(bool $allowDevBypass = true) {
         // Extract token from Authorization header (Bearer <token>)
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
         
@@ -57,24 +58,25 @@ class AdminAuthMiddleware {
             }
         }
 
-        // SECURITY WARNING: Development fallback authentication
-        // This allows simple header auth ONLY in non-production environments
-        if (!Config::isProduction()) {
-            // Header-based dev auth
-            if (Config::getBool('ALLOW_DEV_ADMIN_HEADER', false)) {
-                $devHeader = $_SERVER['HTTP_X_ADMIN_AUTH'] ?? '';
-                if ($devHeader === 'admin') {
-                    Logger::debug('Dev admin header auth used');
-                    return [
-                        'id' => 1,
-                        'username' => 'admin',
-                        'role' => 'admin'
-                    ];
-                }
+        /**
+         * Dev-only bypass:
+         * - Must explicitly enable ALLOW_DEV_ADMIN_HEADER=true
+         * - Must run with APP_ENV === 'development'
+         * - Request must originate from localhost (127.0.0.1 / ::1 or optional DEV_ADMIN_ALLOW_IPS list)
+         * Without ALL of the above, bypass is impossible.
+         */
+        if ($allowDevBypass && self::devBypassEnabled()) {
+            $devHeader = $_SERVER['HTTP_X_ADMIN_AUTH'] ?? '';
+            if ($devHeader === 'admin' && self::isAllowedDevIp()) {
+                Logger::debug('Dev admin header auth used');
+                return [
+                    'id' => 1,
+                    'username' => 'admin',
+                    'role' => 'admin'
+                ];
             }
 
-            // Cookie-based dev auth
-            if (isset($_COOKIE['admin']) && $_COOKIE['admin'] === 'true') {
+            if (isset($_COOKIE['admin']) && $_COOKIE['admin'] === 'true' && self::isAllowedDevIp()) {
                 Logger::debug('Dev admin cookie auth used');
                 return [
                     'id' => 1,
@@ -94,10 +96,7 @@ class AdminAuthMiddleware {
      * @param string $message Error message
      */
     private static function unauthorized($message) {
-        http_response_code(401);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => $message]);
-        exit;
+        ErrorHandler::respond($message, 401);
     }
 
     /**
@@ -106,10 +105,7 @@ class AdminAuthMiddleware {
      * @param string $message Error message
      */
     private static function forbidden($message) {
-        http_response_code(403);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => $message]);
-        exit;
+        ErrorHandler::respond($message, 403);
     }
 
     /**
@@ -117,11 +113,30 @@ class AdminAuthMiddleware {
      * 
      * @return array User data
      */
-    public static function require() {
-        $user = self::verify();
+    public static function require(array $options = []) {
+        $allowDevBypass = $options['allow_dev_bypass'] ?? true;
+        $user = self::verify($allowDevBypass);
         if (!is_array($user)) {
             exit; // verify() already sent response
         }
         return $user;
+    }
+
+    private static function devBypassEnabled() {
+        if (!Config::getBool('ALLOW_DEV_ADMIN_HEADER', false)) {
+            return false;
+        }
+        return Config::get('APP_ENV', 'production') === 'development';
+    }
+
+    private static function isAllowedDevIp() {
+        $remote = $_SERVER['REMOTE_ADDR'] ?? '';
+        $allowed = ['127.0.0.1', '::1'];
+        $extra = trim((string) Config::get('DEV_ADMIN_ALLOW_IPS', ''));
+        if ($extra !== '') {
+            $parts = array_filter(array_map('trim', explode(',', $extra)));
+            $allowed = array_merge($allowed, $parts);
+        }
+        return in_array($remote, $allowed, true);
     }
 }

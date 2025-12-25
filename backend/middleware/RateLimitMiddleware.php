@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../utils/Logger.php';
+require_once __DIR__ . '/ErrorHandler.php';
 
 class RateLimitMiddleware {
     private static $cacheDir = null;
@@ -78,10 +79,7 @@ class RateLimitMiddleware {
     public static function global($ip) {
         $limit = Config::getInt('RATE_LIMIT_GLOBAL', 300);
         if (!self::check($ip, $limit, 60)) {
-            http_response_code(429);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Too many requests. Please try again later.']);
-            exit;
+            ErrorHandler::respond('Too many requests. Please try again later.', 429);
         }
     }
 
@@ -93,10 +91,7 @@ class RateLimitMiddleware {
     public static function strict($ip) {
         $limit = Config::getInt('RATE_LIMIT_STRICT', 20);
         if (!self::check($ip, $limit, 60)) {
-            http_response_code(429);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Too many requests. Please try again later.']);
-            exit;
+            ErrorHandler::respond('Too many requests. Please try again later.', 429);
         }
     }
 
@@ -108,10 +103,7 @@ class RateLimitMiddleware {
     public static function login($ip) {
         $limit = Config::getInt('RATE_LIMIT_LOGIN', 5);
         if (!self::check($ip, $limit, 900)) { // 15 minutes
-            http_response_code(429);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Too many login attempts. Please try again later.']);
-            exit;
+            ErrorHandler::respond('Too many login attempts. Please try again later.', 429);
         }
     }
 
@@ -123,10 +115,7 @@ class RateLimitMiddleware {
     public static function publicEndpoint($ip) {
         $limit = Config::getInt('RATE_LIMIT_PUBLIC', 100);
         if (!self::check($ip, $limit, 60)) {
-            http_response_code(429);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Too many requests. Please try again later.']);
-            exit;
+            ErrorHandler::respond('Too many requests. Please try again later.', 429);
         }
     }
 

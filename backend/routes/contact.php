@@ -13,6 +13,7 @@ require_once __DIR__ . '/../utils/Database.php';
 require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
+require_once __DIR__ . '/../utils/Emailer.php';
 
 class ContactRoutes {
     private $db;
@@ -29,20 +30,55 @@ class ContactRoutes {
         AdminAuthMiddleware::require();
 
         // Support pagination for inbox module
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 25;
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
         $offset = ($page - 1) * $perPage;
 
+        $allowedSort = [
+            'submitted_at' => 'submitted_at',
+            'name' => 'name',
+            'status' => 'status',
+            'subject' => 'subject'
+        ];
+        $sortBy = strtolower($_GET['sort_by'] ?? 'submitted_at');
+        $sortColumn = $allowedSort[$sortBy] ?? 'submitted_at';
+        $sortDir = strtoupper($_GET['sort_dir'] ?? 'DESC');
+        if (!in_array($sortDir, ['ASC', 'DESC'], true)) {
+            $sortDir = 'DESC';
+        }
+
+        $where = [];
+        $params = [];
+
+        $status = isset($_GET['status']) ? trim($_GET['status']) : null;
+        if ($status && $status !== 'all') {
+            $where[] = 'status = ?';
+            $params[] = $status;
+        }
+
+        $search = isset($_GET['search']) ? trim($_GET['search']) : null;
+        if ($search !== null && $search !== '') {
+            $where[] = '(name LIKE ? OR email LIKE ? OR subject LIKE ?)';
+            $needle = '%' . $search . '%';
+            $params[] = $needle;
+            $params[] = $needle;
+            $params[] = $needle;
+        }
+
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        $totalRow = $this->db->fetchOne('SELECT COUNT(*) as count FROM contact_messages' . $whereSql, $params);
+        $total = (int)($totalRow['count'] ?? 0);
+
         $messages = $this->db->fetchAll(
-            'SELECT * FROM contact_messages ORDER BY submitted_at DESC LIMIT ? OFFSET ?',
-            [$perPage, $offset]
+            'SELECT * FROM contact_messages' . $whereSql . " ORDER BY {$sortColumn} {$sortDir} LIMIT ? OFFSET ?",
+            array_merge($params, [$perPage, $offset])
         );
 
-        $total = $this->db->fetchOne('SELECT COUNT(*) as count FROM contact_messages');
-
         echo json_encode([
-            'messages' => $messages,
-            'total' => (int)$total['count']
+            'data' => $messages,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage
         ]);
     }
 
@@ -71,12 +107,35 @@ class ContactRoutes {
 
         // Insert contact message
         $id = $this->db->insert(
-            'INSERT INTO contact_messages (name, email, phone, subject, message, is_read, submitted_at) 
-             VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [$name, $email, $phone, $subject, $message, 0]
+            'INSERT INTO contact_messages (name, email, phone, subject, message, is_read, status, submitted_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+            [$name, $email, $phone, $subject, $message, 0, 'new']
         );
 
         Logger::info("New contact message: ID=$id, From=$name ($email)");
+
+        try {
+            Emailer::sendOpsNotification(
+                'Contact Message',
+                [
+                    'Name' => $name,
+                    'Email' => $email,
+                    'Phone' => $phone ?: 'Not provided',
+                    'Subject' => $subject ?: 'No subject',
+                    'Message' => $message,
+                ],
+                [
+                    'requestId' => RequestContext::getRequestId(),
+                    'path' => $_SERVER['REQUEST_URI'] ?? '/api/contact',
+                    'method' => $_SERVER['REQUEST_METHOD'] ?? 'POST',
+                    'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                ],
+                $email
+            );
+            Logger::info('Contact email sent', ['id' => $id]);
+        } catch (Exception $e) {
+            Logger::error('Contact email failed', ['error' => $e->getMessage()]);
+        }
 
         echo json_encode([
             'id' => $id,
@@ -93,10 +152,22 @@ class ContactRoutes {
 
         $input = json_decode(file_get_contents('php://input'), true);
         $isRead = isset($input['is_read']) ? (int)$input['is_read'] : 0;
+        $status = isset($input['status']) ? trim($input['status']) : null;
+        $allowedStatuses = ['new', 'in_progress', 'responded', 'archived'];
+
+        $fields = ['is_read = ?'];
+        $params = [$isRead];
+
+        if ($status && in_array($status, $allowedStatuses, true)) {
+            $fields[] = 'status = ?';
+            $params[] = $status;
+        }
+
+        $params[] = $id;
 
         $this->db->update(
-            'UPDATE contact_messages SET is_read = ? WHERE id = ?',
-            [$isRead, $id]
+            'UPDATE contact_messages SET ' . implode(', ', $fields) . ' WHERE id = ?',
+            $params
         );
 
         echo json_encode(['message' => 'Message updated']);

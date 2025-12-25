@@ -5,12 +5,33 @@ require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../utils/MediaPipeline.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
+require_once __DIR__ . '/../middleware/ErrorHandler.php';
 
 class MediaRoutes {
     private $db;
 
     public function __construct() {
         $this->db = Database::getInstance();
+    }
+
+    private function describeUploadError($code) {
+        switch ($code) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                return 'File exceeds server upload limit';
+            case UPLOAD_ERR_PARTIAL:
+                return 'Upload interrupted, please try again';
+            case UPLOAD_ERR_NO_FILE:
+                return 'No file was uploaded';
+            case UPLOAD_ERR_NO_TMP_DIR:
+                return 'Server is missing a temporary directory';
+            case UPLOAD_ERR_CANT_WRITE:
+                return 'Server failed to save the uploaded file';
+            case UPLOAD_ERR_EXTENSION:
+                return 'A PHP extension blocked the upload';
+            default:
+                return 'Upload failed';
+        }
     }
 
     private function hydrate($rows) {
@@ -53,8 +74,7 @@ class MediaRoutes {
             echo json_encode(['success' => true, 'media' => $hydrated]);
         } catch (Exception $e) {
             Logger::error('GET /api/media failed', ['error' => $e->getMessage()]);
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to fetch media']);
+            ErrorHandler::respond('Failed to fetch media', 500, ['success' => false]);
         }
     }
 
@@ -65,15 +85,12 @@ class MediaRoutes {
         try {
             $row = $this->db->fetchOne('SELECT * FROM media_library WHERE id = ?', [$id]);
             if (!$row) {
-                http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'Media not found']);
-                return;
+                ErrorHandler::respond('Media not found', 404, ['success' => false]);
             }
             echo json_encode(['success' => true, 'media' => MediaResponseBuilder::hydrateRow($row)]);
         } catch (Exception $e) {
             Logger::error('GET /api/media/:id failed', ['error' => $e->getMessage()]);
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to fetch media']);
+            ErrorHandler::respond('Failed to fetch media', 500, ['success' => false]);
         }
     }
 
@@ -84,16 +101,14 @@ class MediaRoutes {
         $user = AdminAuthMiddleware::require();
 
         if (!isset($_FILES['file'])) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'No file uploaded']);
-            return;
+            ErrorHandler::respond('No file uploaded', 400, ['success' => false]);
         }
 
         $file = $_FILES['file'];
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Upload failed']);
-            return;
+            $message = $this->describeUploadError($file['error']);
+            Logger::error('POST /api/media upload_error', ['code' => $file['error'], 'message' => $message]);
+            ErrorHandler::respond($message, 400, ['success' => false]);
         }
 
         $title = trim($_POST['title'] ?? $file['name']);
@@ -101,10 +116,12 @@ class MediaRoutes {
         $caption = trim($_POST['caption'] ?? '');
         $category = strtolower(trim($_POST['category'] ?? 'general'));
 
+        if ($category === 'logo') {
+            ErrorHandler::respond('Logo uploads are no longer supported', 400, ['success' => false]);
+        }
+
         if ($category === 'resume') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Resume uploads are not supported']);
-            return;
+            ErrorHandler::respond('Resume uploads are not supported', 400, ['success' => false]);
         }
 
         $processed = null;
@@ -175,9 +192,9 @@ class MediaRoutes {
                     MediaPipeline::deleteOriginalByUrl($processed['file_url']);
                 }
             }
-            http_response_code($e->getCode() === 400 ? 400 : 500);
-            $message = $e->getCode() === 400 ? $e->getMessage() : 'Upload failed';
-            echo json_encode(['success' => false, 'message' => $message]);
+            $status = $e->getCode() === 400 ? 400 : 500;
+            $message = $status === 400 ? $e->getMessage() : 'Upload failed';
+            ErrorHandler::respond($message, $status, ['success' => false]);
         }
     }
 
@@ -196,10 +213,11 @@ class MediaRoutes {
         foreach ($assignable as $field) {
             if (array_key_exists($field, $input)) {
                 $value = $input[$field];
-                if ($field === 'category' && strtolower(trim($value)) === 'resume') {
-                    http_response_code(400);
-                    echo json_encode(['success' => false, 'message' => 'Resume category is not allowed']);
-                    return;
+                if ($field === 'category') {
+                    $normalized = strtolower(trim($value));
+                    if ($normalized === 'resume' || $normalized === 'logo') {
+                        ErrorHandler::respond(ucfirst($normalized) . ' category is not allowed', 400, ['success' => false]);
+                    }
                 }
                 $fields[] = "{$field} = ?";
                 $params[] = $value;
@@ -218,8 +236,7 @@ class MediaRoutes {
             echo json_encode(['success' => true]);
         } catch (Exception $e) {
             Logger::error('PUT /api/media/:id failed', ['error' => $e->getMessage()]);
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to update media']);
+            ErrorHandler::respond('Failed to update media', 500, ['success' => false]);
         }
     }
 
@@ -231,9 +248,7 @@ class MediaRoutes {
         try {
             $row = $this->db->fetchOne('SELECT * FROM media_library WHERE id = ?', [$id]);
             if (!$row) {
-                http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'Media not found']);
-                return;
+                ErrorHandler::respond('Media not found', 404, ['success' => false]);
             }
 
             $manifest = MediaPipeline::readManifest($row['manifest_path'] ?? null);
@@ -262,8 +277,7 @@ class MediaRoutes {
             echo json_encode(['success' => true]);
         } catch (Exception $e) {
             Logger::error('DELETE /api/media/:id failed', ['error' => $e->getMessage()]);
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to delete media']);
+            ErrorHandler::respond('Failed to delete media', 500, ['success' => false]);
         }
     }
 }

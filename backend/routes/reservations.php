@@ -12,6 +12,7 @@ require_once __DIR__ . '/../utils/Database.php';
 require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
+require_once __DIR__ . '/../utils/Emailer.php';
 
 class ReservationsRoutes {
     private $db;
@@ -27,11 +28,56 @@ class ReservationsRoutes {
         require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
         AdminAuthMiddleware::require();
 
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
+        $offset = ($page - 1) * $perPage;
+
+        $allowedSort = [
+            'reservation_date' => 'reservation_date',
+            'reservation_time' => 'reservation_time',
+            'created_at' => 'created_at',
+            'name' => 'name',
+            'status' => 'status'
+        ];
+        $sortBy = strtolower($_GET['sort_by'] ?? 'reservation_date');
+        $sortColumn = $allowedSort[$sortBy] ?? 'reservation_date';
+        $sortDir = strtoupper($_GET['sort_dir'] ?? 'DESC');
+        if (!in_array($sortDir, ['ASC', 'DESC'], true)) {
+            $sortDir = 'DESC';
+        }
+
+        $where = [];
+        $params = [];
+        $status = isset($_GET['status']) ? trim($_GET['status']) : null;
+        if ($status && $status !== 'all') {
+            $where[] = 'status = ?';
+            $params[] = $status;
+        }
+
+        $search = isset($_GET['search']) ? trim($_GET['search']) : null;
+        if ($search !== null && $search !== '') {
+            $where[] = '(name LIKE ? OR email LIKE ? OR phone LIKE ?)';
+            $needle = '%' . $search . '%';
+            $params[] = $needle;
+            $params[] = $needle;
+            $params[] = $needle;
+        }
+
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        $totalRow = $this->db->fetchOne('SELECT COUNT(*) as count FROM reservations' . $whereSql, $params);
+        $total = (int)($totalRow['count'] ?? 0);
+
         $reservations = $this->db->fetchAll(
-            'SELECT * FROM reservations ORDER BY reservation_date DESC, reservation_time DESC'
+            'SELECT * FROM reservations' . $whereSql . " ORDER BY {$sortColumn} {$sortDir} LIMIT ? OFFSET ?",
+            array_merge($params, [$perPage, $offset])
         );
 
-        echo json_encode($reservations);
+        echo json_encode([
+            'data' => $reservations,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage
+        ]);
     }
 
     /**
@@ -76,16 +122,25 @@ class ReservationsRoutes {
         
         // Send email notification
         try {
-            require_once __DIR__ . '/../utils/Email.php';
-            Email::sendReservationNotification([
-                'name' => $name,
-                'email' => $email,
-                'phone' => $phone,
-                'date' => $reservationDate,
-                'time' => $reservationTime,
-                'party_size' => $numberOfGuests,
-                'special_requests' => $specialRequests
-            ]);
+            Emailer::sendOpsNotification(
+                'Reservation Request',
+                [
+                    'Name' => $name,
+                    'Email' => $email ?: 'Not provided',
+                    'Phone' => $phone,
+                    'Date' => $reservationDate,
+                    'Time' => $reservationTime,
+                    'Party Size' => $numberOfGuests,
+                    'Special Requests' => $specialRequests ?: 'None',
+                ],
+                [
+                    'requestId' => RequestContext::getRequestId(),
+                    'path' => $_SERVER['REQUEST_URI'] ?? '/api/reservations',
+                    'method' => $_SERVER['REQUEST_METHOD'] ?? 'POST',
+                    'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                ],
+                $email ?: null
+            );
             Logger::info('Reservation email sent', ['id' => $id]);
         } catch (Exception $e) {
             Logger::error('Reservation email failed', ['error' => $e->getMessage()]);
@@ -107,10 +162,8 @@ class ReservationsRoutes {
         $input = json_decode(file_get_contents('php://input'), true);
         $status = $input['status'] ?? '';
 
-        if (!in_array($status, ['pending', 'confirmed', 'cancelled', 'completed'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid status']);
-            return;
+        if (!in_array($status, ['pending', 'confirmed', 'cancelled', 'completed', 'archived'], true)) {
+            ErrorHandler::respond('Invalid status', 400);
         }
 
         $this->db->update(

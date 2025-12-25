@@ -27,7 +27,7 @@ log_info "Starting PHP backend on $BACKEND_HOST:$BACKEND_PORT"
 : > "$BACKEND_LOG_FILE"
 (
   cd "$BACKEND_DIR"
-  php -S "$BACKEND_HOST:$BACKEND_PORT" router.php >"$BACKEND_LOG_FILE" 2>&1 &
+  php -d upload_max_filesize=16M -d post_max_size=32M -S "$BACKEND_HOST:$BACKEND_PORT" router.php >"$BACKEND_LOG_FILE" 2>&1 &
   echo $! > "$BACKEND_PID_FILE"
 )
 

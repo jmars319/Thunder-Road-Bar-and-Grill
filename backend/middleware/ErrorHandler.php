@@ -7,6 +7,8 @@
 
 require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../utils/Logger.php';
+require_once __DIR__ . '/../utils/RequestContext.php';
+require_once __DIR__ . '/../utils/ErrorAlert.php';
 
 class ErrorHandler {
     /**
@@ -23,30 +25,30 @@ class ErrorHandler {
             $code = 500;
         }
 
+        $requestId = RequestContext::getRequestId();
+        $timestamp = gmdate('c');
+
         // Log error
         Logger::error('Error occurred', [
             'code' => $code,
             'message' => $message,
             'file' => $e->getFile(),
             'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString()
+            'trace' => $e->getTraceAsString(),
+            'requestId' => $requestId
         ]);
 
-        // Send JSON error response (ensure code is integer)
-        http_response_code(is_int($code) ? $code : 500);
-        header('Content-Type: application/json');
-
-        $response = ['error' => $message];
-
-        // Include stack trace in development
-        if (Config::isDebug() && !Config::isProduction()) {
-            $response['file'] = $e->getFile();
-            $response['line'] = $e->getLine();
-            $response['trace'] = explode("\n", $e->getTraceAsString());
+        $clientMessage = $message;
+        if ($code >= 500 && !Config::isDebug()) {
+            $clientMessage = 'Internal server error';
         }
 
-        echo json_encode($response);
-        exit;
+        $extra = [];
+        if (Config::isDebug()) {
+            $extra['debugMessage'] = $message;
+        }
+
+        self::respond($clientMessage, $code, $extra);
     }
 
     /**
@@ -56,10 +58,7 @@ class ErrorHandler {
      * @param int $code HTTP status code
      */
     public static function send($message, $code = 400) {
-        http_response_code($code);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => $message]);
-        exit;
+        self::respond($message, $code);
     }
 
     /**
@@ -68,12 +67,42 @@ class ErrorHandler {
      * @param array $errors Validation errors
      */
     public static function validation($errors) {
-        http_response_code(400);
-        header('Content-Type: application/json');
-        echo json_encode([
-            'error' => 'Validation failed',
-            'errors' => $errors
-        ]);
+        self::respond('Validation failed', 400, ['errors' => $errors]);
+    }
+
+    /**
+     * Build and send a consistent error response payload
+     */
+    public static function respond($message, $code = 400, $extra = []) {
+        $status = (int) $code;
+        if ($status < 100) {
+            $status = 400;
+        }
+
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+
+        $payload = array_merge([
+            'error' => $message,
+            'status' => $status,
+            'requestId' => RequestContext::getRequestId(),
+            'timestampUTC' => gmdate('c')
+        ], $extra);
+
+        if ($status >= 500) {
+            ErrorAlert::maybeSend([
+                'status' => $status,
+                'message' => $message,
+                'requestId' => $payload['requestId'],
+                'timestampUTC' => $payload['timestampUTC'],
+                'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+                'path' => $_SERVER['REQUEST_URI'] ?? '/',
+                'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
+            ]);
+        }
+
+        echo json_encode($payload);
         exit;
     }
 
@@ -105,18 +134,12 @@ class ErrorHandler {
         register_shutdown_function(function() {
             $error = error_get_last();
             if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-                Logger::error('Fatal error', $error);
+                Logger::error('Fatal error', array_merge($error, [
+                    'requestId' => RequestContext::getRequestId()
+                ]));
                 
                 if (!headers_sent()) {
-                    http_response_code(500);
-                    header('Content-Type: application/json');
-                    
-                    $response = ['error' => 'Internal server error'];
-                    if (Config::isDebug()) {
-                        $response['details'] = $error;
-                    }
-                    
-                    echo json_encode($response);
+                    self::respond('Internal server error', 500);
                 }
             }
         });

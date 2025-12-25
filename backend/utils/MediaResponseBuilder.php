@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/MediaPipeline.php';
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/Logger.php';
 
 class MediaResponseBuilder {
     private static function decodeVariants($value) {
@@ -43,11 +44,46 @@ class MediaResponseBuilder {
         ];
     }
 
+    private static function filterExistingVariants($variants, $rowId, $type) {
+        if (!is_array($variants)) {
+            return [];
+        }
+        $filtered = [];
+        foreach ($variants as $variant) {
+            $path = $variant['path'] ?? $variant['url'] ?? null;
+            if ($path && MediaPipeline::fileExistsByUrl($path)) {
+                $filtered[] = $variant;
+                continue;
+            }
+            Logger::warning('Missing media variant on disk', [
+                'media_id' => $rowId,
+                'variant_type' => $type,
+                'path' => $path
+            ]);
+        }
+        return $filtered;
+    }
+
     public static function hydrateRow($row) {
         if (!$row) {
             return null;
         }
         $variants = self::resolveVariants($row);
+        $missingFile = false;
+
+        if (!MediaPipeline::fileExistsByUrl($row['file_url'] ?? null)) {
+            $missingFile = true;
+        }
+
+        $filteredOptimized = self::filterExistingVariants($variants['optimized'] ?? [], $row['id'] ?? null, 'optimized');
+        $filteredWebp = self::filterExistingVariants($variants['webp'] ?? [], $row['id'] ?? null, 'webp');
+        if (count($filteredOptimized) !== count($variants['optimized'] ?? []) ||
+            count($filteredWebp) !== count($variants['webp'] ?? [])) {
+            $missingFile = true;
+        }
+        $variants['optimized'] = $filteredOptimized;
+        $variants['webp'] = $filteredWebp;
+
         $row['responsive_variants'] = $variants;
         $row['image_variants'] = $variants;
         $row['fallback_original'] = $row['file_url'];
@@ -58,6 +94,19 @@ class MediaResponseBuilder {
         if (empty($row['webp_srcset'])) {
             $row['webp_srcset'] = self::buildSrcsetFromVariants($variants['webp'] ?? []);
         }
+
+        if ($missingFile) {
+            Logger::warning('Media missing original or variants on disk', [
+                'media_id' => $row['id'] ?? null,
+                'file_url' => $row['file_url'] ?? null
+            ]);
+            $row['file_url'] = null;
+            $row['fallback_original'] = null;
+            $row['optimized_srcset'] = '';
+            $row['webp_srcset'] = '';
+        }
+
+        $row['missing_file'] = $missingFile;
 
         return $row;
     }

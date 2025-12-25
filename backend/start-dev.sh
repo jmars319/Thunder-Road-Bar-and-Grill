@@ -41,5 +41,5 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Start PHP development server with router
-php -S localhost:5001 router.php
+# Start PHP development server with router and higher upload limits
+php -d upload_max_filesize=16M -d post_max_size=32M -S localhost:5001 router.php

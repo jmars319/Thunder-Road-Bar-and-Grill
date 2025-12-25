@@ -44,9 +44,8 @@ class Database {
 
             // Fail fast in production
             if (Config::isProduction()) {
-                http_response_code(503);
-                echo json_encode(['error' => 'Database connection failed']);
-                exit(1);
+                require_once __DIR__ . '/../middleware/ErrorHandler.php';
+                ErrorHandler::respond('Database connection failed', 503);
             }
 
             throw $e;

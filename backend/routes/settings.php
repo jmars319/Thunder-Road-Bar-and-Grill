@@ -7,7 +7,7 @@
  *   content and footer columns
  * 
  * Public endpoints:
- * - GET /api/site-settings -> { business_name, tagline, logo_url, phone, email, address, ... }
+ * - GET /api/site-settings -> { business_name, tagline, phone, email, address, ... }
  * - GET /api/navigation -> [{ id, label, url, display_order }]
  * - GET /api/business-hours -> [{ id, day, opening_time, closing_time, is_closed, ... }]
  * - GET /api/about -> { header, paragraph, phone, email, address, map_embed_url }
@@ -26,6 +26,7 @@ require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
+require_once __DIR__ . '/../utils/HtmlSanitizer.php';
 
 class SettingsRoutes {
     private $db;
@@ -72,21 +73,28 @@ class SettingsRoutes {
     public function getSettings() {
         try {
             $settings = $this->db->fetchOne('SELECT * FROM site_settings WHERE id = 1') ?: [];
-            $heroImages = [];
+            $heroImagesRaw = [];
             if (!empty($settings['hero_images'])) {
-                $heroImages = json_decode($settings['hero_images'], true) ?: [];
+                $heroImagesRaw = json_decode($settings['hero_images'], true) ?: [];
             }
+            $heroImages = [];
             $ids = array_values(array_filter(array_map(function ($entry) {
                 return isset($entry['id']) ? (int) $entry['id'] : null;
-            }, $heroImages)));
+            }, $heroImagesRaw)));
             $map = $ids ? MediaResponseBuilder::hydrateByIds($this->db, $ids) : [];
             $heroVariants = [];
-            foreach ($heroImages as $entry) {
+            foreach ($heroImagesRaw as $entry) {
                 $id = $entry['id'] ?? null;
                 if (!$id || !isset($map[$id])) {
+                    Logger::info('Skipping hero image reference with missing media record', ['id' => $id]);
                     continue;
                 }
                 $hydrated = $map[$id];
+                if (!empty($hydrated['missing_file']) || empty($hydrated['fallback_original'])) {
+                    Logger::info('Skipping hero image due to missing files', ['id' => $id]);
+                    continue;
+                }
+                $heroImages[] = $entry;
                 $heroVariants[] = [
                     'id' => $id,
                     'title' => $entry['title'] ?? $hydrated['title'],
@@ -115,7 +123,7 @@ class SettingsRoutes {
      */
     public function getNavigation() {
         try {
-            $results = $this->db->fetchAll('SELECT * FROM navigation_links ORDER BY display_order');
+            $results = $this->db->fetchAll('SELECT * FROM navigation_links WHERE is_active = 1 ORDER BY display_order');
             
             header('Cache-Control: public, max-age=300');
             echo json_encode($results);
@@ -262,8 +270,21 @@ class SettingsRoutes {
         $params = [];
 
         $allowedFields = [
-            'business_name', 'tagline', 'logo_url', 'phone', 'email', 'address',
-            'hero_images', 'menu_description', 'instagram', 'facebook', 'google'
+            'business_name', 'tagline', 'phone', 'email', 'address',
+            'hero_images', 'hero_slideshow_speed', 'instagram', 'facebook', 'google',
+            'hero_title', 'hero_subtitle', 'hero_cta_primary_label', 'hero_cta_primary_href',
+            'hero_cta_secondary_label', 'hero_cta_secondary_href',
+            'menu_heading', 'menu_intro',
+            'reservations_heading', 'reservations_intro', 'reservations_success_copy', 'reservations_error_copy',
+            'about_heading', 'about_intro',
+            'jobs_heading', 'jobs_intro', 'jobs_success_copy', 'jobs_error_copy',
+            'jobs_sidebar_heading', 'jobs_sidebar_intro', 'jobs_sidebar_benefits', 'jobs_positions_label'
+        ];
+
+        $richTextFields = [
+            'menu_intro', 'reservations_intro', 'reservations_success_copy', 'reservations_error_copy',
+            'about_intro', 'jobs_intro', 'jobs_success_copy', 'jobs_error_copy',
+            'jobs_sidebar_benefits'
         ];
 
         foreach ($allowedFields as $field) {
@@ -273,6 +294,25 @@ class SettingsRoutes {
                 // Special handling for hero_images
                 if ($field === 'hero_images') {
                     $value = is_array($value) ? json_encode($value) : null;
+                } elseif (in_array($field, $richTextFields, true)) {
+                    $value = HtmlSanitizer::sanitizeRichText($value);
+                } elseif (in_array($field, ['hero_cta_primary_href', 'hero_cta_secondary_href'], true)) {
+                    $value = is_string($value) ? trim($value) : '';
+                    if ($value === '') {
+                        $value = null;
+                    } elseif (strpos($value, '#') === 0) {
+                        // allow in-page anchors
+                    } else {
+                        $sanitized = filter_var($value, FILTER_SANITIZE_URL);
+                        $value = $sanitized ?: null;
+                    }
+                } elseif ($field === 'hero_slideshow_speed') {
+                    $value = (int) $value;
+                    if ($value <= 0) {
+                        $value = 6000;
+                    }
+                } elseif (is_string($value)) {
+                    $value = trim($value);
                 }
                 
                 $fields[] = "$field = ?";
