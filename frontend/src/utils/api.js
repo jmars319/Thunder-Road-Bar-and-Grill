@@ -30,7 +30,7 @@ export async function authenticatedFetch(url, options = {}) {
   
   // Merge headers with Authorization
   const headers = {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json; charset=utf-8',
     ...options.headers,
   };
   

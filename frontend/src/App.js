@@ -23,6 +23,8 @@ import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import LoginPage from './pages/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import { authenticatedFetch } from './utils/api';
+import NotFoundPage from './components/error-pages/NotFoundPage';
  
 // Lazy load AdminPanel to reduce initial bundle size
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
@@ -41,6 +43,8 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const ADMIN_MODE_KEY = 'adminMode';
+  const AUTH_USER_KEY = 'authUser';
 
   // Listen for auth expiration events from API utility
   useEffect(() => {
@@ -55,18 +59,94 @@ export default function App() {
     // Store JWT token in localStorage for session persistence
     if (token) {
       localStorage.setItem('authToken', token);
+      localStorage.setItem(ADMIN_MODE_KEY, '1');
     }
-    setCurrentUser(user);
+    if (user) {
+      try {
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+      } catch (e) {
+        localStorage.removeItem(AUTH_USER_KEY);
+      }
+    }
+    setCurrentUser(user || null);
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
     // Clear JWT token from localStorage
     localStorage.removeItem('authToken');
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(ADMIN_MODE_KEY);
     setIsLoggedIn(false);
     setCurrentUser(null);
     setShowAdmin(false);
   };
+
+  const handleBackToSite = () => {
+    localStorage.removeItem(ADMIN_MODE_KEY);
+    setShowAdmin(false);
+  };
+
+  const handleEnterAdmin = () => {
+    if (isLoggedIn) {
+      localStorage.setItem(ADMIN_MODE_KEY, '1');
+    }
+    setShowAdmin(true);
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      localStorage.removeItem(AUTH_USER_KEY);
+      localStorage.removeItem(ADMIN_MODE_KEY);
+      return;
+    }
+    const storedUser = localStorage.getItem(AUTH_USER_KEY);
+    if (storedUser) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+        setIsLoggedIn(true);
+      } catch (e) {
+        localStorage.removeItem(AUTH_USER_KEY);
+      }
+    }
+    if (localStorage.getItem(ADMIN_MODE_KEY) === '1') {
+      setShowAdmin(true);
+    }
+    (async () => {
+      try {
+        const res = await authenticatedFetch('/media?limit=1');
+        if (!res.ok) throw new Error('verify failed');
+      } catch (err) {
+        handleLogout();
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.pathname.startsWith('/admin')) {
+      setShowAdmin(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('debug') === 'contrast' || params.has('contrast')) {
+        import('./dev/contrastProbe').then((mod) => {
+          if (typeof mod.logContrastPairs === 'function') {
+            mod.logContrastPairs();
+          }
+        });
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Contrast probe unavailable', error);
+    }
+  }, []);
 
   // Show admin panel if logged in (lazy loaded)
   if (showAdmin && isLoggedIn && currentUser) {
@@ -84,7 +164,7 @@ export default function App() {
             user={currentUser}
             token={localStorage.getItem('authToken')}
             onLogout={handleLogout} 
-            onBackToSite={() => setShowAdmin(false)} 
+            onBackToSite={handleBackToSite} 
           />
         </Suspense>
       </ErrorBoundary>
@@ -97,7 +177,7 @@ export default function App() {
       <ErrorBoundary>
         <LoginPage 
           onLogin={handleLogin} 
-          onBack={() => setShowAdmin(false)} 
+          onBack={handleBackToSite} 
         />
       </ErrorBoundary>
     );
@@ -108,6 +188,19 @@ export default function App() {
   // free of a router dependency while allowing direct links to /privacy and
   // /terms to render proper pages (useful for crawlers and direct navigation).
   const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const knownPaths = new Set(['/', '/privacy', '/terms', '/admin']);
+  if (!knownPaths.has(path)) {
+    return (
+      <HelmetProvider>
+        <ErrorBoundary>
+          <NotFoundPage
+            requestId={window.__LAST_REQUEST_ID__ || null}
+            timestampUTC={new Date().toISOString()}
+          />
+        </ErrorBoundary>
+      </HelmetProvider>
+    );
+  }
 
   if (path === '/privacy') {
     return (
@@ -132,7 +225,7 @@ export default function App() {
   return (
     <HelmetProvider>
       <ErrorBoundary>
-        <PublicSite onGoToAdmin={() => setShowAdmin(true)} />
+        <PublicSite onGoToAdmin={handleEnterAdmin} />
       </ErrorBoundary>
     </HelmetProvider>
   );

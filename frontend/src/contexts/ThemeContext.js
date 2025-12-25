@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect } from 'react';
 
 /*
   ThemeContext
@@ -31,44 +31,23 @@ import { createContext, useEffect, useState } from 'react';
 */
 
 export const ThemeContext = createContext({
-  theme: 'system',
+  theme: 'dark',
   setTheme: () => {}
 });
 
 export function ThemeProvider({ children }) {
-  // 'light' | 'dark' | 'system'
-  const [theme, setTheme] = useState(() => {
-    try {
-      const stored = localStorage.getItem('site-theme');
-      return stored || 'system';
-    } catch {
-      // If localStorage is not available (SSR or private browsing), fall back to 'system'.
-      return 'system';
-    }
-  });
-
-  // Apply theme by toggling a data attribute on <html>.
-  // We keep this effect minimal: set/remove attribute and persist choice.
   useEffect(() => {
     const root = document.documentElement;
-
-    const apply = (t) => {
-      if (t === 'system') {
-        root.removeAttribute('data-theme');
-      } else {
-        root.setAttribute('data-theme', t);
-      }
-    };
-
-    apply(theme);
-
-    try { localStorage.setItem('site-theme', theme); } catch {
-      // ignore storage errors silently — app still functions without persistence
+    root.setAttribute('data-theme', 'dark');
+    try { localStorage.setItem('site-theme', 'dark'); } catch {
+      // ignore storage errors silently
     }
-  }, [theme]);
+  }, []);
+
+  const noop = () => {};
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark', setTheme: noop }}>
       {children}
     </ThemeContext.Provider>
   );

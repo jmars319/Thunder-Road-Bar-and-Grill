@@ -7,25 +7,22 @@
 
   Contract:
   - Expects GET /api/menu to return an array of categories with `items` arrays.
-  - Optionally reads `site-settings.menu_description` for a description override.
+  - Reads `site-settings.menu_intro` for the description.
 
   Notes:
   - Uses stale-while-revalidate via `cachedFetch` to provide instant content
   -   with background refresh.
   - Panel expansion uses JS measurements to animate `max-height` smoothly.
 */
-import React, { useState, useEffect, useRef } from 'react';
-import { icons } from '../../icons';
-import cachedFetch, { clearCacheFor } from '../../lib/cachedFetch';
-import menuDescription from '../../config/menuDescription';
-import { buildImageVariant, hasRenderableImageVariant, prefixUploadUrl } from '../../utils/imageVariants';
-import ResponsiveImage from '../common/ResponsiveImage';
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { normalizeMenuCategory } from '../../utils/menuDisplay';
+import MenuDisplay from './MenuDisplay';
+import { getApiUrl } from '../../config/api';
 
 export default function MenuSection() {
   const [categories, setCategories] = useState([]);
-  const [siteMenuDescription, setSiteMenuDescription] = useState(menuDescription);
+  const [siteMenuDescription, setSiteMenuDescription] = useState('');
+  const [siteMenuHeading, setSiteMenuHeading] = useState('');
   const [expandedCategory, setExpandedCategory] = useState(null);
   const panelsRef = useRef({});
 
@@ -38,75 +35,70 @@ export default function MenuSection() {
     }
   };
 
-  const normalizeCategory = (cat) => {
-    const fallbackUrl = cat.gallery_image_url || cat.image_url || '';
-    const responsiveEntry = cat.gallery_image_responsive
-      || (cat.gallery_image_variants
-        ? {
-            image_variants: cat.gallery_image_variants,
-            responsive_variants: cat.gallery_image_variants,
-            fallback_original: fallbackUrl,
-            file_url: fallbackUrl,
-            alt_text: cat.name
-          }
-        : null);
-    const heroVariant = responsiveEntry && hasRenderableImageVariant(responsiveEntry)
-      ? buildImageVariant(responsiveEntry, { sizes: '100vw' })
-      : null;
-    return {
-      ...cat,
-      display_columns: cat.display_columns || 2,
-      gallery_image_url: prefixUploadUrl(fallbackUrl),
-      heroVariant
-    };
-  };
+  const debugEnabled = typeof window !== 'undefined' ? (() => {
+    try {
+      return new URLSearchParams(window.location.search).has('debug');
+    } catch (error) {
+      return false;
+    }
+  })() : false;
 
-  // initial fetch + stale-while-revalidate
+  const buildApiUrl = useCallback((path) => {
+    const base = getApiUrl(path);
+    if (!debugEnabled) return base;
+    return base.includes('?') ? `${base}&debug=1` : `${base}?debug=1`;
+  }, [debugEnabled]);
+
+  // fetch latest menu/settings directly from API
   useEffect(() => {
     let mounted = true;
+    const menuController = new AbortController();
+    const settingsController = new AbortController();
 
-    (async () => {
+    async function loadMenu() {
       try {
-        const cached = await cachedFetch(`${API_BASE}/menu`);
-        if (mounted && cached) {
-          const normalized = (Array.isArray(cached) ? cached : []).map(normalizeCategory);
-          setCategories(normalized);
-        }
-
-        const res = await fetch(`${API_BASE}/menu`);
+        const res = await fetch(buildApiUrl('/menu'), {
+          cache: 'no-store',
+          signal: menuController.signal
+        });
         if (!res.ok) throw new Error('Failed to fetch menu');
-        const fresh = await res.json();
-        if (mounted) {
-          const normalizedFresh = (Array.isArray(fresh) ? fresh : []).map(normalizeCategory);
-          setCategories(normalizedFresh);
-        }
-        // fetch site-settings (menu description) as a fallback to the build-time config
-        try {
-          const settings = await cachedFetch(`${API_BASE}/settings`);
-          if (mounted && settings?.settings && typeof settings.settings.menu_description === 'string') {
-            setSiteMenuDescription(settings.settings.menu_description);
-          }
-        } catch (e) {
-          // ignore — we'll keep the build-time menuDescription
-        }
+        const data = await res.json();
+        if (!mounted) return;
+        const normalized = (Array.isArray(data) ? data : []).map(normalizeMenuCategory);
+        setCategories(normalized);
       } catch (e) {
         if (mounted) setCategories([]);
       }
-    })();
+    }
 
-    const menuHandler = () => {
-      clearCacheFor(`${API_BASE}/menu`);
-      cachedFetch(`${API_BASE}/menu`).then(fresh => {
+    async function loadSettings() {
+      try {
+        const res = await fetch(buildApiUrl('/settings'), {
+          cache: 'no-store',
+          signal: settingsController.signal
+        });
+        if (!res.ok) throw new Error('Failed to fetch settings');
+        const payload = await res.json();
         if (!mounted) return;
-        if (!fresh) return;
-        const normalizedFresh = (Array.isArray(fresh) ? fresh : []).map(normalizeCategory);
-        setCategories(normalizedFresh);
-      }).catch(() => {});
-    };
+        const settings = payload?.settings || {};
+        setSiteMenuDescription(settings.menu_intro || '');
+        setSiteMenuHeading(settings.menu_heading || '');
+      } catch (e) {
+        if (!mounted) return;
+        setSiteMenuDescription('');
+        setSiteMenuHeading('');
+      }
+    }
 
-    window.addEventListener('menuUpdated', menuHandler);
-    return () => { mounted = false; window.removeEventListener('menuUpdated', menuHandler); };
-  }, []);
+    loadMenu();
+    loadSettings();
+
+    return () => {
+      mounted = false;
+      menuController.abort();
+      settingsController.abort();
+    };
+  }, [buildApiUrl]);
 
   // Animate panels to exact height using JS measurement
   useEffect(() => {
@@ -147,166 +139,15 @@ export default function MenuSection() {
 
   return (
   <div id="menu" className="py-12 bg-surface-warm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl sm:text-3xl font-heading font-bold text-center mb-4">Our Menu</h2>
-        {siteMenuDescription && (
-          <p className="mx-auto text-center text-base leading-snug text-text-secondary w-full max-w-screen-lg px-4 sm:px-6 mb-6 whitespace-pre-line">
-            {siteMenuDescription}
-          </p>
-        )}
-
-        <div className="space-y-4">
-          {categories.map(category => (
-            <div
-              key={category.id}
-              className={`menu-card bg-surface rounded-lg shadow-lg overflow-hidden card-hover transition-all ${expandedCategory === category.id ? 'expanded' : ''}`}
-            >
-              <button
-                type="button"
-                onClick={() => setExpandedCategory(prev => (prev === category.id ? null : category.id))}
-                className="w-full flex items-center justify-between p-4 hover:bg-surface-warm transition"
-                aria-expanded={expandedCategory === category.id}
-                aria-controls={`menu-cat-${category.id}`}
-              >
-                <div className="text-left">
-                  <h3 className="text-xl md:text-2xl font-heading font-bold text-text-primary mb-1">{category.name}</h3>
-                  {category.description && (
-                    category.description.includes('|') ? (
-                      <div className="text-text-secondary text-sm leading-snug mt-1">
-                        {category.description.split('\n').map((paragraph, pIdx) => (
-                          <div key={pIdx} className={paragraph.includes('|') ? 'columns-2 md:columns-3 gap-4 mb-2' : 'mb-2'}>
-                            {paragraph.includes('|') ? (
-                              paragraph.split('|').map((item, idx) => (
-                                <div key={idx} className="break-inside-avoid mb-1">
-                                  {item.trim()}
-                                </div>
-                              ))
-                            ) : (
-                              <div>{paragraph}</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-text-secondary text-sm leading-snug mt-1 whitespace-pre-line">{category.description}</p>
-                    )
-                  )}
-                </div>
-                <div className="flex items-center gap-4">
-                  {React.createElement(icons.ChevronDown, { className: `chevron ${expandedCategory === category.id ? 'rotated text-primary' : 'text-text-muted'}`, size: 24 })}
-                </div>
-              </button>
-
-              {(category.heroVariant || category.gallery_image_url) && (
-                <div className="relative z-0">
-                  {category.heroVariant ? (
-                    <ResponsiveImage
-                      variant={category.heroVariant}
-                      alt={category.name}
-                      className="w-full h-40 object-cover"
-                      pictureClassName="block w-full h-40"
-                      imgProps={{
-                        onLoad: () => measurePanel(category.id),
-                        onError: () => measurePanel(category.id)
-                      }}
-                      sizes="100vw"
-                    />
-                  ) : (
-                    <img
-                      src={category.gallery_image_url}
-                      alt={category.name}
-                      className="w-full h-40 object-cover"
-                      loading="lazy"
-                      onLoad={() => measurePanel(category.id)}
-                      onError={() => measurePanel(category.id)}
-                    />
-                  )}
-                  <div className="absolute inset-0 overlay-gradient"></div>
-                </div>
-              )}
-
-              <div
-                ref={el => { panelsRef.current[category.id] = el; }}
-                id={`menu-cat-${category.id}`}
-                className={`relative z-20 border-t ${category.gallery_image_url ? 'expanded-panel--image' : 'bg-surface-warm'} expanded-panel ${expandedCategory === category.id ? 'expanded' : 'collapsed'}`}
-                aria-hidden={expandedCategory !== category.id}
-              >
-                {Array.isArray(category.items) && category.items.length > 0 ? (
-                  <div className={
-                    category.display_columns === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-4 p-4' :
-                    category.display_columns === 3 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4' :
-                    'divide-y divide-divider'
-                  }>
-                    {category.items.map(item => (
-                      <div key={item.id} className={
-                        category.display_columns >= 2 
-                          ? 'p-3 bg-surface rounded border border-divider hover:border-primary transition'
-                          : 'p-4 md:p-6 flex justify-between items-start hover:bg-surface-warm transition'
-                      }>
-                        <div className={category.display_columns >= 2 ? 'w-full' : 'flex-1'}>
-                          <h4 className="text-base md:text-lg font-heading font-semibold text-text-primary">{item.name}</h4>
-                          {!category.hide_descriptions && item.description && (
-                            item.description.includes('|') ? (
-                              <div className="text-text-secondary text-sm mt-2 columns-2 md:columns-3 gap-3">
-                                {item.description.split('|').map((text, idx) => (
-                                  <div key={idx} className="break-inside-avoid mb-1">
-                                    {text.trim()}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-text-secondary text-sm mt-1">{item.description}</p>
-                            )
-                          )}
-                          {category.display_columns >= 2 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {(typeof item.price === 'number' && Number(item.price) !== 0) ? (
-                                <span className="price-badge" aria-label={`Price ${item.price}`}>
-                                  {item.primary_quantity ? `${item.primary_quantity} · $${item.price.toFixed(2)}` : `$${item.price.toFixed(2)}`}
-                                </span>
-                              ) : null}
-                              {typeof item.secondary_price === 'number' && Number(item.secondary_price) !== 0 && (
-                                <span className="price-badge" aria-label={`Alternate price ${item.secondary_price}`}>
-                                  {item.secondary_quantity ? `${item.secondary_quantity} · ` : ''}{`$${item.secondary_price.toFixed(2)}`}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {category.display_columns < 2 && (
-                          <div className="ml-4 flex flex-col items-end">
-                            {(typeof item.price === 'number' && Number(item.price) !== 0) ? (
-                              <span className="price-badge" aria-label={`Price ${item.price}`}>
-                                {item.primary_quantity ? `${item.primary_quantity} · $${item.price.toFixed(2)}` : `$${item.price.toFixed(2)}`}
-                              </span>
-                            ) : null}
-                            {typeof item.secondary_price === 'number' && Number(item.secondary_price) !== 0 && (
-                              <span className="price-badge mt-2" aria-label={`Alternate price ${item.secondary_price}`}>
-                                {item.secondary_quantity ? `${item.secondary_quantity} · ` : ''}{`$${item.secondary_price.toFixed(2)}`}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-6 text-center text-text-muted">No items in this category</div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <MenuDisplay
+        categories={categories}
+        menuHeading={siteMenuHeading}
+        menuIntro={siteMenuDescription}
+        expandedCategory={expandedCategory}
+        onToggleCategory={(id) => setExpandedCategory(prev => (prev === id ? null : id))}
+        panelsRef={panelsRef}
+        measurePanel={measurePanel}
+      />
     </div>
   );
 }
-
-// Keep a small module-scope reference so some linters that don't detect
-// member-expression JSX (e.g., <icons.ChevronDown />) won't flag unused
-// imports. This is intentional and safe.
-const __usedMenu = { icons };
-void __usedMenu;
-// Mark LazyImage as used for linters that don't see JSX usages in some configs
-const __usedComponents = { LazyImage };
-void __usedComponents;

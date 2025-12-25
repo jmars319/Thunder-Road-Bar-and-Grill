@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true">
-	<!-- Simple, recolorable inline mark using currentColor for fill. -->
-	<rect width="64" height="64" rx="10" fill="var(--logo-badge-bg, #fff7f2)" />
-	<g fill="currentColor" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="28" text-anchor="middle" dominant-baseline="central">
-		<text x="32" y="34">TR</text>
-	</g>
-	<title>Thunder Road</title>
-</svg>

@@ -12,13 +12,15 @@
   - Performs client-side validation and focuses invalid fields for accessibility.
 */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Toast from '../ui/Toast';
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+import { sanitizeRichText } from '../../utils/richText';
+import { getApiUrl } from '../../config/api';
 
 // Public-facing job application form (frontend-only integration)
 export default function JobSection() {
   const [positions, setPositions] = useState([]);
+  const [hasOpenPositions, setHasOpenPositions] = useState(true);
   const [fields, setFields] = useState(null); // optional dynamic application fields from admin
 
   const [form, setForm] = useState({
@@ -36,6 +38,15 @@ export default function JobSection() {
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const inputRefs = useRef({});
+  const [copy, setCopy] = useState({
+    success: '',
+    failure: '',
+    sidebarHeading: '',
+    sidebarIntro: '',
+    sidebarBenefits: '',
+    positionsLabel: ''
+  });
+  const [hoveredPosition, setHoveredPosition] = useState(null);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -107,9 +118,9 @@ export default function JobSection() {
         resume_url: form.resume_url && form.resume_url.trim() ? form.resume_url.trim() : null
       };
 
-  const res = await fetch(`${API_BASE}/jobs`, {
+  const res = await fetch(getApiUrl('/jobs'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify(payload)
       });
 
@@ -134,12 +145,12 @@ export default function JobSection() {
       }
 
   await res.json();
-  setMessage('Application submitted — thank you!');
+  setMessage(copy.success || 'Application submitted — thank you!');
   // reset to a sensible default: first available position name or empty string
   const defaultPos = positions && positions.length ? (positions[0].name || positions[0] || '') : '';
   setForm({ name: '', email: '', phone: '', position: defaultPos, availability: '', experience: '', cover_letter: '', resume_url: '' });
     } catch (err) {
-      setError(err.message || 'Submission failed');
+      setError(copy.failure || err.message || 'Submission failed');
     } finally {
       setSubmitting(false);
     }
@@ -149,47 +160,114 @@ export default function JobSection() {
   useEffect(() => {
     // Fetch public-facing active positions first. If that returns none,
     // fall back to the admin-facing list (older behavior) and finally a static list.
-    fetch(`${API_BASE}/job-positions/public`)
+    fetch(getApiUrl('/job-positions/public'))
       .then((r) => r.ok ? r.json() : [])
       .then((publicPositions) => {
         if (Array.isArray(publicPositions) && publicPositions.length) {
           // store array of objects so we can display name and preserve id
           setPositions(publicPositions);
           setForm((s) => ({ ...s, position: publicPositions[0].name }));
+          setHasOpenPositions(true);
           return;
         }
 
-  // No public/open positions — use a static fallback list instead of
-  // calling admin endpoints which are intentionally protected. This
-  // avoids noisy 401 Unauthorized errors in the browser console.
-  const fallback = ['Server','Bartender','Line Cook','Dishwasher','Cashier','Manager'];
-        setPositions(fallback.map((p, i) => ({ id: `f-${i}`, name: p })));
-        setForm((s) => ({ ...s, position: fallback[0] }));
+        setPositions([]);
+        setForm((s) => ({ ...s, position: '' }));
+        setHasOpenPositions(false);
       })
       .catch(() => {
-  const fallback = ['Server','Bartender','Line Cook','Dishwasher','Cashier','Manager'];
-  setPositions(fallback.map((p, i) => ({ id: `f-${i}`, name: p })));
-  setForm((s) => ({ ...s, position: fallback[0] }));
+      setPositions([]);
+      setForm((s) => ({ ...s, position: '' }));
+      setHasOpenPositions(false);
       });
 
-    fetch(`${API_BASE}/application-fields`)
+    fetch(getApiUrl('/application-fields'))
       .then((r) => r.ok ? r.json() : [])
       .then((data) => {
         if (Array.isArray(data) && data.length) setFields(data);
       })
       .catch(() => {});
+
+    fetch(getApiUrl('/settings'))
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        const settings = data?.settings || {};
+        setCopy({
+          success: settings.jobs_success_copy || '',
+          failure: settings.jobs_error_copy || '',
+          sidebarHeading: settings.jobs_sidebar_heading || '',
+          sidebarIntro: settings.jobs_sidebar_intro || '',
+          sidebarBenefits: settings.jobs_sidebar_benefits || '',
+          positionsLabel: settings.jobs_positions_label || ''
+        });
+      })
+      .catch(() => setCopy({
+        success: '',
+        failure: '',
+        sidebarHeading: '',
+        sidebarIntro: '',
+        sidebarBenefits: '',
+        positionsLabel: ''
+      }));
   }, []);
+
+  const sidebarBenefitsHtml = useMemo(() => sanitizeRichText(copy.sidebarBenefits || ''), [copy.sidebarBenefits]);
+  const activePositionDescription = useMemo(() => {
+    if (hoveredPosition && hoveredPosition.description) {
+      return hoveredPosition.description;
+    }
+    const selected = positions.find((p) => (p.name || p) === (form.position || ''));
+    return selected?.description || '';
+  }, [hoveredPosition, positions, form.position]);
 
   return (
     <section id="jobs" className="px-4 py-8 md:py-12 bg-surface">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-xl font-semibold mb-3">Join our team</h2>
-        <p className="mb-4 text-muted">We're hiring friendly, reliable people. Fill out the short form below to apply.</p>
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+          <div className="bg-background/80 border border-divider rounded-lg shadow px-5 py-6 space-y-5">
+            <div>
+              <h3 className="text-xl font-semibold text-text-primary">{copy.sidebarHeading || 'Why you’ll love working here'}</h3>
+              {copy.sidebarIntro && <p className="text-text-secondary mt-2">{copy.sidebarIntro}</p>}
+            </div>
+            {sidebarBenefitsHtml && (
+              <div className="prose prose-invert prose-sm max-w-none text-text-secondary [&>ul]:list-disc [&>ul]:pl-5" dangerouslySetInnerHTML={{ __html: sidebarBenefitsHtml }} />
+            )}
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
+                {copy.positionsLabel || 'Open Positions'}
+              </p>
+              {positions.length > 0 ? (
+                <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {positions.map((p) => (
+                    <li key={p.id || p.name || p}>
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2 rounded-lg bg-surface-warm/30 hover:bg-primary/15 transition font-medium text-text-primary"
+                        onMouseEnter={() => setHoveredPosition(p)}
+                        onMouseLeave={() => setHoveredPosition(null)}
+                        onFocus={() => setHoveredPosition(p)}
+                        onBlur={() => setHoveredPosition(null)}
+                      >
+                        {p.name || p}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-text-secondary mt-2">We&apos;re not hiring right now. Check back soon.</p>
+              )}
+              {activePositionDescription && (
+                <div className="mt-3 text-sm text-brand-dark bg-brand/10 border border-brand/30 p-4 rounded-lg shadow-inner transition-colors">
+                  {activePositionDescription}
+                </div>
+              )}
+            </div>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3 bg-background p-4 rounded shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="flex flex-col">
-              <span className="text-sm mb-1">Full name *</span>
+          <form onSubmit={handleSubmit} className="space-y-3 bg-background p-5 rounded-lg shadow border border-divider">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="flex flex-col">
+                <span className="text-sm mb-1">Full name *</span>
               <input id="name" ref={el => inputRefs.current.name = el} name="name" value={form.name} onChange={handleChange} required aria-required="true" className="form-input" aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'err-name' : undefined} />
               {fieldErrors.name && <div id="err-name" className="text-sm text-red-600 mt-1">{fieldErrors.name}</div>}
             </label>
@@ -205,7 +283,7 @@ export default function JobSection() {
             </label>
             <label className="flex flex-col">
               <span className="text-sm mb-1">Position *</span>
-              {positions && positions.length > 0 ? (
+              {hasOpenPositions ? (
                 <select id="position" ref={el => inputRefs.current.position = el} name="position" value={form.position} onChange={handleChange} required aria-required="true" className="form-input" aria-invalid={!!fieldErrors.position} aria-describedby={fieldErrors.position ? 'err-position' : undefined}>
                   {positions.map((p) => (
                     // positions may be objects ({id, name}) or simple strings
@@ -213,8 +291,9 @@ export default function JobSection() {
                   ))}
                 </select>
               ) : (
-                // If no positions are available, allow the applicant to type a position.
-                <input id="position" ref={el => inputRefs.current.position = el} name="position" value={form.position} onChange={handleChange} required aria-required="true" className="form-input" placeholder="Position (e.g. Server)" />
+                <div className="p-3 rounded-lg bg-surface-warm text-text-secondary text-sm border border-divider">
+                  Not hiring right now. You can still submit an application without selecting a position.
+                </div>
               )}
               {fieldErrors.position && <div id="err-position" className="text-sm text-red-600 mt-1">{fieldErrors.position}</div>}
             </label>
@@ -253,9 +332,6 @@ export default function JobSection() {
             />
             {fieldErrors.resume_url && <div id="err-resume-url" className="text-sm text-red-600 mt-1">{fieldErrors.resume_url}</div>}
           </label>
-          {error && <Toast type="error">{error}</Toast>}
-          {message && <Toast type="success">{message}</Toast>}
-
           {fields && Array.isArray(fields) && (
             <div className="mt-4 bg-surface p-3 rounded">
               <h4 className="font-medium mb-2">Additional information</h4>
@@ -279,7 +355,13 @@ export default function JobSection() {
               {submitting ? 'Submitting…' : 'Submit application'}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {error && <Toast type="error">{error}</Toast>}
+          {message && <Toast type="success">{message}</Toast>}
+        </div>
       </div>
     </section>
   );

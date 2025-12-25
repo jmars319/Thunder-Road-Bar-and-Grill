@@ -105,8 +105,3 @@ export function buildWebpSrcSet(url, sizesArr = [480, 768, 1024, 1600]) {
  * Use these when calling buildSrcSet/buildWebpSrcSet without custom sizes
  */
 export const DEFAULT_SIZES = [480, 768, 1024, 1600];
-
-/**
- * Logo-specific size breakpoints (smaller sizes for UI elements)
- */
-export const LOGO_SIZES = [160, 320, 480, 768, 1024, 1600];

@@ -16,21 +16,33 @@
 import { useEffect, useState, useRef } from 'react';
 import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
 import ResponsiveImage from '../common/ResponsiveImage';
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+import { getApiUrl } from '../../config/api';
 
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
   // images: array of { src, alt }
   const [images, setImages] = useState([]);
+  const [heroCopy, setHeroCopy] = useState({ title: '', subtitle: '', ctas: [] });
+  const [slideshowSpeed, setSlideshowSpeed] = useState(6000);
   const idxRef = useRef(0);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-  fetch(`${API_BASE}/settings`).then(r => r.ok ? r.json() : {}).then(async payload => {
+  fetch(getApiUrl('/settings')).then(r => r.ok ? r.json() : {}).then(async payload => {
         const heroVariants = Array.isArray(payload?.settings?.hero_images_variants)
           ? payload.settings.hero_images_variants
           : [];
+        const settings = payload?.settings || {};
+        setHeroCopy({
+          title: settings.hero_title || '',
+          subtitle: settings.hero_subtitle || '',
+          ctas: [
+            settings.hero_cta_primary_label ? { label: settings.hero_cta_primary_label, href: settings.hero_cta_primary_href || '#menu' } : null,
+            settings.hero_cta_secondary_label ? { label: settings.hero_cta_secondary_label, href: settings.hero_cta_secondary_href || '#reservations' } : null
+          ].filter(Boolean)
+        });
+        const parsedSpeed = parseInt(settings.hero_slideshow_speed, 10);
+        setSlideshowSpeed(Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000);
         if (heroVariants.length) {
           const normalized = heroVariants
             .map((hero) => ({
@@ -47,7 +59,7 @@ export default function HeroSection() {
 
       // Fallback: if site settings don't include hero images, fetch recent hero-category media
       try {
-        const mres = await fetch(`${API_BASE}/media?category=hero`);
+        const mres = await fetch(getApiUrl('/media?category=hero'));
         if (!mres.ok) return;
         const payload = await mres.json();
         const heroes = Array.isArray(payload?.media) ? payload.media : Array.isArray(payload) ? payload : [];
@@ -68,12 +80,13 @@ export default function HeroSection() {
 
   useEffect(() => {
     if (!images.length) return;
+    const interval = slideshowSpeed || 6000;
     const id = window.setInterval(() => {
       idxRef.current = (idxRef.current + 1) % images.length;
       setIndex(idxRef.current);
-    }, 6000);
+    }, interval);
     return () => window.clearInterval(id);
-  }, [images]);
+  }, [images, slideshowSpeed]);
 
   // Render the hero as image elements so Lighthouse and browsers can discover
   // and prioritize the LCP image. Use object-fit to maintain cover behavior
@@ -131,29 +144,29 @@ export default function HeroSection() {
         {images[index]?.variant?.fallback && (
           <img src={images[index].variant.fallback} alt={images[index].alt || ''} className="sr-only" />
         )}
-        <h1 className="hero-title text-4xl md:text-5xl font-heading font-extrabold mb-4">
-          Welcome to Thunder Road Bar and Grill
-        </h1>
-        <p className="hero-subtitle text-lg md:text-xl opacity-90 mb-6 max-w-2xl mx-auto">
-          Great Food. Cold Drinks. Good Times.
-        </p>
-        <div className="flex gap-4 justify-center flex-wrap">
-          <a
-            href="#menu"
-            role="button"
-            aria-label="View menu"
-            className="bg-primary text-text-inverse px-6 py-2 rounded-lg hover:bg-primary-dark transition font-bold shadow-sm"
-          >
-            View Menu
-          </a>
-          <a
-            href="#reservations"
-            role="button"
-            aria-label="Make a reservation"
-            className="bg-surface text-text-primary px-6 py-2 rounded-lg hover:bg-surface-warm transition font-bold shadow-sm"
-          >
-            Make a Reservation
-          </a>
+        <div className="inline-flex flex-col gap-4 px-6 py-5 rounded-2xl bg-black/45 backdrop-blur-md shadow-xl max-w-3xl mx-auto">
+          {heroCopy.title && (
+            <h1 className="text-4xl md:text-5xl font-heading font-extrabold tracking-tight text-brand-cream drop-shadow-sm">
+              {heroCopy.title}
+            </h1>
+          )}
+          {heroCopy.subtitle && (
+            <p className="text-lg md:text-xl text-brand-cream/90">
+              {heroCopy.subtitle}
+            </p>
+          )}
+        </div>
+        <div className="flex gap-4 justify-center flex-wrap mt-8">
+          {heroCopy.ctas.map((cta, idx) => (
+            <a
+              key={`${cta.label}-${idx}`}
+              href={cta.href || '#'}
+              role="button"
+              className={`cta-glass ${idx === 0 ? 'cta-glass--primary' : 'cta-glass--secondary'}`}
+            >
+              {cta.label}
+            </a>
+          ))}
         </div>
       </div>
     </div>

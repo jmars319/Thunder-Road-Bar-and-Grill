@@ -8,15 +8,14 @@
   - Props: { onGoToAdmin?: function }
 
   Notes:
-  - Attempts to inline SVG logos for recoloring when the configured logo is an SVG.
+  - Renders the shared BrandLogo component so the logo always loads from bundled static assets.
 */
 import React, { useState, useEffect } from 'react';
-import { ReactComponent as DefaultLogo } from '../../logo.svg';
 import { createPortal } from 'react-dom';
 
 import { icons } from '../../icons';
-import Spinner from '../ui/Spinner';
-import { buildSrcSet, buildWebpSrcSet, LOGO_SIZES } from '../../utils/imageUtils';
+import BrandLogo from '../shared/BrandLogo';
+import { getApiUrl } from '../../config/api';
 // Lazy-load the OrderModal so it's only fetched when a user opens the modal.
 // This keeps the initial JS bundle smaller and loads the placeholder only on
 // demand. If you add analytics for interest in ordering, dispatch analytics
@@ -36,23 +35,16 @@ const OrderModal = React.lazy(() => import('./OrderModal'));
   - Data: expects GET /api/settings and GET /api/navigation endpoints.
 
   Accessibility & logo notes:
-  - If the configured `siteSettings.logo_url` points to an SVG file, this
-    component will attempt to fetch the SVG and render it inline so it can
-    inherit `currentColor` from CSS tokens (recolorable). If fetch fails or
-    the URL is not an SVG, it falls back to a normal <img> element.
-  - Inline SVG content is injected as raw HTML; only use this with trusted
-    sources. If your admin allows arbitrary uploads, sanitize SVGs server-side.
+  - The logo is a static asset rendered via <BrandLogo />. It no longer depends
+    on uploaded media, so the navbar remains stable even if the API is offline.
   - Styling: uses design token classes (e.g., bg-primary, bg-surface, text-text-*)
     and runtime theme variables. Prefer editing tokens in `custom-styles.css`.
 */
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 export default function PublicNavbar({ onGoToAdmin }) {
   // kept for backwards compatibility with parent callers; no-op in navbar now
   void onGoToAdmin;
   const [siteSettings, setSiteSettings] = useState(null);
-  const [logoSvg, setLogoSvg] = useState(null);
   const [navLinks, setNavLinks] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -63,13 +55,13 @@ export default function PublicNavbar({ onGoToAdmin }) {
 
   useEffect(() => {
     // Load site-level settings (logo, name, tagline). Keep errors silent for now.
-    fetch(`${API_BASE}/settings`)
+    fetch(getApiUrl('/settings'))
       .then(res => res.json())
       .then(payload => setSiteSettings(payload?.settings || {}))
       .catch(() => {});
 
     // Load the navigation payload (array of { id, label, url }).
-    fetch(`${API_BASE}/navigation`)
+    fetch(getApiUrl('/navigation'))
       .then(res => res.json())
       .then(data => {
         // Ensure we always set an array, even if data is null/undefined/not-an-array
@@ -126,23 +118,6 @@ export default function PublicNavbar({ onGoToAdmin }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // If the logo_url is an SVG file, fetch sanitized content from backend API
-  // to prevent XSS attacks. Inline rendering allows the SVG to inherit
-  // currentColor (recolorable). Falls back to <img> on error.
-  useEffect(() => {
-    if (!siteSettings?.logo_url) return;
-    const url = siteSettings.logo_url;
-    if (typeof url === 'string' && url.toLowerCase().endsWith('.svg')) {
-      // Fetch sanitized SVG from backend API instead of direct file access
-      fetch(`${API_BASE}/logo/sanitized`)
-        .then(r => (r.ok ? r.text() : Promise.reject()))
-        .then(svgText => setLogoSvg(svgText))
-        .catch(() => setLogoSvg(null));
-    } else {
-      setLogoSvg(null);
-    }
-  }, [siteSettings]);
-
   // Listen for siteSettingsUpdated events so the navbar updates instantly
   // when an admin changes the logo or other settings in the MediaModule.
   useEffect(() => {
@@ -158,58 +133,14 @@ export default function PublicNavbar({ onGoToAdmin }) {
     return () => window.removeEventListener('siteSettingsUpdated', handler);
   }, []);
 
-  // Localized logo URL: prefer the configured logo; when none is configured
-  // render the bundled inline DefaultLogo component. Use an explicit
-  // `isBundledDefault` flag so linters don't report the imported component
-  // as unused and to avoid relying on string-equality checks against the
-  // bundler path.
-  const isBundledDefault = !siteSettings?.logo_url;
-  const logoUrl = siteSettings?.logo_url || '';
-
   return (
     <nav className="bg-surface shadow-md header-sticky top-0 z-50 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
   <div className="flex justify-between items-center h-16 md:h-20">
           <div className="flex items-center gap-3">
-            {logoUrl && (
-              <div className="logo-badge">
-                {/* Prefer inline SVG when available so logos can inherit token colors */}
-                {logoSvg ? (
-                  <span
-                    role="img"
-                    aria-label={siteSettings.business_name || 'Site logo'}
-                    className="h-full w-auto inline-block"
-                    dangerouslySetInnerHTML={{ __html: logoSvg }}
-                  />
-                ) : (
-                  <picture>
-                    {
-                      // Logo is a small inline element. Provide small responsive
-                      // variants so the browser doesn't assume a tiny display
-                      // size. Use 160/320 as the smallest widths that the
-                      // backend generator now produces.
-                    }
-                    {buildWebpSrcSet(logoUrl, LOGO_SIZES) ? (
-                      <source srcSet={buildWebpSrcSet(logoUrl, LOGO_SIZES)} type="image/webp" sizes="(min-width: 768px) 80px, 64px" />
-                    ) : null}
-                    {buildSrcSet(logoUrl, LOGO_SIZES) ? (
-                      <source srcSet={buildSrcSet(logoUrl, LOGO_SIZES)} type="image/jpeg" sizes="(min-width: 768px) 80px, 64px" />
-                    ) : null}
-                    {isBundledDefault ? (
-                      <DefaultLogo role="img" aria-label={siteSettings?.business_name || 'Site logo'} className="h-full w-auto object-contain" />
-                    ) : (
-                      <img
-                        src={logoUrl}
-                        srcSet={buildSrcSet(logoUrl, LOGO_SIZES) || undefined}
-                        sizes="(min-width: 768px) 80px, 64px"
-                        alt={siteSettings?.business_name || 'Site logo'}
-                        className="h-full w-auto object-contain"
-                      />
-                    )}
-                  </picture>
-                )}
-              </div>
-            )}
+            <div className="logo-badge">
+              <BrandLogo className="h-full w-auto object-contain" />
+            </div>
             <div>
               <div className="text-lg font-bold text-text-primary font-heading">
                 {siteSettings?.business_name || 'Thunder Road Bar and Grill'}
@@ -364,5 +295,3 @@ export default function PublicNavbar({ onGoToAdmin }) {
 // Some editor/lint setups don't detect JSX uses of member-expressions like
 // `<icons.X />`. Provide a small used-symbol object so those tools don't
 // incorrectly report `icons` as unused.
-const __usedNavbar = { icons, Spinner, OrderModal, DefaultLogo };
-void __usedNavbar;

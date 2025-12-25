@@ -15,12 +15,16 @@
   - Keep presentation tokenized (use `custom-styles.css` tokens) and avoid
     placing heavy logic here; consider extracting upload helpers/tests.
 */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { icons } from '../../icons';
 import Toast from '../ui/Toast';
 import usePaginatedResource from '../../hooks/usePaginatedResource';
 import Spinner from '../ui/Spinner';
 import { authenticatedFetch, API_BASE } from '../../utils/api';
+import { sanitizeRichText } from '../../utils/richText';
+import { normalizeMenuCategory } from '../../utils/menuDisplay';
+import MenuDisplay from '../public/MenuDisplay';
+import RichTextField from './RichTextField';
 // ensure imports are recognized by some linters when used only in JSX
 const __usedSpinner = Spinner;
 void __usedSpinner;
@@ -36,10 +40,25 @@ void __usedSpinner;
 */
 
 function MenuModule() {
+  const debugEnabled = typeof window !== 'undefined' ? (() => {
+    try {
+      return new URLSearchParams(window.location.search).has('debug');
+    } catch (error) {
+      return false;
+    }
+  })() : false;
+  const withDebugParam = useCallback((path) => {
+    if (!debugEnabled) return path;
+    return path.includes('?') ? `${path}&debug=1` : `${path}?debug=1`;
+  }, [debugEnabled]);
+  const logDebug = useCallback((label, payload) => {
+    if (!debugEnabled) return;
+    // eslint-disable-next-line no-console
+    console.debug(label, payload);
+  }, [debugEnabled]);
   const [categories, setCategories] = useState([]);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [originalCategory, setOriginalCategory] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [processingUpload, setProcessingUpload] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -59,6 +78,26 @@ function MenuModule() {
   const [toast, setToast] = useState(null);
   const [showZeroPriceConfirm, setShowZeroPriceConfirm] = useState(false);
   const [pendingSavePayload, setPendingSavePayload] = useState(null);
+  const previewPanelsRef = useRef({});
+  const [previewExpanded, setPreviewExpanded] = useState(null);
+  const previewCategories = useMemo(() => categories.map(normalizeMenuCategory), [categories]);
+  const [siteSettings, setSiteSettings] = useState({});
+  const [descriptionExpanded, setDescriptionExpanded] = useState({});
+
+  const measurePreviewPanel = (id) => {
+    const el = previewPanelsRef.current[id];
+    if (!el) return;
+    if (Number(previewExpanded) === Number(id)) {
+      el.style.maxHeight = `${el.scrollHeight}px`;
+    }
+  };
+
+  const toggleDescriptionPreview = (id) => {
+    setDescriptionExpanded((prev) => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
     /*
       MenuModule
@@ -80,10 +119,6 @@ function MenuModule() {
       - Prices are handled as numbers (parseFloat) when editing — guard against NaN where necessary.
     */
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
   const apiOrigin = API_BASE.replace(/\/api$/, '');
   const normalizeUrl = (u) => {
     if (!u) return '';
@@ -92,9 +127,9 @@ function MenuModule() {
     return `${apiOrigin}/${u}`;
   };
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
-      const res = await authenticatedFetch('/menu/admin');
+    const res = await authenticatedFetch(withDebugParam('/menu/admin'));
       if (!res.ok) { setCategories([]); return; }
       const data = await res.json();
       // server returns categories already ordered by display_order and items ordered by display_order
@@ -102,7 +137,21 @@ function MenuModule() {
     } catch (e) {
       setCategories([]);
     }
-  };
+  }, [withDebugParam]);
+
+  useEffect(() => {
+    fetchCategories();
+    (async () => {
+      try {
+        const res = await authenticatedFetch('/settings');
+        if (!res.ok) { setSiteSettings({}); return; }
+        const payload = await res.json();
+        setSiteSettings(payload?.settings || {});
+      } catch {
+        setSiteSettings({});
+      }
+    })();
+  }, [fetchCategories]);
 
   const saveCategory = () => {
     // client-side validation: name required
@@ -112,43 +161,33 @@ function MenuModule() {
     return;
     }
     const method = editingCategory.id ? 'PUT' : 'POST';
-    const url = editingCategory.id 
-      ? `${API_BASE}/menu/categories/${editingCategory.id}`
-      : `${API_BASE}/menu/categories`;
+    const endpoint = editingCategory.id 
+      ? `/menu/categories/${editingCategory.id}`
+      : '/menu/categories';
+    const url = withDebugParam(endpoint);
 
-  // Build payload with required fields
-  const payload = { 
-      name: editingCategory.name,
-      description: editingCategory.description || '',
-      display_order: editingCategory.display_order || 0,
-      display_columns: 2, // Always use 2-column layout
-      hide_descriptions: editingCategory.hide_descriptions || 0,
-      is_active: editingCategory.is_active
+    const payload = { 
+      name: editingCategory.name.trim(),
+      description: sanitizeRichText(editingCategory.description || ''),
+      display_order: Number(editingCategory.display_order) || 0,
+      display_columns: Number(editingCategory.display_columns) || 1,
+      hide_descriptions: editingCategory.hide_descriptions ? 1 : 0,
+      is_active: editingCategory.is_active ? 1 : 0
     };
-    
-    // Include image fields only if explicitly modified or for new categories
-    // Compare with original to detect changes
-    if (originalCategory) {
-      // Only include if changed
-      if (editingCategory.image_url !== originalCategory.image_url) {
-        payload.image_url = editingCategory.image_url;
-      }
-      if (editingCategory.gallery_image_id !== originalCategory.gallery_image_id) {
-        payload.gallery_image_id = editingCategory.gallery_image_id;
-      }
-    } else {
-      // New category - include all image fields
-      payload.image_url = editingCategory.image_url || null;
+
+    if (Object.prototype.hasOwnProperty.call(editingCategory, 'gallery_image_id')) {
       payload.gallery_image_id = editingCategory.gallery_image_id || null;
     }
+
+    logDebug('[menu:saveCategory]', payload);
 
     authenticatedFetch(url, {
       method,
       body: JSON.stringify(payload)
     }).then((response) => {
       fetchCategories();
+      try { window.dispatchEvent(new window.CustomEvent('menuUpdated')); } catch (e) {}
       setEditingCategory(null);
-      setOriginalCategory(null);
       setToast({ type: 'success', message: 'Category saved' });
       setTimeout(() => setToast(null), 3000);
     }).catch((error) => {
@@ -170,7 +209,7 @@ function MenuModule() {
       uploadXhr.current = xhr;
       const fd = new FormData();
       fd.append('file', file);
-      // Allow callers to specify a category (logo, hero, menu, general)
+      // Allow callers to specify a category (hero, menu, general)
       fd.append('category', category);
 
       xhr.open('POST', `${API_BASE}/media`);
@@ -195,7 +234,13 @@ function MenuModule() {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
-            resolve(data?.media?.file_url || data?.file_url || null);
+            if (data?.media) {
+              resolve(data.media);
+              return;
+            }
+            setUploadError('Invalid server response');
+            reject(new Error('Invalid response'));
+            return;
           } catch (err) {
             setUploadError('Invalid server response');
             reject(new Error('Invalid response'));
@@ -231,8 +276,11 @@ function MenuModule() {
 
   const deleteCategory = (id) => {
     if (window.confirm('Delete this category and all its items?')) {
-      authenticatedFetch(`/menu/categories/${id}`, { method: 'DELETE' })
-        .then(() => fetchCategories());
+      authenticatedFetch(withDebugParam(`/menu/categories/${id}`), { method: 'DELETE' })
+        .then(() => {
+          fetchCategories();
+          try { window.dispatchEvent(new window.CustomEvent('menuUpdated')); } catch (e) {}
+        });
     }
   };
 
@@ -240,7 +288,7 @@ function MenuModule() {
   // confirmation from the admin because public menus hide $0.00 prices.
   const doSaveItem = (payload) => {
     const method = payload.id ? 'PUT' : 'POST';
-    const url = payload.id ? `/menu/items/${payload.id}` : '/menu/items';
+    const url = withDebugParam(payload.id ? `/menu/items/${payload.id}` : '/menu/items');
 
     authenticatedFetch(url, {
       method,
@@ -262,6 +310,7 @@ function MenuModule() {
   const attemptSaveItem = () => {
     // Ensure is_available is explicit so backend update doesn't set it to NULL
     const payload = { ...editingItem, is_available: typeof editingItem.is_available !== 'undefined' ? editingItem.is_available : 1 };
+    payload.description = sanitizeRichText(payload.description || '');
 
     const primaryZero = typeof payload.price === 'number' && payload.price === 0;
     const secondaryZero = typeof payload.secondary_price === 'number' && payload.secondary_price === 0;
@@ -278,7 +327,7 @@ function MenuModule() {
 
   const deleteItem = (id) => {
     if (window.confirm('Delete this menu item?')) {
-      authenticatedFetch(`/menu/items/${id}`, { method: 'DELETE' })
+      authenticatedFetch(withDebugParam(`/menu/items/${id}`), { method: 'DELETE' })
         .then(() => fetchCategories());
     }
   };
@@ -310,13 +359,13 @@ function MenuModule() {
         // build payload from original fields and new display_order
         const payload = {
           name: original.name,
-          description: original.description,
+          description: sanitizeRichText(original.description || ''),
           price: typeof original.price === 'number' ? original.price : original.price,
           image_url: original.image_url || null,
           display_order: u.display_order,
           is_available: typeof original.is_available !== 'undefined' ? original.is_available : 1,
         };
-        return authenticatedFetch(`/menu/items/${u.id}`, {
+        return authenticatedFetch(withDebugParam(`/menu/items/${u.id}`), {
           method: 'PUT',
           body: JSON.stringify(payload)
         }).then(res => {
@@ -424,7 +473,7 @@ function MenuModule() {
 
     // Save all category orders to backend using batch endpoint
     try {
-      const response = await authenticatedFetch('/menu/categories/reorder', {
+      const response = await authenticatedFetch(withDebugParam('/menu/categories/reorder'), {
         method: 'PUT',
         body: JSON.stringify({
           categories: updates.map(cat => ({
@@ -454,18 +503,47 @@ function MenuModule() {
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center">
   <h2 className="text-2xl font-bold text-text-inverse">Menu Management</h2>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setEditingCategory({ name: '', description: '', display_order: 0, is_active: 1 })}
+            onClick={() => setEditingCategory({
+              name: '',
+              description: '',
+              display_order: 0,
+              display_columns: 1,
+              hide_descriptions: 0,
+              is_active: 1,
+              gallery_image_id: null,
+              gallery_image_url: ''
+            })}
             className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
             aria-label="Add menu category"
           >
             <icons.Plus size={18} />
             Add Category
           </button>
+        </div>
+      </div>
+
+      <div className="bg-surface rounded-lg shadow p-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+          <div>
+            <h3 className="text-lg font-semibold text-text-primary">Public Menu Preview</h3>
+            <p className="text-xs text-text-secondary">Reflects the live menu layout and sanitizes text exactly like the public site.</p>
+          </div>
+        </div>
+        <div className="border border-divider rounded-lg">
+          <MenuDisplay
+            categories={previewCategories}
+            menuHeading={siteSettings?.menu_heading || ''}
+            menuIntro={siteSettings?.menu_intro || ''}
+            expandedCategory={previewExpanded}
+            onToggleCategory={(id) => setPreviewExpanded(prev => (prev === id ? null : id))}
+            panelsRef={previewPanelsRef}
+            measurePanel={measurePreviewPanel}
+          />
         </div>
       </div>
 
@@ -476,7 +554,7 @@ function MenuModule() {
             <h3 className="text-xl font-bold mb-4 text-text-primary">
               {editingCategory.id ? 'Edit' : 'Add'} Category
             </h3>
-            <p className="text-sm text-text-muted mb-3">Existing images will be preserved unless you remove or replace them.</p>
+            <p className="text-sm text-text-secondary mb-3">Existing images will be preserved unless you remove or replace them.</p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
@@ -487,20 +565,12 @@ function MenuModule() {
                   className="w-full form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
-                <textarea
-                  value={editingCategory.description}
-                  onChange={(e) => setEditingCategory({...editingCategory, description: e.target.value})}
-                  className="w-full form-input"
-                  rows="3"
-                />
-                <p className="text-xs text-text-muted mt-1">
-                  Lines with pipes (|) display in columns. Lines without pipes display normally. Example:<br/>
-                  Current Flavors:<br/>
-                  Chocolate | Vanilla | Strawberry
-                </p>
-              </div>
+              <RichTextField
+                label="Description"
+                value={editingCategory.description || ''}
+                onChange={(html) => setEditingCategory({ ...editingCategory, description: html })}
+                helperText="Allowed formatting: bold, italic, line breaks, unordered/ordered lists."
+              />
               <div>
                 <label className="inline-flex items-center gap-2">
                   <input type="checkbox" checked={!!editingCategory.is_active} onChange={(e) => setEditingCategory(c => ({ ...c, is_active: e.target.checked ? 1 : 0 }))} />
@@ -516,101 +586,106 @@ function MenuModule() {
                   />
                   <span className="text-sm text-text-primary">Hide Item Descriptions</span>
                 </label>
-                <p className="text-xs text-text-muted mt-1">
+                <p className="text-xs text-text-secondary mt-1">
                   Check this to hide menu item descriptions (useful for simple lists)
                 </p>
               </div>
               <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Image URL (optional)</label>
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    value={editingCategory.image_url || ''}
-                    onChange={(e) => setEditingCategory({...editingCategory, image_url: e.target.value})}
-                    placeholder="https://.../image.jpg"
-                    className="w-full form-input"
-                    disabled={uploading}
-                  />
-                    <label className={`px-3 py-2 rounded cursor-pointer text-sm ${uploading ? 'opacity-60 pointer-events-none' : 'bg-surface'}`}>
-                    <input type="file" accept="image/*" className="hidden" onChange={async (ev) => {
-                      const f = ev.target.files?.[0];
-                      if (!f) return;
-                      // client-side checks: image type and size <= 5MB
-                      const MAX_BYTES = 5 * 1024 * 1024;
-                      if (!f.type.startsWith("image/")) {
-                        setUploadError('Please select an image file');
-                        return;
-                      }
-                      if (f.size > MAX_BYTES) {
-                        setUploadError('Image must be 5 MB or smaller');
-                        return;
-                      }
-                      try {
-                        // Use the 'menu' category for category images so they are
-                        // discoverable in the menu media listing and treated with menu rules.
-                        const url = await uploadFile(f, 'menu');
-                        if (url) setEditingCategory(c => ({ ...c, image_url: url }));
-                      } catch (err) {
-                        // error state is handled by uploadError
-                      }
-                    }} />
-                    {uploading ? (processingUpload ? 'Processing images…' : `Uploading ${uploadProgress}%`) : 'Upload'}
-                  </label>
-                </div>
-                {uploadError && <Toast type="error" onClose={() => setUploadError(null)}>{uploadError}</Toast>}
-                {editingCategory.image_url && (
-                  <div className="mt-2">
-                    <img loading="lazy" src={editingCategory.image_url} alt="preview" className="h-24 rounded object-cover" />
-                    {uploading && <div className="w-full bg-surface-warm h-2 rounded mt-2 overflow-hidden"><div className="bg-accent h-2" style={{ width: `${uploadProgress}%` }} /></div>}
-                    {uploading && <div className="mt-2"><button type="button" onClick={cancelUpload} className="btn btn-ghost btn-sm">Cancel</button></div>}
-                  </div>
-                )}
-
-                  {/* debug overlay removed (2025-10-24) — historical note removed to reduce noise */}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Gallery image (optional)</label>
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    value={editingCategory.gallery_image_url || ''}
-                    onChange={(e) => setEditingCategory({...editingCategory, gallery_image_url: e.target.value})}
-                    placeholder="https://.../image.jpg"
-                    className="w-full form-input"
-                    disabled={uploading}
-                  />
+                <label className="block text-sm font-medium text-text-primary mb-1">Menu image</label>
+                <p className="text-xs text-text-secondary mb-2">
+                  Pick an image from the media library or upload a new one for this category.
+                </p>
+                <div className="flex flex-wrap gap-2 items-center">
                   <button
                     type="button"
                     onClick={async () => {
-                      // open picker and fetch first page
-                      const cur = editingCategory.gallery_image_url;
-                      setSelectedMediaId(null);
+                      const currentId = editingCategory.gallery_image_id;
+                      setSelectedMediaId(currentId ? String(currentId) : null);
                       setShowMediaPicker(true);
                       try {
                         reset();
                         await fetchPage(0, false);
-                        if (cur) {
-                          const match = (pagedMedia || []).find(m => normalizeUrl(m.file_url) === normalizeUrl(cur) || m.file_url === cur);
-                          if (match) setSelectedMediaId(match.id);
-                        }
                       } catch (e) {
-                        // ignore
+                        // ignore fetch failures; modal still opens
                       }
                     }}
-                    className="px-3 py-2 rounded text-sm bg-surface"
+                    className={`px-3 py-2 rounded text-sm bg-surface ${uploading ? 'opacity-60 pointer-events-none' : ''}`}
+                    disabled={uploading}
                   >
-                    Choose from Media
+                    Choose from media
                   </button>
-                  {editingCategory.gallery_image_url && (
-                    <button type="button" onClick={() => setEditingCategory(c => ({ ...c, gallery_image_url: '', gallery_image_id: null }))} className="px-3 py-2 rounded text-sm bg-surface">Remove</button>
+                  <label className={`px-3 py-2 rounded cursor-pointer text-sm bg-surface ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={async (ev) => {
+                        const file = ev.target.files?.[0];
+                        if (!file) return;
+                        const MAX_BYTES = 8 * 1024 * 1024;
+                        if (!file.type.startsWith('image/')) {
+                          setUploadError('Please select an image file');
+                          return;
+                        }
+                        if (file.size > MAX_BYTES) {
+                          setUploadError('Image must be 8 MB or smaller');
+                          return;
+                        }
+                        try {
+                          const media = await uploadFile(file, 'menu');
+                          if (media?.id) {
+                            setEditingCategory((prev) => ({
+                              ...prev,
+                              gallery_image_id: media.id,
+                              gallery_image_url: media.fallback_original || media.file_url || ''
+                            }));
+                            setSelectedMediaId(String(media.id));
+                            try {
+                              window.dispatchEvent(new window.CustomEvent('mediaUpdated'));
+                            } catch (eventError) {
+                              // ignore Event errors in unsupported browsers
+                            }
+                          }
+                        } catch (err) {
+                          // error handled via uploadError state
+                        }
+                      }}
+                    />
+                    {uploading ? (processingUpload ? 'Processing images…' : `Uploading ${uploadProgress}%`) : 'Upload new image'}
+                  </label>
+                  {editingCategory.gallery_image_id && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingCategory((c) => ({ ...c, gallery_image_url: '', gallery_image_id: null }))}
+                      className={`px-3 py-2 rounded text-sm bg-surface ${uploading ? 'opacity-60 pointer-events-none' : ''}`}
+                      disabled={uploading}
+                    >
+                      Remove
+                    </button>
                   )}
                 </div>
-                {editingCategory.gallery_image_url && (
-                  <div className="mt-2">
-                    <img loading="lazy" src={normalizeUrl(editingCategory.gallery_image_url)} alt="gallery preview" className="h-24 rounded object-cover" />
+                {uploadError && (
+                  <Toast type="error" onClose={() => setUploadError(null)}>{uploadError}</Toast>
+                )}
+                {uploading && (
+                  <div className="text-xs text-text-secondary mt-2 flex items-center gap-2">
+                    {processingUpload ? 'Processing images…' : `Uploading ${uploadProgress}%`}
+                    <button type="button" onClick={cancelUpload} className="underline text-primary text-xs">
+                      Cancel
+                    </button>
                   </div>
                 )}
-                {/* media errors are handled by the paginated hook when needed */}
+                {editingCategory.gallery_image_url && (
+                  <div className="mt-2">
+                    <img
+                      loading="lazy"
+                      src={normalizeUrl(editingCategory.gallery_image_url)}
+                      alt="menu preview"
+                      className="h-24 rounded object-cover"
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                   <button
@@ -646,7 +721,13 @@ function MenuModule() {
                   type="button"
                   onClick={() => {
                     const media = (pagedMedia || []).find(m => String(m.id) === String(selectedMediaId));
-                    if (media) setEditingCategory(c => ({ ...c, gallery_image_url: media.file_url, gallery_image_id: media.id }));
+                    if (media) {
+                      setEditingCategory(c => ({
+                        ...c,
+                        gallery_image_url: media.fallback_original || media.file_url || '',
+                        gallery_image_id: media.id
+                      }));
+                    }
                     setShowMediaPicker(false);
                   }}
                   className="px-3 py-1 rounded bg-primary text-text-inverse"
@@ -711,15 +792,12 @@ function MenuModule() {
                   className="w-full form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
-                <textarea
-                  value={editingItem.description}
-                  onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
-                  className="w-full form-input"
-                  rows="2"
-                />
-              </div>
+              <RichTextField
+                label="Description"
+                value={editingItem.description || ''}
+                onChange={(html) => setEditingItem({ ...editingItem, description: html })}
+                helperText="Matches the public menu exactly. Allowed tags: p, strong, em, br, ul, ol, li."
+              />
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Price</label>
                 <input
@@ -850,7 +928,33 @@ function MenuModule() {
                   )}
                   <div>
                     <h3 className="font-bold text-lg text-text-primary">{category.name}</h3>
-                    <p className="text-sm text-text-secondary">{category.description}</p>
+                    {category.description ? (() => {
+                      const descHtml = sanitizeRichText(category.description || '');
+                      if (!descHtml) return null;
+                      const expanded = !!descriptionExpanded[category.id];
+                      return (
+                        <div className="mt-1">
+                          <div className="text-xs uppercase tracking-wide text-text-secondary mb-1">Preview</div>
+                          <div className={`menu-description-preview ${expanded ? 'expanded' : 'clamped'}`}>
+                            <div
+                              className="text-sm text-text-secondary menu-description"
+                              dangerouslySetInnerHTML={{ __html: descHtml }}
+                            />
+                            {!expanded && <div className="menu-description-preview__fade" />}
+                          </div>
+                          <button
+                            type="button"
+                            className="text-xs text-primary hover:underline mt-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleDescriptionPreview(category.id);
+                            }}
+                          >
+                            {expanded ? 'Show less' : 'Show more'}
+                          </button>
+                        </div>
+                      );
+                    })() : null}
                   </div>
                 </div>
               </button>
@@ -867,7 +971,6 @@ function MenuModule() {
                   type="button"
                   onClick={() => {
                     setEditingCategory({ ...category, is_active: category.is_active == null ? 1 : category.is_active });
-                    setOriginalCategory(category);
                   }}
                   className="text-text-inverse hover:bg-surface-warm p-2 rounded"
                   aria-label={`Edit category ${category.name}`}
@@ -911,8 +1014,15 @@ function MenuModule() {
                         </button>
                         <div className="flex-1">
                           <p className="font-medium text-text-primary">{item.name}</p>
-                          <p className="text-sm text-text-secondary">{item.description}</p>
-                            <p className="text-lg font-heading text-primary mt-1">{typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : '—'}</p>
+                          {!category.hide_descriptions && item.description ? (
+                            <div
+                              className="text-sm text-text-secondary menu-item-description mt-1"
+                              dangerouslySetInnerHTML={{ __html: sanitizeRichText(item.description || '') }}
+                            />
+                          ) : null}
+                          <p className="text-lg font-heading text-primary mt-1">
+                            {typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : '—'}
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <button

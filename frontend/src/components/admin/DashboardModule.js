@@ -38,8 +38,6 @@ import { authenticatedFetch } from '../../utils/api';
 
 // Last updated: 2025-10-21 — documentation sweep: clarified per-card loading recommendation.
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-
 /* DEV:
   StatCard accepts a `color` prop which should be a semantic token class
   (e.g., bg-primary, bg-secondary, bg-accent). Update colors in
@@ -83,33 +81,111 @@ function DashboardModule() {
     subscribers: 0,
     messages: 0
   });
+  const [testEmailState, setTestEmailState] = useState({
+    status: 'idle',
+    message: '',
+    requestId: null,
+    type: null
+  });
+  const enableTestEmail = process.env.REACT_APP_ENABLE_TEST_EMAIL === 'true';
 
   useEffect(() => {
-    Promise.all([
-      authenticatedFetch('/reservations').then(r => r.ok ? r.json() : []).catch(() => []),
-      authenticatedFetch('/jobs').then(r => r.ok ? r.json() : []).catch(() => []),
-      authenticatedFetch('/subscribers').then(r => r.ok ? r.json() : []).catch(() => []),
-      authenticatedFetch('/messages').then(r => r.ok ? r.json() : []).catch(() => [])
-    ]).then(([reservations, jobs, subscribers, messages]) => {
-      // Normalize contact messages response: the inbox endpoint returns a
-      // paginated object { total, page, per_page, messages: [...] } while other
-      // endpoints return arrays. Handle both shapes here.
-      let messagesList = [];
-      if (Array.isArray(messages)) messagesList = messages;
-      else if (messages && Array.isArray(messages.messages)) messagesList = messages.messages;
+    let cancelled = false;
 
-      setStats({
-        reservations: Array.isArray(reservations) ? reservations.filter(r => r.status === 'pending').length : 0,
-        jobs: Array.isArray(jobs) ? jobs.filter(j => j.status === 'new').length : 0,
-        subscribers: Array.isArray(subscribers) ? subscribers.filter(s => s.is_active).length : 0,
-        messages: Array.isArray(messagesList) ? messagesList.filter(m => !m.is_read).length : 0
+    const fetchPagedCount = async (path, params) => {
+      const query = new URLSearchParams({
+        page: '1',
+        per_page: '1',
+        sort_by: 'submitted_at',
+        sort_dir: 'DESC',
+        ...params
       });
-    }).catch(() => {
-      // Keep stats at defaults in case of an unexpected failure.
-      setStats({ reservations: 0, jobs: 0, subscribers: 0, messages: 0 });
-    });
+      const res = await authenticatedFetch(`${path}?${query.toString()}`);
+      if (!res.ok) throw new Error('Failed to load count');
+      const payload = await res.json();
+      const total = parseInt(payload?.total, 10);
+      return Number.isFinite(total) ? total : 0;
+    };
+
+    const fetchActiveSubscribers = async () => {
+      const res = await authenticatedFetch('/subscribers');
+      if (!res.ok) return 0;
+      const list = await res.json();
+      if (!Array.isArray(list)) return 0;
+      return list.filter((subscriber) => {
+        if (!subscriber) return false;
+        const flag = subscriber.is_active;
+        return flag === true || flag === 1 || flag === '1';
+      }).length;
+    };
+
+    const loadStats = async () => {
+      try {
+        const [pendingReservations, newApplications, activeSubscribers, unreadMessages] = await Promise.all([
+          fetchPagedCount('/reservations', { status: 'pending' }),
+          fetchPagedCount('/jobs', { status: 'new' }),
+          fetchActiveSubscribers(),
+          fetchPagedCount('/messages', { status: 'new' })
+        ]);
+        if (!cancelled) {
+          setStats({
+            reservations: pendingReservations,
+            jobs: newApplications,
+            subscribers: activeSubscribers,
+            messages: unreadMessages
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setStats({
+            reservations: 0,
+            jobs: 0,
+            subscribers: 0,
+            messages: 0
+          });
+        }
+      }
+    };
+
+    loadStats();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  const triggerTestEmail = async (type) => {
+    if (!enableTestEmail) return;
+    setTestEmailState({
+      status: 'loading',
+      message: `Sending ${type === 'alert' ? 'alert' : 'ops'} email...`,
+      requestId: null,
+      type
+    });
+    try {
+      const res = await authenticatedFetch('/admin/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type })
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload?.error || 'Request failed');
+      }
+      setTestEmailState({
+        status: 'success',
+        message: `${type === 'alert' ? 'Alert' : 'Ops'} email queued successfully.`,
+        requestId: payload?.requestId || null,
+        type
+      });
+    } catch (error) {
+      setTestEmailState({
+        status: 'error',
+        message: error?.message || 'Unable to send test email',
+        requestId: null,
+        type
+      });
+    }
+  };
 
 
   return (
@@ -157,6 +233,63 @@ function DashboardModule() {
           <li>• <strong>Newsletter:</strong> Manage email subscribers</li>
         </ul>
       </div>
+
+      <div className="bg-surface rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-heading font-bold text-text-primary">Email System Test</h3>
+            <p className="text-text-secondary text-sm">
+              Send a one-off email to verify SendGrid delivery. Stores the request ID for auditing.
+            </p>
+          </div>
+          <icons.Mail size={24} className="text-primary" aria-hidden />
+        </div>
+        {enableTestEmail ? (
+          <>
+            <div className="flex flex-wrap gap-3 mb-4">
+              <button
+                type="button"
+                onClick={() => triggerTestEmail('ops')}
+                className="px-4 py-2 rounded-lg bg-primary text-text-inverse hover:bg-primary-light transition disabled:opacity-60"
+                disabled={testEmailState.status === 'loading'}
+              >
+                Send test ops email
+              </button>
+              <button
+                type="button"
+                onClick={() => triggerTestEmail('alert')}
+                className="px-4 py-2 rounded-lg border border-border text-text-primary hover:border-primary transition disabled:opacity-60"
+                disabled={testEmailState.status === 'loading'}
+              >
+                Send test alert email
+              </button>
+            </div>
+            {testEmailState.status !== 'idle' && (
+              <div
+                className={`rounded-lg p-4 text-sm ${
+                  testEmailState.status === 'success'
+                    ? 'bg-success/10 text-success'
+                    : testEmailState.status === 'error'
+                    ? 'bg-error/10 text-error'
+                    : 'bg-surface-warm text-text-secondary'
+                }`}
+              >
+                <p className="font-semibold mb-1">{testEmailState.message}</p>
+                {testEmailState.requestId && (
+                  <p className="font-mono text-xs text-text-secondary">
+                    requestId: {testEmailState.requestId}
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-text-secondary text-sm">
+            Test emails are disabled for this environment. Set <code className="font-mono">REACT_APP_ENABLE_TEST_EMAIL=true</code> (and
+            backend <code className="font-mono">ALLOW_PROD_TEST_EMAIL=true</code> if needed) to enable.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -168,4 +301,3 @@ const Module = {
 };
 
 export default Module;
-

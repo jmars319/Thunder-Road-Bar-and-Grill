@@ -1,6 +1,5 @@
 import { useState } from 'react';
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+import { API_BASE } from '../../config/api';
 
 /**
  * PasswordChangeModule
@@ -71,7 +70,7 @@ export default function PasswordChangeModule({ token }) {
       const response = await fetch(`${API_BASE}/user/password`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({

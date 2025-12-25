@@ -15,10 +15,9 @@
     API interactions; this file handles layout and module routing only.
 */
 
-import React, { useState, useEffect } from 'react';
-import { ReactComponent as DefaultLogo } from '../logo.svg';
+import React, { useState } from 'react';
 import { icons } from '../icons';
-import ThemeToggle from '../components/ThemeToggle';
+import BrandLogo from '../components/shared/BrandLogo';
 import DashboardModule from '../components/admin/DashboardModule';
 import InboxModule from '../components/admin/InboxModule';
 import MenuModule from '../components/admin/MenuModule';
@@ -27,12 +26,7 @@ import JobsModule from '../components/admin/JobsModule';
 import MediaModule from '../components/admin/MediaModule';
 import SettingsModule from '../components/admin/SettingsModule';
 import PasswordChangeModule from '../components/admin/PasswordChangeModule';
-import NewsletterModule from '../components/admin/NewsletterModule';
 import Snackbar from '../components/ui/Snackbar';
-
-// mark conditionally-rendered admin assets as used for static analyzers
-const __usedAdmin = { DefaultLogo };
-void __usedAdmin;
 
 const AdminModules = {
   dashboard: { component: DashboardModule, name: 'Dashboard', icon: icons.LayoutDashboard },
@@ -50,32 +44,6 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeModule, setActiveModule] = useState('dashboard');
 
-  const [siteSettings, setSiteSettings] = useState(null);
-
-  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-
-  useEffect(() => {
-    let mounted = true;
-    fetch(`${API_BASE}/settings`)
-      .then((r) => (r.ok ? r.json() : {}))
-      .then((payload) => {
-        if (mounted) setSiteSettings(payload?.settings || {});
-      })
-      .catch(() => {});
-
-    const handler = (e) => {
-      if (mounted) setSiteSettings(e?.detail || {});
-    };
-
-    window.addEventListener('siteSettingsUpdated', handler);
-    return () => {
-      mounted = false;
-      window.removeEventListener('siteSettingsUpdated', handler);
-    };
-  }, [API_BASE]);
-
-  // siteSettings updated via API and 'siteSettingsUpdated' events
-
   const registryEntry = AdminModules[activeModule];
   const candidate = registryEntry?.component || registryEntry;
   const CurrentModule = candidate?.component ? candidate.component : candidate;
@@ -87,21 +55,9 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
       >
         <div className="p-4 flex items-center justify-between border-b border-divider">
           <div className="flex items-center gap-3">
-            {(
-              <>
-                {siteSettings?.logo_url ? (
-                  <img
-                    src={siteSettings.logo_url}
-                    alt={siteSettings?.business_name || 'Site logo'}
-                    className="h-8 object-contain"
-                  />
-                ) : (
-                  <DefaultLogo role="img" aria-label={siteSettings?.business_name || 'Site logo'} className="h-8 object-contain" />
-                )}
-                {sidebarOpen && (
-                  <span className="text-sm font-heading font-bold text-text-inverse">TRBG ADMIN</span>
-                )}
-              </>
+            <BrandLogo className="h-8 object-contain" />
+            {sidebarOpen && (
+              <span className="text-sm font-heading font-bold text-text-inverse">TRBG ADMIN</span>
             )}
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2" aria-label={sidebarOpen?"Collapse sidebar":"Expand sidebar"}>
@@ -155,7 +111,6 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-text-inverse font-bold">
               {(user?.name || 'A').charAt(0).toUpperCase()}
             </div>
-            {React.createElement(ThemeToggle, { inline: true, className: 'ml-4' })}
           </div>
         </header>
 

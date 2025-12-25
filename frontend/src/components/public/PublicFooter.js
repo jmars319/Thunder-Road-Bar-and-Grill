@@ -13,6 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { ReactComponent as GoogleIcon } from '../../assets/google-g.svg';
 import cachedFetch, { clearCacheFor } from '../../lib/cachedFetch';
+import { getApiUrl } from '../../config/api';
 
 const HoursModal = React.lazy(() => import('./HoursModal'));
 const PrivacyModal = React.lazy(() => import('./PrivacyModal'));
@@ -23,8 +24,6 @@ const OrderModal = React.lazy(() => import('./OrderModal'));
 void HoursModal; void PrivacyModal; void TermsModal; void ContactModal; void OrderModal;
 // mark the inline Google SVG component as intentionally used
 void GoogleIcon;
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 export default function PublicFooter({ onGoToAdmin }) {
   // NOTE: Footer uses token classes (`bg-surface`, `text-text-inverse`,
@@ -39,16 +38,19 @@ export default function PublicFooter({ onGoToAdmin }) {
   const [showOrder, setShowOrder] = useState(false);
 
   useEffect(() => {
+    const footerColumnsUrl = getApiUrl('/footer-columns');
+    const settingsUrl = getApiUrl('/settings');
+
     (async () => {
       try {
-        const cols = await cachedFetch(`${API_BASE}/footer-columns`);
+        const cols = await cachedFetch(footerColumnsUrl);
         setColumns(Array.isArray(cols) ? cols : []);
       } catch (e) {
         setColumns([]);
       }
 
       try {
-        const s = await cachedFetch(`${API_BASE}/settings`);
+        const s = await cachedFetch(settingsUrl);
         setSiteSettings(s?.settings || {});
       } catch (e) {
         setSiteSettings({});
@@ -56,10 +58,10 @@ export default function PublicFooter({ onGoToAdmin }) {
     })();
 
     const handler = () => {
-      clearCacheFor(`${API_BASE}/settings`);
-      clearCacheFor(`${API_BASE}/footer-columns`);
-      cachedFetch(`${API_BASE}/settings`).then(s => setSiteSettings(s?.settings || {}));
-      cachedFetch(`${API_BASE}/footer-columns`).then(cols => setColumns(Array.isArray(cols) ? cols : []));
+      clearCacheFor(settingsUrl);
+      clearCacheFor(footerColumnsUrl);
+      cachedFetch(settingsUrl).then(s => setSiteSettings(s?.settings || {}));
+      cachedFetch(footerColumnsUrl).then(cols => setColumns(Array.isArray(cols) ? cols : []));
     };
 
     window.addEventListener('siteSettingsUpdated', handler);

@@ -27,9 +27,12 @@
 
   /* Text */
   --text-primary: #1c1917;
-  --text-secondary: #78716c;
-  --text-muted: #94a3b8;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
   --text-inverse: #fff;
+  --text-placeholder: #5f6674;
+  --brand-cream: #fff5f0;
+  --brand-cream: #fff5f0;
 
   /* Borders */
   --border-color: #e2e8f0;
@@ -87,9 +90,10 @@
     --secondary-color: #b45309;
     --accent-color: #f59e0b;
   --text-primary: #e6eef8; /* near white */
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  --text-secondary: #d5deed;
+  --text-muted: #a5b4cf;
   --text-inverse: #fff;
+  --text-placeholder: #c7d1ea;
     --border-color: #1f2a37;
     --divider-color: #14202b;
 
@@ -119,9 +123,10 @@
   --secondary-color: #b45309;
   --accent-color: #f59e0b;
   --text-primary: #e6eef8;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  --text-secondary: #d5deed;
+  --text-muted: #a5b4cf;
   --text-inverse: #fff;
+  --text-placeholder: #c7d1ea;
   --border-color: #1f2a37;
   --divider-color: #14202b;
   --logo-badge-bg: rgb(255 255 255 / 30%);
@@ -141,9 +146,10 @@
   --secondary-color: #92400e;
   --accent-color: #f59e0b;
   --text-primary: #1c1917;
-  --text-secondary: #78716c;
-  --text-muted: #94a3b8;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
   --text-inverse: #fff;
+  --text-placeholder: #5f6674;
   --border-color: #e2e8f0;
   --divider-color: #f1f5f9;
 }
@@ -155,6 +161,7 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+/** Avoid global optimizeLegibility to prevent browser kerning surprises; apply only where dense menu text needs it. */
 }
 
 /* Paragraphs use a slightly more characterful serif to increase legibility
@@ -197,6 +204,143 @@ h1, h2, h3, h4, h5, h6 {
 .menu-price, .price-badge {
   font-family: 'Roboto Mono', ui-monospace, monospace;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.015em;
+  text-rendering: optimizeLegibility;
+}
+
+.rich-text-field [contenteditable='true'] ul {
+  list-style: disc;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.rich-text-field [contenteditable='true'] ol {
+  list-style: decimal;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.rich-text-field [contenteditable='true'] li {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.rt-cols-2,
+.rt-cols-3 {
+  width: 100%;
+}
+
+.rt-cols-2 > ul,
+.rt-cols-2 > ol,
+.rt-cols-3 > ul,
+.rt-cols-3 > ol {
+  column-gap: 24px;
+  column-fill: balance;
+}
+
+.rt-cols-2 > ul,
+.rt-cols-2 > ol {
+  column-count: 2;
+}
+
+.rt-cols-3 > ul,
+.rt-cols-3 > ol {
+  column-count: 3;
+}
+
+@media (max-width: 640px) {
+  .rt-cols-2 > ul,
+  .rt-cols-2 > ol,
+  .rt-cols-3 > ul,
+  .rt-cols-3 > ol {
+    column-count: 1;
+  }
+}
+
+.rich-text-field__editor-wrapper {
+  position: relative;
+}
+
+.rich-text-field__editor {
+  min-height: 120px;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: var(--surface-color);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.rich-text-field__editor p,
+.rich-text-field__editor li {
+  color: inherit;
+}
+
+.rich-text-field__editor.is-focused {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgb(220 38 38 / 20%);
+}
+
+.rich-text-field__placeholder {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.95rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.rich-text-field__dirty {
+  margin-left: auto;
+}
+
+.menu-description,
+.menu-item-description {
+  color: var(--text-primary);
+}
+
+.menu-description p,
+.menu-item-description p {
+  color: inherit;
+}
+
+.menu-description ul,
+.menu-description ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.menu-description ul {
+  list-style: disc;
+}
+
+.menu-description ol {
+  list-style: decimal;
+}
+
+.menu-description li {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.menu-description-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.375rem;
+}
+
+.menu-description-preview.clamped {
+  max-height: 4.5rem;
+}
+
+.menu-description-preview__fade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2rem;
+  background: linear-gradient(180deg, transparent, var(--surface-color));
 }
 
 /* Hero Section with Gradient */
@@ -210,20 +354,55 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Overlay gradient used on images to improve text readability */
 .overlay-gradient {
-  background: linear-gradient(to bottom, rgb(0 0 0 / 20%), rgb(0 0 0 / 10%));
+  background: linear-gradient(to bottom, rgb(0 0 0 / 45%), rgb(0 0 0 / 15%));
 }
 
-/* Hero Text Outline (for readability) */
-.hero-title,
+/* Hero typography tweaks */
+.hero-title {
+  color: var(--brand-cream);
+  text-shadow: 0 6px 16px rgb(0 0 0 / 45%);
+}
+
 .hero-subtitle {
-  /* Use token for inverse text so dark/light themes remain consistent */
-  color: var(--text-inverse);
-  text-shadow:
-    1px 1px 0 var(--primary-color),
-    -1px -1px 0 var(--primary-color),
-    1px -1px 0 var(--primary-color),
-    -1px 1px 0 var(--primary-color),
-    0 2px 6px rgb(0 0 0 / 25%);
+  color: rgb(255 255 255 / 0.9);
+  text-shadow: 0 4px 12px rgb(0 0 0 / 35%);
+}
+
+.text-brand-cream {
+  color: var(--brand-cream);
+}
+
+.cta-glass {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: none;
+  transition: background 0.2s ease, color 0.2s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 15px 35px rgb(0 0 0 / 35%);
+  border: 1px solid rgb(255 255 255 / 20%);
+}
+
+.cta-glass--primary {
+  background: rgba(220, 38, 38, 0.92);
+  color: #fff;
+}
+
+.cta-glass--primary:hover {
+  background: rgba(220, 38, 38, 1);
+}
+
+.cta-glass--secondary {
+  background: rgba(15, 23, 36, 0.82);
+  color: #f8fafc;
+}
+
+.cta-glass--secondary:hover {
+  background: rgba(15, 23, 36, 0.92);
 }
 
 /* Card Hover Effects */
@@ -238,9 +417,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Menu Card Expansion */
 .menu-card {
-  perspective: 1200px;
-  transform-style: preserve-3d;
-  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  will-change: transform;
 }
 
 .menu-card.expanded {
@@ -471,21 +649,28 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Form Input Focus */
-.form-input:focus {
+.form-input:focus,
+.form-select:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgb(220 38 38 / 8%);
 }
 
 /* Form Input base styles (improve contrast and placeholder readability) */
-.form-input {
+.form-input,
+.form-select {
   background-color: var(--surface-color);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
 .form-input::placeholder {
-  color: rgb(28 25 23 / 45%); /* slightly muted but readable */
+  color: var(--text-placeholder); /* tokenized for consistent contrast */
+}
+
+.form-select option {
+  background-color: var(--surface-color);
+  color: var(--text-primary);
 }
 
 /* Fix autofill styling to ensure good contrast in light mode */
@@ -523,21 +708,33 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Price Badge */
 .price-badge {
-  display: inline-block;
-  background: rgb(0 0 0 / 60%);
-  color: var(--text-inverse);
-  padding: 0.18rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(28 25 23 / 12%);
+  color: var(--text-primary);
+  padding: 0.2rem 0.7rem;
   border-radius: 9999px;
-  font-size: 0.95rem;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 40%);
+  font-size: 1rem;
+  border: 1px solid rgb(28 25 23 / 16%);
+  text-shadow: none;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 15%);
 }
 
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   .price-badge {
-    background: rgb(220 38 38 / 12%);
-    color: var(--text-primary);
-    box-shadow: none;
+    background: rgb(248 250 252 / 12%);
+    color: #f8fafc;
+    border-color: rgb(248 250 252 / 22%);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 55%);
   }
+}
+
+:root[data-theme='dark'] .price-badge {
+  background: rgb(248 250 252 / 12%);
+  color: #f8fafc;
+  border-color: rgb(248 250 252 / 22%);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 55%);
 }
 
 /* Logo Badge (surface background) */

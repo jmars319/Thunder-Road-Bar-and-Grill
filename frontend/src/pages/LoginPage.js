@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react';
-import { ReactComponent as DefaultLogo } from '../logo.svg';
-import { buildSrcSet, buildWebpSrcSet, LOGO_SIZES } from '../utils/imageUtils';
-
-// Mark intentionally imported but conditionally-rendered components as used
-// so static analyzers don't report false-positive 'defined but never used'.
-const __usedLogin = { DefaultLogo };
-void __usedLogin;
+import { useState } from 'react';
+import BrandLogo from '../components/shared/BrandLogo';
+import { API_BASE } from '../config/api';
 
 /*
   Purpose:
@@ -17,14 +12,9 @@ void __usedLogin;
     response containing a `success` boolean and optionally a `user` object.
 
   Notes:
-  - API_BASE is currently hard-coded for local development. Move to
-    environment configuration for deployments.
   - Accessibility: uses labels, input ids, and an aria-live error region for
     screen reader announcements.
 */
-
-// Use environment-driven API base so deployments can override without code changes
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 /**
  * Props:
@@ -36,30 +26,6 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [siteSettings, setSiteSettings] = useState(null);
-  const [logoSvg, setLogoSvg] = useState(null);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/settings`).then(r => r.ok ? r.json() : {}).then(payload => setSiteSettings(payload?.settings || {})).catch(() => {});
-    const handler = (e) => setSiteSettings(e?.detail || {});
-    window.addEventListener('siteSettingsUpdated', handler);
-    return () => window.removeEventListener('siteSettingsUpdated', handler);
-  }, []);
-
-  useEffect(() => {
-    if (!siteSettings?.logo_url) return;
-    const url = siteSettings.logo_url;
-    if (typeof url === 'string' && url.toLowerCase().endsWith('.svg')) {
-      // Fetch sanitized SVG from backend API instead of direct file access
-      fetch(`${API_BASE}/logo/sanitized`)
-        .then(r => (r.ok ? r.text() : Promise.reject()))
-        .then(t => setLogoSvg(t))
-        .catch(() => setLogoSvg(null));
-    } else {
-      setLogoSvg(null);
-    }
-  }, [siteSettings]);
-
   // Primary submit handler. Keeps error/loading state local and defensive about
   // response shapes. We always check `response.ok` before parsing JSON because
   // some servers return HTML or an error page on non-2xx status codes.
@@ -73,7 +39,7 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
     try {
       const response = await fetch(`${API_BASE}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ username, password })
       });
 
@@ -118,33 +84,9 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
         <div className="bg-surface rounded-lg shadow-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-                {
-                  (() => {
-                    const isBundledDefault = !siteSettings?.logo_url;
-                    const logoUrl = siteSettings?.logo_url || '';
-                    return (
-                      <div className="inline-block mb-4 logo-badge">
-                        {logoSvg ? (
-                          <span role="img" aria-label={siteSettings?.business_name || 'Site logo'} dangerouslySetInnerHTML={{ __html: logoSvg }} className="h-12 w-12 inline-block" />
-                        ) : (
-                          <picture>
-                            {buildWebpSrcSet(logoUrl, LOGO_SIZES) ? (
-                              <source srcSet={buildWebpSrcSet(logoUrl, LOGO_SIZES)} type="image/webp" sizes="(min-width: 768px) 80px, 64px" />
-                            ) : null}
-                            {buildSrcSet(logoUrl, LOGO_SIZES) ? (
-                              <source srcSet={buildSrcSet(logoUrl, LOGO_SIZES)} type="image/jpeg" sizes="(min-width: 768px) 80px, 64px" />
-                            ) : null}
-                            {isBundledDefault ? (
-                              <DefaultLogo role="img" aria-label={siteSettings?.business_name || 'Site logo'} className="inline-block h-12 w-auto" />
-                            ) : (
-                              <img src={logoUrl} srcSet={buildSrcSet(logoUrl, LOGO_SIZES) || undefined} sizes="(min-width: 768px) 80px, 64px" alt={siteSettings?.business_name || 'Site logo'} className="inline-block h-12 w-auto" />
-                            )}
-                          </picture>
-                        )}
-                      </div>
-                    );
-                  })()
-                }
+            <div className="inline-block mb-4 logo-badge">
+              <BrandLogo className="inline-block h-12 w-auto" />
+            </div>
             <h1 className="text-2xl font-bold text-text-primary">Thunder Road Admin</h1>
             <p className="text-text-secondary text-sm mt-2">Sign in to manage your site</p>
           </div>
@@ -173,7 +115,7 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="admin"
+                placeholder="Enter your admin username"
                 className="w-full form-input"
                 autoComplete="username"
                 aria-label="username"
@@ -191,7 +133,7 @@ export default function LoginPage({ onLogin = () => {}, onBack = () => {} }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder=""
+                placeholder="Enter your password"
                 className="w-full form-input"
                 autoComplete="current-password"
                 aria-label="password"

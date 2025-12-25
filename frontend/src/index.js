@@ -23,13 +23,13 @@ import App from './App';
 import { ToastProvider } from './contexts/ToastContext';
 import ThemeProvider from './contexts/ThemeContext';
 import reportWebVitals from './reportWebVitals';
+import { API_BASE } from './config/api';
 
 // Ensure API requests to our backend include credentials so admin cookies are
 // sent with requests from the admin UI (dev convenience). This wraps the
 // global fetch and adds `credentials: 'include'` for requests targeting the
 // configured API base URL. It is safe to keep this in development; in
 // production a proper auth flow should be used.
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 if (typeof window !== 'undefined' && window.fetch) {
   const origFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {

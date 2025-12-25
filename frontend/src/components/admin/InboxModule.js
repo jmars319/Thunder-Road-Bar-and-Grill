@@ -1,224 +1,257 @@
-/*
-  InboxModule
-
-  Purpose:
-  - Admin inbox for viewing and managing contact messages. Supports marking
-    messages as read and deleting messages.
-
-  Contract:
-  - Rendered in admin shell. Expects GET/PUT/DELETE endpoints for contact messages.
-
-  Notes:
-  - Keep UI optimistic but refetch after mutations to ensure server canonical state.
-*/
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { icons } from '../../icons';
 import { authenticatedFetch } from '../../utils/api';
 
-/*
-  InboxModule
-
-  Purpose:
-  - Simple admin inbox for viewing contact messages. Supports marking messages as read
-    and deleting messages.
-
-  API expectations:
-  - GET  /api/contact/messages
-      -> [ { id, name, email, subject, message, submitted_at, is_read, phone? }, ... ]
-  - PUT  /api/contact/messages/:id  { is_read: true }
-  - DELETE /api/contact/messages/:id
-
-  Component contract / usage notes:
-  - This is a presentational/admin utility component. The admin routing/authorization
-    lives elsewhere and this component assumes it's only rendered for authorized users.
-  - All network calls are best-effort. Failures will be quietly caught and the UI
-    will render empty/default values. For production consider surface errors via a
-    toast or banner so the admin knows an operation failed.
-
-  Edge cases handled here:
-  - Protects against non-array GET responses (falls back to an empty list).
-  - Marks a message as read only when opening an unread message.
-  - Defensive date rendering when submitted_at is missing or invalid.
-  Accessibility:
-  - Message list renders as interactive buttons; these include type="button" to
-    avoid accidental submits. Buttons expose aria-labels and use visual focus
-    styles from the project's design tokens.
-*/
-
-/* DEV:
-   - This admin inbox uses tokenized classes for surfaces and text (e.g., bg-surface,
-     bg-surface-warm, text-text-primary, text-text-secondary). Update colors in
-     `frontend/src/custom-styles.css` to affect the admin UI globally rather than
-     modifying utility classes locally.
-   
-   Security note:
-   - User messages are rendered as plain text (not HTML) to prevent XSS attacks.
-     React automatically escapes text content in JSX, so no manual escaping needed.
-*/
-
 function InboxModule() {
   const [messages, setMessages] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [modalMessage, setModalMessage] = useState(null);
   const [page, setPage] = useState(1);
-  const perPage = 25; // static for now; change to state if you want a per-page selector
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [perPage] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [statusFilter, setStatusFilter] = useState('new');
+  const [sortBy, setSortBy] = useState('submitted_at');
+  const [sortDir, setSortDir] = useState('DESC');
+  const [loading, setLoading] = useState(false);
 
-  const fetchMessages = useCallback(() => {
-    // Prefer a minimal check for OK responses and gracefully handle unexpected shapes
-    authenticatedFetch(`/contact/messages?page=${page}&per_page=${perPage}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch messages');
-        return res.json();
-      })
-      .then(data => {
-        setMessages(Array.isArray(data.messages) ? data.messages : []);
+  const fetchMessages = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+      status: statusFilter,
+      sort_by: sortBy,
+      sort_dir: sortDir
+    });
+    try {
+      const res = await authenticatedFetch(`/contact/messages?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(Array.isArray(data.data) ? data.data : (Array.isArray(data.messages) ? data.messages : []));
         setTotal(typeof data.total === 'number' ? data.total : 0);
-      })
-      .catch(() => { setMessages([]); setTotal(0); });
-  }, [page, perPage]);
+      } else {
+        setMessages([]);
+        setTotal(0);
+      }
+    } catch {
+      setMessages([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, perPage, statusFilter, sortBy, sortDir]);
 
   useEffect(() => {
-    // initial fetch and refetch when page/perPage change (fetchMessages is stable via useCallback)
     fetchMessages();
   }, [fetchMessages]);
 
-  useEffect(() => {
-    const handler = () => fetchMessages();
-    window.addEventListener('contactMessageSent', handler);
-    return () => window.removeEventListener('contactMessageSent', handler);
-  }, [fetchMessages]);
-
-  
-
-  const markAsRead = (id) => {
-    // Only send the update; if it fails keep the UI consistent by refetching.
-    authenticatedFetch(`/contact/messages/${id}`, {
+  const updateMessage = async (message, updates) => {
+    await authenticatedFetch(`/contact/messages/${message.id}`, {
       method: 'PUT',
-      body: JSON.stringify({ is_read: true })
-    }).then(res => {
-      if (res.ok) fetchMessages();
-      else fetchMessages();
-    }).catch(() => fetchMessages());
+      body: JSON.stringify(updates)
+    });
+    fetchMessages();
   };
 
-  const deleteMessage = (id) => {
-    if (window.confirm('Delete this message?')) {
-      authenticatedFetch(`/contact/messages/${id}`, { method: 'DELETE' })
-        .then(res => {
-          if (!res.ok) {
-            console.error('Delete failed with status:', res.status);
-            return res.json().then(err => {
-              alert(`Failed to delete: ${err.error || err.message || 'Unknown error'}`);
-            }).catch(() => {
-              alert('Failed to delete message');
-            });
-          }
-          fetchMessages();
-          setSelectedMessage(null);
-        })
-        .catch(err => {
-          console.error('Delete error:', err);
-          alert('Network error while deleting message');
-        });
+  const deleteMessage = async (message) => {
+    if (!window.confirm('Delete this message?')) return;
+    await authenticatedFetch(`/contact/messages/${message.id}`, { method: 'DELETE' });
+    if (modalMessage?.id === message.id) setModalMessage(null);
+    fetchMessages();
+  };
+
+  const changeSort = (column) => {
+    if (sortBy === column) {
+      setSortDir(prev => (prev === 'ASC' ? 'DESC' : 'ASC'));
+    } else {
+      setSortBy(column);
+      setSortDir('ASC');
     }
   };
 
+  const openModal = (message) => {
+    setModalMessage(message);
+    if (!message.is_read) {
+      updateMessage(message, { is_read: 1 });
+    }
+  };
+
+  const statusOptions = ['new', 'in_progress', 'responded', 'archived'];
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-1 bg-surface rounded-lg shadow">
-        <div className="p-4 border-b">
-          <h3 className="font-bold text-lg text-text-primary">Messages</h3>
-        </div>
-        <div className="p-3 flex items-center justify-between border-t">
-          <div className="text-sm text-text-secondary">{total} messages</div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} className="px-2 py-1 rounded bg-surface">Prev</button>
-            <div className="text-sm">Page {page}</div>
-            <button type="button" onClick={() => setPage(p => p + 1)} className="px-2 py-1 rounded bg-surface">Next</button>
+    <div className="space-y-6">
+      <div className="bg-surface rounded-lg shadow overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between p-4 border-b border-divider gap-3 text-xs">
+          <div className="flex gap-2 flex-wrap">
+            {statusOptions.concat('all').map(status => (
+              <button
+                key={status}
+                onClick={() => { setStatusFilter(status); setPage(1); }}
+                className={`px-3 py-1 rounded-full ${statusFilter === status ? 'bg-primary text-text-inverse' : 'bg-surface-warm text-text-primary'}`}
+              >
+                {status}
+              </button>
+            ))}
           </div>
+          <span className="text-text-secondary">Total {total}</span>
         </div>
-        <div className="divide-y max-h-[600px] overflow-y-auto" role="list" aria-label="Inbox messages">
-          {(Array.isArray(messages) ? messages : []).map(msg => (
-            <button
-              key={msg.id}
-              type="button"
-              role="listitem"
-              aria-label={`Open message from ${msg.name}`}
-              aria-current={selectedMessage?.id === msg.id ? 'true' : undefined}
-              onClick={() => {
-                setSelectedMessage(msg);
-                // Mark as read on open only if currently unread
-                if (!msg.is_read) markAsRead(msg.id);
-              }}
-              className={`w-full p-4 text-left hover:bg-surface-warm transition ${
-                selectedMessage?.id === msg.id ? 'bg-surface-warm' : ''
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                {msg.is_read ? <icons.MailOpen size={18} /> : <icons.Mail size={18} className="text-primary" />}
-                <div className="flex-1 min-w-0">
-                  <p className={`font-medium truncate ${!msg.is_read ? 'text-text-primary' : ''}`}>
-                    {msg.name}
-                  </p>
-                  <p className="text-sm text-text-secondary truncate">{msg.subject}</p>
-                  <p className="text-xs text-text-secondary mt-1">
-                    {msg.submitted_at ? new Date(msg.submitted_at).toLocaleDateString() : ''}
-                  </p>
-                </div>
-              </div>
-            </button>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-warm border-b border-divider">
+              <tr>
+                <SortableTh label="Name" sortKey="name" sortBy={sortBy} sortDir={sortDir} onSort={changeSort} />
+                <SortableTh label="Subject" sortKey="subject" sortBy={sortBy} sortDir={sortDir} onSort={changeSort} />
+                <SortableTh label="Submitted" sortKey="submitted_at" sortBy={sortBy} sortDir={sortDir} onSort={changeSort} />
+                <SortableTh label="Status" sortKey="status" sortBy={sortBy} sortDir={sortDir} onSort={changeSort} />
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-divider">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-text-secondary">Loading messages…</td>
+                </tr>
+              ) : messages.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-text-secondary">No messages.</td>
+                </tr>
+              ) : (
+                messages.map(msg => (
+                  <tr key={msg.id} className="hover:bg-surface-warm/60">
+                    <td className="px-4 py-3">
+                      <button type="button" className="text-left font-medium text-text-primary" onClick={() => openModal(msg)}>
+                        {msg.name}
+                      </button>
+                      <div className="text-xs text-text-secondary">{msg.email}</div>
+                    </td>
+                    <td className="px-4 py-3">{msg.subject}</td>
+                    <td className="px-4 py-3">{msg.submitted_at ? new Date(msg.submitted_at).toLocaleString() : ''}</td>
+                    <td className="px-4 py-3">{msg.status}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => openModal(msg)} className="px-2 py-1 rounded-full text-xs border border-divider text-text-primary">
+                          View
+                        </button>
+                        <select
+                          className="form-input text-xs"
+                          value={msg.status}
+                          onChange={(e) => updateMessage(msg, { status: e.target.value })}
+                        >
+                          {statusOptions.map(option => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                        <button type="button" onClick={() => deleteMessage(msg)} className="px-2 py-1 rounded-full text-xs bg-error text-text-inverse flex items-center gap-1">
+                          <icons.Trash2 size={12} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-divider text-xs text-text-secondary">
+          <span>Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button type="button" className="px-3 py-1 rounded-full border border-divider disabled:opacity-50" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
+            <button type="button" className="px-3 py-1 rounded-full border border-divider disabled:opacity-50" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</button>
+          </div>
         </div>
       </div>
 
-      <div className="lg:col-span-2 bg-surface rounded-lg shadow">
-        {selectedMessage ? (
-            <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
+      {modalMessage && (
+        <div className="modal-backdrop flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-xl font-bold text-text-primary">{selectedMessage.subject}</h3>
-                <p className="text-sm text-text-secondary mt-1">
-                  From: {selectedMessage.name} ({selectedMessage.email})
-                </p>
-                {selectedMessage.phone && (
-                  <p className="text-sm text-text-secondary">Phone: {selectedMessage.phone}</p>
-                )}
-                <p className="text-xs text-text-secondary mt-2">
-                  {selectedMessage.submitted_at ? new Date(selectedMessage.submitted_at).toLocaleString() : ''}
-                </p>
+                <h3 className="text-xl font-bold text-text-primary">{modalMessage.subject || 'No subject'}</h3>
+                <p className="text-sm text-text-secondary">{modalMessage.name} · {modalMessage.email}</p>
+                {modalMessage.phone && <p className="text-xs text-text-secondary">{modalMessage.phone}</p>}
               </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => deleteMessage(modalMessage)} className="text-error flex items-center gap-1">
+                  <icons.Trash2 size={16} /> Delete
+                </button>
+                <button type="button" onClick={() => setModalMessage(null)} className="text-text-secondary hover:text-text-primary">
+                  <icons.X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-text-primary mb-4">
+              <Detail label="Submitted" value={modalMessage.submitted_at ? new Date(modalMessage.submitted_at).toLocaleString() : '—'} />
+              <Detail label="Status" value={modalMessage.status} />
+              <Detail label="Source" value={modalMessage.source || 'Website'} />
+              <Detail label="IP Address" value={modalMessage.ip_address || 'Not recorded'} />
+            </div>
+            <div className="text-sm text-text-primary">
+              <p className="text-2xs uppercase tracking-wide text-text-secondary mb-1">Message</p>
+              <p className="whitespace-pre-line bg-surface-warm rounded-lg p-4 border border-divider">{modalMessage.message || 'No message provided.'}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <select
+                className="form-input text-xs"
+                value={modalMessage.status}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  updateMessage(modalMessage, { status: next });
+                  setModalMessage(prev => prev ? { ...prev, status: next } : prev);
+                }}
+              >
+                {statusOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
               <button
                 type="button"
-                onClick={() => deleteMessage(selectedMessage.id)}
-                aria-label="Delete message"
-                className="text-error hover:text-error-muted p-2 rounded hover:bg-error/10"
+                onClick={() => {
+                  const next = modalMessage.is_read ? 0 : 1;
+                  updateMessage(modalMessage, { is_read: next });
+                  setModalMessage(prev => prev ? { ...prev, is_read: next } : prev);
+                }}
+                className="px-3 py-1 rounded-full border border-divider text-xs"
               >
-                <icons.Trash2 size={18} />
+                {modalMessage.is_read ? 'Mark unread' : 'Mark read'}
+              </button>
+              <button type="button" onClick={() => setModalMessage(null)} className="px-3 py-1 rounded-full text-xs bg-surface text-text-primary border border-divider">
+                Close
               </button>
             </div>
-              <div className="border-t pt-4">
-              <p className="text-text-primary whitespace-pre-wrap">
-                {selectedMessage.message}
-              </p>
-            </div>
           </div>
-        ) : (
-          <div className="flex items-center justify-center h-full p-12 text-center text-text-secondary">
-            <div>
-              <icons.Inbox size={48} className="mx-auto mb-4" />
-              <p>Select a message to view</p>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function SortableTh({ label, sortKey, sortBy, sortDir, onSort }) {
+  return (
+    <th
+      className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wide cursor-pointer select-none"
+      onClick={() => onSort(sortKey)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortBy === sortKey ? (sortDir === 'ASC' ? '▲' : '▼') : null}
+      </span>
+    </th>
   );
 }
 
 const Module = {
   component: InboxModule,
-  name: 'Inbox',
+  name: 'Messages',
   icon: icons.Inbox
 };
 
 export default Module;
+
+function Detail({ label, value }) {
+  return (
+    <div className="border border-divider rounded-lg p-3">
+      <p className="text-2xs uppercase tracking-wide text-text-secondary mb-1">{label}</p>
+      <p className="text-sm text-text-primary">{value || '—'}</p>
+    </div>
+  );
+}

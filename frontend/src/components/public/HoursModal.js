@@ -14,8 +14,7 @@
 */
 
 import { useEffect, useState, useRef } from 'react';
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+import { getApiUrl } from '../../config/api';
 
 export default function HoursModal({ onClose }) {
   const [hours, setHours] = useState(null);
@@ -25,7 +24,7 @@ export default function HoursModal({ onClose }) {
 
   useEffect(() => {
     let mounted = true;
-    fetch(`${API_BASE}/business-hours`)
+    fetch(getApiUrl('/business-hours'))
       .then(res => {
         if (!res.ok) throw new Error('Failed to load hours');
         return res.json();

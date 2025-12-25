@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { icons } from '../../icons';
+import { getApiUrl } from '../../config/api';
 
 /*
   ReservationSection
@@ -24,8 +25,6 @@ import { icons } from '../../icons';
    Last reviewed: 2025-10-24 — accessibility and token guidance confirmed; no per-file suppressions remain.
 */
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-
 export default function ReservationSection() {
 
   // NOTE: UI feedback uses tokenized classes (e.g., bg-success/10, text-success,
@@ -43,6 +42,24 @@ export default function ReservationSection() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
+  const [copy, setCopy] = useState({ heading: '', intro: '', success: '', failure: '' });
+
+  useEffect(() => {
+    fetch(getApiUrl('/settings'))
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        const settings = data?.settings || {};
+        setCopy({
+          heading: settings.reservations_heading || '',
+          intro: settings.reservations_intro || '',
+          success: settings.reservations_success_copy || '',
+          failure: settings.reservations_error_copy || ''
+        });
+      })
+      .catch(() => {
+        setCopy({ heading: '', intro: '', success: '', failure: '' });
+      });
+  }, []);
 
   const handleSubmit = async () => {
     setError('');
@@ -65,9 +82,9 @@ export default function ReservationSection() {
       // Ensure number_of_guests is a number before sending
       const payload = { ...formData, number_of_guests: Number(formData.number_of_guests) || 1 };
 
-      const response = await fetch(`${API_BASE}/reservations`, {
+      const response = await fetch(getApiUrl('/reservations'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify(payload)
       });
 
@@ -122,19 +139,20 @@ export default function ReservationSection() {
   return (
     <div id="reservations" className="py-10 bg-background">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-heading font-bold text-center mb-6">Make a Reservation</h2>
+        {copy.heading && <h2 className="text-2xl font-heading font-bold text-center mb-2">{copy.heading}</h2>}
+        {copy.intro && <p className="text-center text-text-secondary mb-4">{copy.intro}</p>}
 
         {submitted && (
           <div className="bg-success/10 border border-success rounded-lg p-3 mb-4 flex items-center gap-3">
             {React.createElement(icons.CheckCircle, { size: 20, className: 'text-success' })}
-            <p className="text-success">Reservation submitted! We'll contact you to confirm.</p>
+            <p className="text-success">{copy.success || "Reservation submitted! We'll contact you to confirm."}</p>
           </div>
         )}
 
         {error && (
           <div className="bg-error/10 border border-error rounded-lg p-3 mb-4 flex items-center gap-3">
             {React.createElement(icons.AlertCircle, { size: 20, className: 'text-error' })}
-            <p className="text-error">{error}</p>
+            <p className="text-error">{copy.failure || error}</p>
           </div>
         )}
 

@@ -1,743 +1,672 @@
-/*
-  MediaModule
-
-  Purpose:
-  - Admin media manager for uploading and selecting images used across the site.
-
-  Contract:
-  - Rendered inside admin shell. Expects media endpoints (list, upload, delete).
-
-  Notes:
-  - Keep upload handling robust (size/type checks) and expose progress to the UI.
-*/
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { icons } from '../../icons';
-import usePaginatedResource from '../../hooks/usePaginatedResource';
 import Spinner from '../ui/Spinner';
-import MediaCardSkeleton from '../ui/MediaCardSkeleton';
 import makeAbsolute from '../../lib/makeAbsolute';
 import { authenticatedFetch, API_BASE } from '../../utils/api';
 
-// Some linters may report these UI helpers as unused when components are
-// conditionally rendered; reference them here to ensure they're recognized.
-const __usedSpinner = Spinner;
-const __usedMediaCardSkeleton = MediaCardSkeleton;
-void __usedSpinner;
-void __usedMediaCardSkeleton;
+const TAB_CONFIG = [
+  { key: 'all', label: 'All Files' },
+  { key: 'hero', label: 'Hero Images' },
+  { key: 'menu', label: 'Menu Images' },
+  { key: 'other', label: 'Other' }
+];
 
-/*
-  MediaModule
+const CATEGORY_LABELS = {
+  hero: 'Hero Images',
+  menu: 'Menu Images',
+  general: 'Other'
+};
 
-  Purpose:
-  - Simple media manager for uploading images and copying/deleting existing media.
+const CATEGORY_OPTIONS = [
+  { value: 'hero', label: 'Hero Images' },
+  { value: 'menu', label: 'Menu Images' },
+  { value: 'general', label: 'Other / Misc' }
+];
 
-  API expectations:
+const normalizeCategory = (value) => {
+  if (!value) return 'general';
+  const normalized = String(value).toLowerCase();
+  if (normalized === 'hero' || normalized === 'menu') return normalized;
+  if (normalized === 'gallery') return 'menu';
+  return 'general';
+};
 
-*/
+const formatBytes = (bytes) => {
+  if (!bytes && bytes !== 0) return '';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.min(Math.floor(Math.log(bytes || 1) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, i);
+  return `${value.toFixed(value >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+};
 
-// Implementation of AllUploadsGrid using the paginated hook. Placed here so
-// it can be a top-level component and keep hooks usage valid.
-function AllUploadsGridComponent({ mediaLimit = 48, copyUrl, deleteMedia, openMenuImagePicker, copiedId }) {
-  const { items: pagedAll, loading: pagedAllLoading, total: pagedAllTotal, sentinelRef: allSentinel, fetchPage: fetchAllPage, reset } = usePaginatedResource(`${API_BASE}/media?`, { limit: mediaLimit });
+const getMediaPreviewUrl = (media) => {
+  if (!media) return '';
+  return makeAbsolute(
+    media.optimized_path ||
+      media.webp_path ||
+      media.file_url ||
+      media.fallback_original ||
+      ''
+  );
+};
 
-  // load first page on mount; reset on unmount so reopening the section
-  // starts fresh (clears items/offset and re-attaches sentinel)
-  // Prime paginated lists on mount and load site settings. The fetch/reset
-  // helpers are stable from the paginated hook; include them so linters don't
-  // flag missing dependencies.
-  useEffect(() => {
-    fetchAllPage(0, false).catch(() => {});
-    return () => {
-      try {
-        // ensure the paginated hook clears its internal offset/items
-        reset();
-      } catch (e) {
-        // ignore
+const getCopyUrl = (media) => {
+  if (!media) return '';
+  return makeAbsolute(
+    (media.responsive_variants?.optimized?.[0]?.url) ||
+      media.optimized_path ||
+      media.webp_path ||
+      media.file_url ||
+      media.fallback_original ||
+      ''
+  );
+};
+
+const defaultUploadState = {
+  file: null,
+  previewUrl: '',
+  progress: 0,
+  uploading: false,
+  processing: false
+};
+
+export default function MediaModule() {
+  const [media, setMedia] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [uploadCategory, setUploadCategory] = useState('hero');
+  const [uploadState, setUploadState] = useState(defaultUploadState);
+  const [editMedia, setEditMedia] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+  const [usageMap, setUsageMap] = useState({ hero: {}, menu: {} });
+
+  const loadUsage = useCallback(async () => {
+    try {
+      const [settingsRes, categoriesRes] = await Promise.all([
+        authenticatedFetch('/settings'),
+        authenticatedFetch('/menu/categories')
+      ]);
+
+      let heroUsage = {};
+      if (settingsRes.ok) {
+        const sitePayload = await settingsRes.json();
+        const entries = Array.isArray(sitePayload?.settings?.hero_images)
+          ? sitePayload.settings.hero_images
+          : [];
+        heroUsage = entries.reduce((acc, entry, index) => {
+          if (entry && entry.id) {
+            acc[entry.id] = {
+              order: index + 1,
+              title: entry.title || `Slide ${index + 1}`
+            };
+          }
+          return acc;
+        }, {});
       }
-    };
-  }, [fetchAllPage, reset]);
 
-  // refresh when other parts of the app dispatch a mediaUpdated event
+      let menuUsage = {};
+      if (categoriesRes.ok) {
+        const categories = await categoriesRes.json();
+        if (Array.isArray(categories)) {
+          menuUsage = categories.reduce((acc, category) => {
+            const mediaId = category?.gallery_image_id;
+            if (mediaId) {
+              if (!acc[mediaId]) acc[mediaId] = [];
+              acc[mediaId].push(category.name || `Category ${category.id}`);
+            }
+            return acc;
+          }, {});
+        }
+      }
+
+      setUsageMap({ hero: heroUsage, menu: menuUsage });
+    } catch (err) {
+      setUsageMap({ hero: {}, menu: {} });
+    }
+  }, []);
+
+  const loadMedia = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await authenticatedFetch(`/media?limit=400&_=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      if (!res.ok) throw new Error('Failed to fetch media');
+      const payload = await res.json();
+      const list = Array.isArray(payload?.media)
+        ? payload.media
+        : Array.isArray(payload)
+          ? payload
+          : [];
+      setMedia(list);
+    } catch (err) {
+      setError('Unable to load media. Please try again in a moment.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const handler = () => {
-      try {
-        reset();
-        fetchAllPage(0, false).catch(() => {});
-      } catch (e) {}
-    };
+    loadMedia();
+    const handler = () => loadMedia();
     window.addEventListener('mediaUpdated', handler);
     return () => window.removeEventListener('mediaUpdated', handler);
-  }, [fetchAllPage, reset]);
-
-  return (
-    <>
-      {pagedAllLoading && pagedAll.length === 0 ? (
-        <MediaCardSkeleton count={8} />
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {pagedAll.map(item => (
-            <div key={item.id} className="bg-surface rounded-lg shadow overflow-hidden card-hover">
-              <div className="aspect-square bg-surface-warm flex items-center justify-center">
-                {item.file_type?.startsWith('image/') ? (
-                  <img src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-full object-cover" />
-                ) : (
-                  <icons.Image size={48} className="text-primary" />
-                )}
-              </div>
-              <div className="p-3">
-                <p className="text-sm font-medium text-text-primary truncate">{item.title}</p>
-                <p className="text-xs text-text-secondary truncate">{item.file_name}</p>
-                <div className="flex gap-2 mt-3">
-                  <button type="button" onClick={() => copyUrl(item.file_url)} className="flex-1 bg-surface-warm text-text-primary py-1 px-2 rounded text-xs hover:bg-surface transition flex items-center justify-center gap-1">
-                    {copiedId === item.file_url ? (
-                      <>
-                        <icons.CheckCircle size={12} />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <icons.Copy size={12} />
-                        Copy URL
-                      </>
-                    )}
-                  </button>
-                  {item.category === 'menu' && (
-                    <button type="button" onClick={() => openMenuImagePicker(item)} className="bg-surface-warm text-text-primary py-1 px-2 rounded text-xs hover:bg-surface transition">Use for menu</button>
-                  )}
-                  <button type="button" onClick={() => deleteMedia(item.id)} className="bg-surface-warm text-error py-1 px-2 rounded text-xs hover:bg-surface transition"><icons.Trash2 size={12} /></button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {pagedAllTotal !== null && pagedAllTotal > pagedAll.length && (
-        <div className="mt-4 text-center">
-          <div ref={allSentinel} aria-hidden="true" className="h-6" />
-          {pagedAllLoading && <div className="mt-2"><Spinner size={18} /></div>}
-        </div>
-      )}
-    </>
-  );
-}
-// Ensure the top-level helper component is recognized by some linters
-const __usedAllUploadsGridComponent = AllUploadsGridComponent;
-void __usedAllUploadsGridComponent;
-/*
-  MediaModule
-
-  Purpose:
-  - Simple media manager for uploading images and copying/deleting existing media.
-
-  API expectations:
-  - GET  /api/media -> [ { id, title, file_name, file_url, file_type }, ... ]
-  - POST /api/media (multipart/form-data)
-  - DELETE /api/media/:id
-
-  Developer notes:
-  - Uploads use a FormData multipart POST. The backend should return the new media
-    list through GET /api/media; this component re-fetches after a successful upload.
-  - Copying a URL uses the Clipboard API; it may be unavailable in insecure contexts.
-    The code uses try/catch around navigator.clipboard to avoid runtime errors.
-  - Consider returning the created media item from the upload endpoint to avoid
-    a full re-fetch if performance becomes a concern.
-  Accessibility:
-  - The upload control uses a hidden file input — ensure label content clearly
-    describes the action. Action buttons include explicit type="button" and
-    accessible labels.
-  // Last updated: 2025-10-21 — developer notes reviewed and clarified for accessibility and API expectations.
-*/
-
-// MediaModule
-
-function MediaModule() {
-  const MEDIA_LIMIT = 48;
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [processingUpload, setProcessingUpload] = useState(false);
-  const uploadXhrRef = useRef(null);
-  const [copiedId, setCopiedId] = useState(null);
-  const [sections, setSections] = useState({ logos: true, hero: true, menu: true, all: false });
-  const [siteSettings, setSiteSettings] = useState(null);
-  // selectedHeroes holds ordered hero slide objects: { id, file_url, title, alt_text }
-  const [selectedHeroes, setSelectedHeroes] = useState([]);
-  const [showMenuPicker, setShowMenuPicker] = useState(false);
-  const [menuImage, setMenuImage] = useState(null);
-  const [categoriesList, setCategoriesList] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-
-  // Paginated resources for specific categories to avoid loading all media
-  const { items: logoItems, loading: logoLoading, total: logoTotal, sentinelRef: logoSentinel, fetchPage: fetchLogoPage, reset: resetLogo } = usePaginatedResource(`${API_BASE}/media?category=logo`, { limit: MEDIA_LIMIT });
-  const { items: heroItems, loading: heroLoading, total: heroTotal, sentinelRef: heroSentinel, fetchPage: fetchHeroPage, reset: resetHero } = usePaginatedResource(`${API_BASE}/media?category=hero`, { limit: MEDIA_LIMIT });
-  const { items: menuImages, loading: menuLoading, total: menuTotal, sentinelRef: menuSentinel, fetchPage: fetchMenuPage, reset: resetMenuList } = usePaginatedResource(`${API_BASE}/media?category=menu`, { limit: MEDIA_LIMIT });
+  }, [loadMedia]);
 
   useEffect(() => {
-    fetchMedia();
-    authenticatedFetch('/settings').then(r => r.ok ? r.json() : {}).then(payload => {
-      const settings = payload?.settings || {};
-      setSiteSettings(settings);
-      if (Array.isArray(settings?.hero_images) && settings.hero_images.length) setSelectedHeroes(settings.hero_images);
-    }).catch(() => {});
-    // Ensure paginated category lists fetch their first page on mount so the
-    // Logos and Gallery grids are populated. We call these independently so
-    // they can paginate separately via their sentinels.
-    try { fetchLogoPage(0, false).catch(() => {}); } catch (e) {}
-    try { fetchHeroPage(0, false).catch(() => {}); } catch (e) {}
-    try { fetchMenuPage(0, false).catch(() => {}); } catch (e) {}
-  }, [fetchLogoPage, fetchHeroPage, fetchMenuPage, resetLogo, resetHero, resetMenuList]);
+    loadUsage();
+    const reload = () => loadUsage();
+    window.addEventListener('siteSettingsUpdated', reload);
+    window.addEventListener('menuUpdated', reload);
+    window.addEventListener('mediaUpdated', reload);
+    return () => {
+      window.removeEventListener('siteSettingsUpdated', reload);
+      window.removeEventListener('menuUpdated', reload);
+      window.removeEventListener('mediaUpdated', reload);
+    };
+  }, [loadUsage]);
 
-  const fetchMedia = (category, limit, offset) => {
-    // fallback fetch used for uncategorized requests; paginated hooks handle category-specific lists
-    const l = typeof limit === 'number' ? limit : MEDIA_LIMIT;
-    const o = typeof offset === 'number' ? offset : 0;
-    const q = [`limit=${encodeURIComponent(l)}`, `offset=${encodeURIComponent(o)}`];
-    if (category) q.unshift(`category=${encodeURIComponent(category)}`);
-    const url = `${API_BASE}/media?${q.join('&')}`;
-    return fetch(url)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch media');
-        const totalHeader = res.headers.get('X-Total-Count');
-        const total = totalHeader ? parseInt(totalHeader, 10) : null;
-        return res.json().then(payload => {
-          const list = Array.isArray(payload) ? payload : Array.isArray(payload?.media) ? payload.media : [];
-          return { data: list, total };
-        });
-      })
-      .catch(() => ({ data: [], total: null }));
+  const counts = useMemo(() => {
+    const tally = { hero: 0, menu: 0, other: 0 };
+    media.forEach((item) => {
+      const cat = normalizeCategory(item.category);
+      if (cat === 'hero') tally.hero += 1;
+      else if (cat === 'menu') tally.menu += 1;
+      else tally.other += 1;
+    });
+    return tally;
+  }, [media]);
+
+  const filteredMedia = useMemo(() => {
+    if (activeTab === 'all') return media;
+    if (activeTab === 'other') {
+      return media.filter((item) => {
+        const cat = normalizeCategory(item.category);
+        return cat !== 'hero' && cat !== 'menu';
+      });
+    }
+    return media.filter((item) => normalizeCategory(item.category) === activeTab);
+  }, [media, activeTab]);
+
+  const resetUploadState = () => {
+    if (uploadState.previewUrl) {
+      try { URL.revokeObjectURL(uploadState.previewUrl); } catch (e) {}
+    }
+    setUploadState(defaultUploadState);
   };
-  const uploadMediaFile = (file, category = 'general') => new Promise((resolve, reject) => {
-    setUploading(true);
-    setUploadProgress(0);
-    setProcessingUpload(false);
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      resetUploadState();
+      return;
+    }
+    setUploadState((prev) => ({
+      ...prev,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      progress: 0
+    }));
+  };
+
+  const uploadMedia = (file, category) => new Promise((resolve, reject) => {
     const xhr = new window.XMLHttpRequest();
-    uploadXhrRef.current = xhr;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', file.name);
     formData.append('category', category);
     xhr.open('POST', `${API_BASE}/media`);
-    const token = localStorage.getItem('authToken');
+    const token = window.localStorage.getItem('authToken');
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
-        setUploadProgress(Math.round((event.loaded / event.total) * 100));
+        setUploadState((prev) => ({
+          ...prev,
+          progress: Math.round((event.loaded / event.total) * 100)
+        }));
       }
     };
-    xhr.upload.onload = () => setProcessingUpload(true);
-    xhr.onerror = () => {
-      uploadXhrRef.current = null;
-      setUploading(false);
-      setProcessingUpload(false);
-      reject(new Error('Upload failed'));
+    xhr.upload.onload = () => {
+      setUploadState((prev) => ({ ...prev, processing: true }));
     };
+    xhr.onerror = () => reject(new Error('Upload failed. Please try again.'));
     xhr.onload = () => {
-      uploadXhrRef.current = null;
-      setUploading(false);
-      setProcessingUpload(false);
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          resolve(JSON.parse(xhr.responseText));
-        } catch (err) {
-          reject(err);
-        }
+      setUploadState((prev) => ({ ...prev, processing: false }));
+      const status = xhr.status;
+      let response = {};
+      try {
+        response = JSON.parse(xhr.responseText || '{}');
+      } catch (e) {}
+      if (status >= 200 && status < 300) {
+        resolve(response);
       } else {
-        reject(new Error('Upload failed'));
+        reject(new Error(response?.message || 'Upload failed. Please try again.'));
       }
     };
     xhr.send(formData);
   });
 
-  // generic upload used by section-specific handlers. category string is optional.
-  const handleUpload = async (file, category = 'general') => {
-    if (!file) return;
+  const handleUpload = async () => {
+    if (!uploadState.file) return;
+    setError('');
+    setMessage('');
+    setUploadState((prev) => ({ ...prev, uploading: true }));
     try {
-      await uploadMediaFile(file, category);
-      // refresh the relevant paginated list (and notify All uploads)
-      if (category === 'logo') {
-        resetLogo();
-        fetchLogoPage(0, false).catch(() => {});
-      } else if (category === 'hero') {
-        resetHero();
-        fetchHeroPage(0, false).catch(() => {});
-      } else if (category === 'menu') {
-        resetMenuList();
-        fetchMenuPage(0, false).catch(() => {});
-      } else {
-        // fallback: refresh legacy media list
-        await fetchMedia();
-      }
+      await uploadMedia(uploadState.file, uploadCategory);
+      setMessage('File uploaded successfully');
+      resetUploadState();
+      await loadMedia();
       try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
     } catch (err) {
-      console.error('upload failed', err);
-      try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Upload failed' })); } catch (e) {}
+      setError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setUploadState(defaultUploadState);
     }
   };
 
-  // helper that returns an onChange handler bound to a category
-  const makeUploadHandler = (category) => async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await handleUpload(file, category);
+  const handleDelete = async (item) => {
+    if (!window.confirm('Delete this image? This cannot be undone.')) return;
+    setError('');
+    try {
+      const res = await authenticatedFetch(`/media/${item.id}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 404) {
+        throw new Error('Delete failed');
+      }
+      setMessage('Media deleted');
+      await loadMedia();
+      try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
+    } catch (err) {
+      setError('Failed to delete media. Please try again.');
+    }
   };
 
-  const toggleHeroSelection = (id) => {
-    // helper to find media across paginated lists and the legacy media array
-    const findMedia = (mid) => {
-      return [
-        ...logoItems,
-        ...heroItems,
-        ...menuImages
-      ].find(x => String(x.id) === String(mid));
-    };
-    setSelectedHeroes(s => {
-      const exists = s.find(x => x.id === id);
-      if (exists) return s.filter(x => x.id !== id);
-      // find media item to add across paginated lists
-      const m = findMedia(id);
-      if (!m) return s;
-      return [...s, { id: m.id, file_url: m.file_url, title: m.title, alt_text: '' }];
+  const openEditModal = (item) => {
+    const normalizedCategory = normalizeCategory(item.category);
+    setEditMedia(item);
+    setEditForm({
+      alt_text: item.alt_text || '',
+      caption: item.caption || '',
+      category: normalizedCategory
     });
   };
 
-  const moveHero = (idx, dir) => {
-    setSelectedHeroes(s => {
-      const next = [...s];
-      const swap = idx + dir;
-      if (swap < 0 || swap >= next.length) return s;
-      const tmp = next[swap];
-      next[swap] = next[idx];
-      next[idx] = tmp;
-      return next;
-    });
-  };
-
-  const setHeroAlt = (id, alt) => {
-    setSelectedHeroes(s => s.map(x => x.id === id ? { ...x, alt_text: alt } : x));
-  };
-
-  const saveHeroImages = async () => {
-    const payload = { ...(siteSettings || {}), hero_images: selectedHeroes };
+  const handleEditSave = async () => {
+    if (!editMedia || !editForm) return;
+    setSavingEdit(true);
+    setError('');
+    setMessage('');
     try {
-      const res = await authenticatedFetch('/site-settings', { method: 'PUT', body: JSON.stringify(payload) });
-  if (!res.ok) throw new Error('Failed to save');
-  setSiteSettings(payload);
-      // Broadcast the updated settings so other parts of the app (for example
-      // the public navbar) can react immediately instead of waiting for a
-      // full page refresh. Use a compatibility-friendly CustomEvent approach.
-      try {
-        if (typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
-          window.dispatchEvent(new window.CustomEvent('siteSettingsUpdated', { detail: payload }));
-        } else if (typeof document !== 'undefined' && document.createEvent) {
-          const evt = document.createEvent('CustomEvent');
-          evt.initCustomEvent('siteSettingsUpdated', false, false, payload);
-          window.dispatchEvent(evt);
-        }
-      } catch (e) {
-        // ignore
-      }
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Hero images saved' })); } catch (e) {}
-    } catch (err) {
-      console.error('MediaModule.saveHeroImages - error', err);
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Failed to save hero images' })); } catch (e) {}
-    }
-  };
-
-  // Set the provided media item as the site logo. We store an absolute URL so
-  // consumers (like PublicNavbar) can fetch inline SVGs or images regardless
-  // of the frontend origin. After a successful PUT we dispatch a small
-  // cross-window event so other components can react immediately.
-  const setAsLogo = async (item) => {
-    const absolute = `${API_BASE.replace(/\/api$/, '')}${item.file_url}`;
-    const payload = { ...(siteSettings || {}), logo_url: absolute };
-    try {
-      const res = await authenticatedFetch('/site-settings', { method: 'PUT', body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error('Failed to set logo');
-      setSiteSettings(payload);
-      // Dispatch a cross-component event. Use window.CustomEvent when
-      // available, otherwise fall back to the older document.createEvent
-      // API for maximum compatibility and to avoid linter 'CustomEvent'
-      // undefined errors in some environments.
-      try {
-        if (typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
-          window.dispatchEvent(new window.CustomEvent('siteSettingsUpdated', { detail: payload }));
-        } else if (typeof document !== 'undefined' && document.createEvent) {
-          const evt = document.createEvent('CustomEvent');
-          // initCustomEvent(type, bubbles, cancelable, detail)
-          evt.initCustomEvent('siteSettingsUpdated', false, false, payload);
-          window.dispatchEvent(evt);
-        }
-      } catch (e) {
-        // noop
-      }
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Site logo updated' })); } catch (e) {}
-    } catch (err) {
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Failed to update site logo' })); } catch (e) {}
-    }
-  };
-
-  const changeMediaCategory = async (id, newCategory) => {
-    try {
-      const res = await authenticatedFetch(`/media/${id}`, {
+      const res = await authenticatedFetch(`/media/${editMedia.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ category: newCategory })
+        body: JSON.stringify({
+          alt_text: editForm.alt_text || '',
+          caption: editForm.caption || '',
+          category: editForm.category
+        })
       });
-      
-      if (!res.ok) throw new Error('Failed to update category');
-      
-      // Refresh all category lists to reflect the change
-      try { resetLogo(); fetchLogoPage(0, false).catch(() => {}); } catch (e) {}
-      try { resetHero(); fetchHeroPage(0, false).catch(() => {}); } catch (e) {}
-      try { resetMenuList(); fetchMenuPage(0, false).catch(() => {}); } catch (e) {}
+      if (!res.ok) throw new Error('Failed to save changes');
+      setEditMedia(null);
+      setEditForm(null);
+      setMessage('Media updated');
+      await loadMedia();
       try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
-      try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Category updated' })); } catch (e) {}
     } catch (err) {
-      console.error('Failed to update category', err);
-      try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Failed to update category' })); } catch (e) {}
+      setError(err.message || 'Failed to save changes');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
-  const deleteMedia = (id) => {
-    if (window.confirm('Delete this media file?')) {
-      authenticatedFetch(`/media/${id}`, { method: 'DELETE' })
-        .then(() => {
-          // refresh legacy and paginated lists
-          fetchMedia();
-          try { resetLogo(); fetchLogoPage(0, false).catch(() => {}); } catch (e) {}
-          try { resetHero(); fetchHeroPage(0, false).catch(() => {}); } catch (e) {}
-          try { resetMenuList(); fetchMenuPage(0, false).catch(() => {}); } catch (e) {}
-          try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
-        }).catch(() => {});
-    }
-  };
-
-  const copyUrl = (url) => {
-    try {
-      const absolute = makeAbsolute(url);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(absolute);
-        setCopiedId(url);
-        setTimeout(() => setCopiedId(null), 2000);
-      } else {
-        // Fallback: create a temporary textarea (rare, but more robust)
-        const ta = document.createElement('textarea');
-  ta.value = absolute;
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-          document.execCommand('copy');
-          setCopiedId(url);
-          setTimeout(() => setCopiedId(null), 2000);
-        } catch {
-          // ignore
-        }
-        document.body.removeChild(ta);
-      }
-  } catch {
-      // Clipboard API may be unavailable; silently ignore for now.
-    }
-  };
-
-  const openMenuImagePicker = (item) => {
-    setMenuImage(item);
-    setSelectedCategoryId(null);
-    setCategoriesLoading(true);
-    authenticatedFetch('/menu/categories')
-      .then(r => r.json())
-      .then(d => setCategoriesList(Array.isArray(d) ? d : []))
-      .catch(() => setCategoriesList([]))
-      .finally(() => setCategoriesLoading(false));
-    setShowMenuPicker(true);
-  };
-
-  const confirmSetMenuImage = async () => {
-    if (!menuImage || !selectedCategoryId) {
-      try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Select a category' })); } catch (e) {}
+  const handleCopyUrl = (item) => {
+    const url = getCopyUrl(item);
+    if (!url) {
+      setError('File URL unavailable');
       return;
     }
-    const cat = categoriesList.find(c => String(c.id) === String(selectedCategoryId));
-    if (!cat) {
-      try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Category not found' })); } catch (e) {}
-      return;
-    }
-    const absolute = `${API_BASE.replace(/\/api$/, '')}${menuImage.file_url}`;
-    const payload = {
-      name: cat.name,
-      description: cat.description,
-      image_url: cat.image_url,
-      gallery_image_id: menuImage.id,
-      gallery_image_url: absolute, // keep URL for preview/backcompat
-      display_order: cat.display_order,
-      is_active: cat.is_active
-    };
     try {
-      const res = await authenticatedFetch(`/menu/categories/${cat.id}`, { method: 'PUT', body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error('Failed to update category');
-      setShowMenuPicker(false);
-      setMenuImage(null);
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Menu image applied to category' })); } catch (e) {}
-    } catch (err) {
-      console.error('Failed to set menu image', err);
-  try { window.dispatchEvent(new window.CustomEvent('snackbar', { detail: 'Failed to set menu image' })); } catch (e) {}
+      navigator.clipboard.writeText(url);
+      setCopiedId(item.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (e) {
+      setError('Clipboard copy failed');
     }
   };
 
-  // (AllUploadsGrid is implemented at top-level and used below; we pass
-  // helper callbacks into it so it doesn't need to close over local state.)
+  const countForTab = (tab) => {
+    if (tab === 'all') return media.length;
+    if (tab === 'hero') return counts.hero;
+    if (tab === 'menu') return counts.menu;
+    return counts.other;
+  };
 
+  const getUsageBadges = (mediaId) => {
+    const heroInfo = usageMap.hero?.[mediaId];
+    const menuInfo = usageMap.menu?.[mediaId] || [];
+    return { heroInfo, menuInfo };
+  };
 
   return (
-    <>
-      <div className="space-y-6">
-        {uploading && (
-          <div className="text-sm text-text-secondary px-4">
-            {processingUpload ? 'Processing images…' : `Uploading ${uploadProgress}%`}
-          </div>
-        )}
-      {/* Section: Logos */}
-      <div className="bg-surface rounded-lg shadow">
-        <button type="button" className="w-full flex items-center justify-between p-4" onClick={() => setSections(s => ({ ...s, logos: !s.logos }))} aria-expanded={sections.logos}>
-          <div className="flex items-center gap-3">
-            <icons.Image size={20} />
-            <h3 className="text-lg font-medium">Logos</h3>
-          </div>
-          <div>{sections.logos ? <icons.ChevronUp /> : <icons.ChevronDown />}</div>
-        </button>
-        {sections.logos && (
-          <div className="p-4 border-t border-divider">
-            <label className="flex items-center gap-4">
-              <span className="text-sm text-text-secondary">Upload logo</span>
-              <input type="file" className="hidden" accept="image/*" onChange={makeUploadHandler('logo')} disabled={uploading} />
-              <label className={`px-3 py-2 rounded cursor-pointer text-sm ${uploading ? 'opacity-60 pointer-events-none' : 'bg-surface'}`}>
-                <input type="file" accept="image/*" className="hidden" onChange={makeUploadHandler('logo')} />
-                {uploading ? 'Uploading…' : 'Choose file'}
-              </label>
-            </label>
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {logoLoading && logoItems.length === 0 ? (
-                <MediaCardSkeleton count={4} />
-              ) : (
-                logoItems.map(item => (
-                  <div key={item.id} className="bg-surface rounded overflow-hidden border border-divider">
-                    <img loading="lazy" src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-24 object-cover" />
-                    <div className="p-2 space-y-2">
-                      <div className="text-xs truncate font-medium">{item.title}</div>
-                      <select
-                        value={item.category || 'logo'}
-                        onChange={(e) => changeMediaCategory(item.id, e.target.value)}
-                        className="w-full text-xs p-1 rounded border text-gray-900 bg-white"
-                      >
-                        <option value="logo">Logo</option>
-                        <option value="hero">Hero</option>
-                        <option value="menu">Menu</option>
-                      </select>
-                      <div className="flex gap-2 justify-between">
-                        <button type="button" onClick={() => setAsLogo(item)} className="text-xs px-2 py-1 bg-primary text-text-inverse rounded">Use</button>
-                        <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
-                        <button onClick={() => deleteMedia(item.id)} className="text-xs px-2 py-1 bg-error text-white rounded">Del</button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            {logoTotal !== null && logoTotal > logoItems.length && (
-              <div className="mt-4 text-center">
-                <div ref={logoSentinel} aria-hidden="true" className="h-6" />
-                {logoLoading && <div className="mt-2"><Spinner size={18} /></div>}
-              </div>
-            )}
-          </div>
-        )}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-text-primary">Media Manager</h2>
+          <p className="text-sm text-text-secondary">Upload, edit, and delete hero/menu images from one place.</p>
+        </div>
       </div>
 
-      {/* Section: Hero */}
-      <div className="bg-surface rounded-lg shadow">
-        <button type="button" className="w-full flex items-center justify-between p-4" onClick={() => setSections(s => ({ ...s, hero: !s.hero }))} aria-expanded={sections.hero}>
-          <div className="flex items-center gap-3">
-            <icons.Image size={20} />
-            <h3 className="text-lg font-medium">Hero</h3>
-          </div>
-          <div>{sections.hero ? <icons.ChevronUp /> : <icons.ChevronDown />}</div>
-        </button>
-        {sections.hero && (
-          <div className="p-4 border-t border-divider">
-            <p className="text-sm text-text-secondary mb-2">Upload large hero images</p>
-            <label className={`px-3 py-2 rounded cursor-pointer text-sm ${uploading ? 'opacity-60 pointer-events-none' : 'bg-surface'}`}>
-              <input type="file" accept="image/*" className="hidden" onChange={makeUploadHandler('hero')} />
-              {uploading ? 'Uploading…' : 'Choose file'}
-            </label>
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {heroLoading && heroItems.length === 0 ? (
-                <MediaCardSkeleton count={4} />
-              ) : (
-                heroItems.map(item => (
-                  <div key={item.id} className="bg-surface rounded overflow-hidden relative border border-divider">
-                    <img loading="lazy" src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-24 object-cover" />
-                    <label className="absolute top-2 left-2 bg-white/80 rounded p-1 text-xs">
-                      <input type="checkbox" checked={selectedHeroes.some(h => h.id === item.id)} onChange={() => toggleHeroSelection(item.id)} />
-                    </label>
-                    <div className="p-2 space-y-2">
-                      <div className="text-xs truncate font-medium">{item.title}</div>
-                      <select
-                        value={item.category || 'hero'}
-                        onChange={(e) => changeMediaCategory(item.id, e.target.value)}
-                        className="w-full text-xs p-1 rounded border text-gray-900 bg-white"
-                      >
-                        <option value="logo">Logo</option>
-                        <option value="hero">Hero</option>
-                        <option value="menu">Menu</option>
-                      </select>
-                      <div className="flex gap-2 justify-between">
-                        <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
-                        <button onClick={() => deleteMedia(item.id)} className="text-xs px-2 py-1 bg-error text-white rounded">Del</button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            {heroTotal !== null && heroTotal > heroItems.length && (
-              <div className="mt-4 text-center">
-                <div ref={heroSentinel} aria-hidden="true" className="h-6" />
-                {heroLoading && <div className="mt-2"><Spinner size={18} /></div>}
+      {message && (
+        <div className="bg-success/10 border border-success text-success px-4 py-2 rounded flex items-center gap-2">
+          <icons.CheckCircle size={16} />
+          <span>{message}</span>
+        </div>
+      )}
+      {error && (
+        <div className="bg-error/10 border border-error text-error px-4 py-2 rounded flex items-center gap-2">
+          <icons.AlertTriangle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <section className="bg-surface rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Upload New Image</h3>
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">Select file</label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="bg-surface-warm text-text-primary px-4 py-2 rounded cursor-pointer hover:bg-surface transition">
+                  <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  Choose Image
+                </label>
+                {uploadState.file && <span className="text-sm text-text-secondary truncate">{uploadState.file.name}</span>}
+                {uploadState.file && (
+                  <button
+                    type="button"
+                    className="text-xs text-error hover:underline"
+                    onClick={resetUploadState}
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
-            )}
-            <div className="mt-3">
-              <h4 className="text-sm font-medium mb-2">Selected slides (drag to reorder or use arrows)</h4>
-              {selectedHeroes.length === 0 && <p className="text-sm text-text-secondary">No slides selected.</p>}
-              <div className="space-y-2">
-                {selectedHeroes.map((h, i) => (
-                  <div key={h.id} className="flex items-center gap-3 bg-surface p-2 rounded">
-                    <img loading="lazy" src={makeAbsolute(h.file_url)} alt={h.title} className="w-16 h-10 object-cover rounded" />
-                    <div className="flex-1 text-xs">
-                      <div className="font-medium">{h.title}</div>
-                      <input type="text" value={h.alt_text || ''} onChange={(e) => setHeroAlt(h.id, e.target.value)} placeholder="Alt text (for accessibility)" className="w-full form-input mt-1" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <button type="button" onClick={() => moveHero(i, -1)} className="px-2 py-1 bg-surface-warm rounded">↑</button>
-                      <button type="button" onClick={() => moveHero(i, 1)} className="px-2 py-1 bg-surface-warm rounded">↓</button>
-                    </div>
-                  </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">Category</label>
+              <select
+                value={uploadCategory}
+                onChange={(e) => setUploadCategory(e.target.value)}
+                className="form-select w-full max-w-xs"
+              >
+                {CATEGORY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
-              </div>
-              <div className="mt-3 flex justify-end">
-                <button type="button" onClick={saveHeroImages} className="bg-primary text-text-inverse px-3 py-2 rounded">Save hero images</button>
-              </div>
+              </select>
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Section: Menu Images */}
-      <div className="bg-surface rounded-lg shadow">
-        <button type="button" className="w-full flex items-center justify-between p-4" onClick={() => setSections(s => ({ ...s, menu: !s.menu }))} aria-expanded={sections.menu}>
-          <div className="flex items-center gap-3">
-            <icons.Image size={20} />
-            <h3 className="text-lg font-medium">Menu Images</h3>
-          </div>
-          <div>{sections.menu ? <icons.ChevronUp /> : <icons.ChevronDown />}</div>
-        </button>
-        {sections.menu && (
-          <div className="p-4 border-t border-divider">
-            <p className="text-sm text-text-secondary mb-2">Upload menu images</p>
-            <label className={`px-3 py-2 rounded cursor-pointer text-sm ${uploading ? 'opacity-60 pointer-events-none' : 'bg-surface'}`}>
-              <input type="file" accept="image/*" className="hidden" onChange={makeUploadHandler('menu')} />
-              {uploading ? 'Uploading…' : 'Choose file'}
-            </label>
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {menuLoading && menuImages.length === 0 ? (
-                <MediaCardSkeleton count={8} />
-              ) : (
-                menuImages.map(item => (
-                  <div key={item.id} className="bg-surface rounded overflow-hidden border border-divider">
-                    <img loading="lazy" src={makeAbsolute(item.file_url)} alt={item.title} className="w-full h-24 object-cover" />
-                    <div className="p-2 space-y-2">
-                      <div className="text-xs truncate font-medium">{item.title}</div>
-                      <select
-                        value={item.category || 'menu'}
-                        onChange={(e) => changeMediaCategory(item.id, e.target.value)}
-                        className="w-full text-xs p-1 rounded border text-gray-900 bg-white"
-                      >
-                        <option value="logo">Logo</option>
-                        <option value="hero">Hero</option>
-                        <option value="menu">Menu</option>
-                      </select>
-                      <div className="flex gap-2 justify-between">
-                        <button onClick={() => copyUrl(item.file_url)} className="text-xs px-2 py-1 bg-surface-warm rounded">Copy</button>
-                        <button onClick={() => deleteMedia(item.id)} className="text-xs px-2 py-1 bg-error text-white rounded">Del</button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            {menuTotal !== null && menuTotal > menuImages.length && (
-              <div className="mt-4 text-center">
-                <div ref={menuSentinel} aria-hidden="true" className="h-6" />
-                {menuLoading && <div className="mt-2"><Spinner size={18} /></div>}
+            {uploadState.uploading && (
+              <div>
+                <div className="flex items-center justify-between text-xs text-text-secondary mb-1">
+                  <span>Uploading…</span>
+                  <span>{uploadState.progress}%</span>
+                </div>
+                <div className="h-2 bg-surface rounded">
+                  <div
+                    className="h-2 bg-primary rounded transition-all"
+                    style={{ width: `${uploadState.progress}%` }}
+                  />
+                </div>
               </div>
             )}
-          </div>
-        )}
-      </div>
 
-      {/* Section: All uploads (optional) */}
-      <div className="bg-surface rounded-lg shadow">
-        <button type="button" className="w-full flex items-center justify-between p-4" onClick={() => setSections(s => ({ ...s, all: !s.all }))} aria-expanded={sections.all}>
-          <div className="flex items-center gap-3">
-            <icons.Folder size={20} />
-            <h3 className="text-lg font-medium">All uploads</h3>
-          </div>
-          <div>{sections.all ? <icons.ChevronUp /> : <icons.ChevronDown />}</div>
-        </button>
-        {sections.all && (
-          <div className="p-4 border-t border-divider">
-            <p className="text-sm text-text-secondary mb-2">All uploaded media (latest first)</p>
-                  <div className="mt-4">
-                    <AllUploadsGridComponent mediaLimit={MEDIA_LIMIT} copyUrl={copyUrl} deleteMedia={deleteMedia} openMenuImagePicker={openMenuImagePicker} copiedId={copiedId} />
-                  </div>
-          </div>
-        )}
-      </div>
-      </div>
-      {/* Menu picker modal */}
-      {showMenuPicker && (
-        <div className="modal-backdrop flex items-center justify-center z-50">
-          <div className="bg-surface rounded-lg p-4 max-w-lg w-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold">Apply as menu image</h3>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setShowMenuPicker(false)} className="px-2 py-1 rounded">Cancel</button>
-                <button type="button" onClick={confirmSetMenuImage} className="px-2 py-1 rounded bg-primary text-text-inverse">Apply</button>
+            {uploadState.processing && (
+              <div className="flex items-center gap-2 text-sm text-text-secondary">
+                <Spinner size={16} />
+                <span>Processing images…</span>
               </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition disabled:opacity-50"
+                onClick={handleUpload}
+                disabled={!uploadState.file || uploadState.uploading || uploadState.processing}
+              >
+                Upload Image
+              </button>
             </div>
-            {categoriesLoading ? <p>Loading categories…</p> : (
-              <div className="space-y-2">
-                {categoriesList.map(c => (
-                  <label key={c.id} className={`flex items-center gap-3 p-2 rounded cursor-pointer ${String(selectedCategoryId) === String(c.id) ? 'ring-2 ring-primary' : 'hover:bg-surface-warm'}`}>
-                    <input type="radio" name="menu-cat" checked={String(selectedCategoryId) === String(c.id)} onChange={() => setSelectedCategoryId(c.id)} />
-                    <div className="flex-1">
-                      <div className="font-medium">{c.name}</div>
-                      <div className="text-sm text-text-secondary">{c.description}</div>
-                    </div>
-                  </label>
-                ))}
+          </div>
+
+          <div className="w-full lg:w-72 border border-divider rounded-lg overflow-hidden bg-background">
+            {uploadState.previewUrl ? (
+              <>
+                <img src={uploadState.previewUrl} alt="Preview" className="w-full h-40 object-cover" />
+                <div className="p-3 text-sm text-text-secondary">Preview of the file to be uploaded.</div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-6 text-center text-text-secondary text-sm">
+                <icons.Image size={36} className="mb-2 text-text-muted" />
+                No file selected
               </div>
             )}
           </div>
         </div>
+      </section>
+
+      <section className="bg-surface rounded-lg shadow">
+        <div className="border-b border-divider px-6 pt-4">
+          <div className="flex items-center gap-2 overflow-auto pb-2">
+            {TAB_CONFIG.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                  activeTab === tab.key
+                    ? 'bg-primary text-text-inverse'
+                    : 'bg-surface-warm text-text-primary hover:bg-surface'
+                }`}
+              >
+                {tab.label}
+                <span className="ml-2 text-xs text-text-secondary">
+                  {countForTab(tab.key)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center gap-2 text-text-secondary">
+              <Spinner size={18} />
+              <span>Loading media…</span>
+            </div>
+          ) : filteredMedia.length === 0 ? (
+            <div className="text-text-secondary text-sm">
+              No media in this category yet. Upload some images to get started.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredMedia.map((item) => {
+                const { heroInfo, menuInfo } = getUsageBadges(item.id);
+                const menuTooltip = menuInfo && menuInfo.length
+                  ? `Used by: ${menuInfo.join(', ')}`
+                  : '';
+                return (
+                <div key={item.id} className="border border-divider rounded-lg overflow-hidden bg-background flex flex-col">
+                  <div className="relative">
+                    <img
+                      src={getMediaPreviewUrl(item)}
+                      alt={item.alt_text || item.title || ''}
+                      className="w-full h-40 object-cover"
+                      loading="lazy"
+                    />
+                    <span className="absolute top-2 left-2 text-2xs uppercase text-text-inverse bg-black/60 px-2 py-1 rounded-full">
+                      {CATEGORY_LABELS[normalizeCategory(item.category)]}
+                    </span>
+                    {(heroInfo || (menuInfo && menuInfo.length)) && (
+                      <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+                        {heroInfo && (
+                          <span
+                            className="text-2xs uppercase tracking-wide bg-primary text-text-inverse px-2 py-1 rounded-full shadow"
+                            title="Used in hero slideshow"
+                          >
+                            Hero #{heroInfo.order}
+                          </span>
+                        )}
+                        {menuInfo && menuInfo.length > 0 && (
+                          <span
+                            className="text-2xs uppercase tracking-wide bg-black/70 text-text-inverse px-2 py-1 rounded-full shadow cursor-help"
+                            title={menuTooltip}
+                          >
+                            In menu
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 flex flex-col gap-2 flex-1">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary truncate">{item.title || item.file_name}</p>
+                      <p className="text-2xs text-text-secondary truncate">{item.file_name}</p>
+                    </div>
+                    <p className="text-2xs text-text-secondary">Size: {formatBytes(item.file_size)}</p>
+                    {menuInfo && menuInfo.length > 0 && (
+                      <p className="text-2xs text-text-secondary truncate" title={menuTooltip}>
+                        Used by: {menuInfo.slice(0, 2).join(', ')}{menuInfo.length > 2 ? ` +${menuInfo.length - 2}` : ''}
+                      </p>
+                    )}
+                    <div className="mt-auto flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyUrl(item)}
+                        className="flex-1 text-xs bg-surface-warm hover:bg-surface transition px-2 py-1 rounded flex items-center justify-center gap-1"
+                      >
+                        {copiedId === item.id ? (
+                          <>
+                            <icons.CheckCircle size={12} />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <icons.Copy size={12} />
+                            Copy URL
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(item)}
+                        className="px-2 py-1 rounded bg-surface hover:bg-surface-warm text-xs flex items-center gap-1"
+                      >
+                        <icons.Edit size={12} />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item)}
+                        className="px-2 py-1 rounded bg-error/10 text-error hover:bg-error/20 text-xs flex items-center gap-1"
+                      >
+                        <icons.Trash2 size={12} />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {editMedia && editForm && (
+        <div className="modal-backdrop flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-text-primary">Edit Media</h3>
+              <button type="button" onClick={() => { setEditMedia(null); setEditForm(null); }} aria-label="Close edit modal">
+                <icons.X size={18} />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="rounded-lg overflow-hidden border border-divider">
+                <img
+                  src={getMediaPreviewUrl(editMedia)}
+                  alt={editMedia.alt_text || editMedia.title || ''}
+                  className="w-full h-60 object-cover"
+                />
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">Filename</label>
+                  <input
+                    type="text"
+                    value={editMedia.file_name}
+                    readOnly
+                    className="form-input w-full bg-surface-warm text-text-secondary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">Category</label>
+                  <select
+                    value={editForm.category}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, category: e.target.value }))}
+                    className="form-select w-full"
+                  >
+                    {CATEGORY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">Alt Text</label>
+                  <input
+                    type="text"
+                    value={editForm.alt_text}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, alt_text: e.target.value }))}
+                    className="form-input w-full"
+                  />
+                  <p className="text-2xs text-text-secondary mt-1">Used for accessibility and SEO.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">Caption</label>
+                  <textarea
+                    value={editForm.caption}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, caption: e.target.value }))}
+                    className="form-input w-full"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => { setEditMedia(null); setEditForm(null); }}
+                className="px-4 py-2 rounded bg-surface-warm hover:bg-surface transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleEditSave}
+                className="px-4 py-2 rounded bg-primary text-text-inverse hover:bg-primary-dark transition disabled:opacity-60"
+                disabled={savingEdit}
+              >
+                {savingEdit ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }
-
-
-
-const Module = {
-  component: MediaModule,
-  name: 'Media',
-  icon: icons.Image
-};
-export default Module;

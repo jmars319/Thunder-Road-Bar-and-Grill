@@ -15,10 +15,9 @@
 
 import { useState } from 'react';
 import Spinner from '../ui/Spinner';
+import { getApiUrl } from '../../config/api';
 // reference Spinner to satisfy some analyzers that don't detect JSX usage in ternaries
 void Spinner;
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
 
 export default function ContactModal({ onClose }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -42,9 +41,9 @@ export default function ContactModal({ onClose }) {
     if (v) { setError(v); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/contact`, {
+      const res = await fetch(getApiUrl('/contact'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify(form)
       });
       if (!res.ok) {

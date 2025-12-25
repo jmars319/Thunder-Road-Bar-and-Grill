@@ -52,7 +52,13 @@ import {
   Sun,
   Moon,
   Monitor,
-  Key
+  Key,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Eraser,
+  Wand2
 } from 'lucide-react';
 
 // Re-export named symbols for backwards compatibility with existing imports
@@ -93,7 +99,13 @@ export {
   Sun,
   Moon,
   Monitor,
-  Key
+  Key,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Eraser,
+  Wand2
 };
 
 // Note: keep this module intentionally thin — it's a single re-export layer
@@ -139,7 +151,13 @@ export const icons = {
   Sun,
   Moon,
   Monitor,
-  Key
+  Key,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Eraser,
+  Wand2
 };
 
 export default icons;

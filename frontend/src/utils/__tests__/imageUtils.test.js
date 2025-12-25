@@ -5,7 +5,7 @@
  * Tests the buildSrcSet and buildWebpSrcSet helper functions.
  */
 
-import { buildSrcSet, buildWebpSrcSet, DEFAULT_SIZES, LOGO_SIZES } from '../imageUtils';
+import { buildSrcSet, buildWebpSrcSet, DEFAULT_SIZES } from '../imageUtils';
 
 describe('imageUtils', () => {
   describe('buildSrcSet', () => {
@@ -100,10 +100,6 @@ describe('imageUtils', () => {
   describe('Constants', () => {
     test('DEFAULT_SIZES is defined correctly', () => {
       expect(DEFAULT_SIZES).toEqual([480, 768, 1024, 1600]);
-    });
-
-    test('LOGO_SIZES is defined correctly', () => {
-      expect(LOGO_SIZES).toEqual([160, 320, 480, 768, 1024, 1600]);
     });
   });
 
