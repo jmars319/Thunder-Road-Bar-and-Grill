@@ -37,9 +37,19 @@ class MediaPipeline {
         return $root;
     }
 
+    private static function uploadPublicPrefix() {
+        $default = '/' . trim(self::uploadDir(), '/');
+        $configured = trim((string) Config::get('UPLOAD_PUBLIC_PREFIX', ''));
+        if ($configured === '') {
+            return $default;
+        }
+        $normalized = '/' . ltrim($configured, '/');
+        return rtrim($normalized, '/');
+    }
+
     private static function publicPath($relative) {
         $normalized = ltrim($relative, '/');
-        return '/' . self::uploadDir() . '/' . $normalized;
+        return self::uploadPublicPrefix() . '/' . $normalized;
     }
 
     public static function ensureStructure() {
@@ -85,9 +95,14 @@ class MediaPipeline {
             return null;
         }
         $trimmed = ltrim($url, '/');
-        $uploadDir = self::uploadDir();
-        if (strpos($trimmed, $uploadDir . '/') === 0) {
-            $trimmed = substr($trimmed, strlen($uploadDir) + 1);
+        $prefix = ltrim(self::uploadPublicPrefix(), '/');
+        if ($prefix !== '' && strpos($trimmed, $prefix . '/') === 0) {
+            $trimmed = substr($trimmed, strlen($prefix) + 1);
+        } else {
+            $uploadDir = trim(self::uploadDir(), '/');
+            if (strpos($trimmed, $uploadDir . '/') === 0) {
+                $trimmed = substr($trimmed, strlen($uploadDir) + 1);
+            }
         }
         $candidate = self::uploadRoot() . '/' . $trimmed;
         $real = realpath($candidate);
@@ -235,8 +250,6 @@ class MediaPipeline {
         $variantWidths = MediaProfiles::getVariantWidths($category);
         $optimizedVariants = [];
         $webpVariants = [];
-        $uploadDir = self::uploadDir();
-
         $optimizedExt = in_array($mimeType, ['image/png', 'image/gif'], true) ? '.png' : '.jpg';
 
         foreach ($variantWidths as $width) {
@@ -250,8 +263,8 @@ class MediaPipeline {
             if (self::saveOptimizedVariant($resized, $optimizedPath, $optimizedExt)) {
                 $optimizedVariants[] = [
                     'width' => $width,
-                    'url' => '/' . $uploadDir . '/variants/optimized/' . $optimizedFilename,
-                    'path' => '/' . $uploadDir . '/variants/optimized/' . $optimizedFilename
+                    'url' => self::publicPath('variants/optimized/' . $optimizedFilename),
+                    'path' => self::publicPath('variants/optimized/' . $optimizedFilename)
                 ];
             }
 
@@ -260,8 +273,8 @@ class MediaPipeline {
             if (self::saveWebpVariant($resized, $webpPath)) {
                 $webpVariants[] = [
                     'width' => $width,
-                    'url' => '/' . $uploadDir . '/variants/webp/' . $webpFilename,
-                    'path' => '/' . $uploadDir . '/variants/webp/' . $webpFilename
+                    'url' => self::publicPath('variants/webp/' . $webpFilename),
+                    'path' => self::publicPath('variants/webp/' . $webpFilename)
                 ];
             }
 
@@ -269,8 +282,8 @@ class MediaPipeline {
         }
 
         $originalMeta = [
-            'url' => '/' . $uploadDir . '/' . $basename . $ext,
-            'path' => '/' . $uploadDir . '/' . $basename . $ext,
+            'url' => self::publicPath($basename . $ext),
+            'path' => self::publicPath($basename . $ext),
             'width' => $metadata['width'],
             'height' => $metadata['height'],
             'mime' => $mimeType,
@@ -339,7 +352,7 @@ class MediaPipeline {
         );
 
         return [
-            'file_url' => '/' . self::uploadDir() . '/' . $finalName,
+            'file_url' => self::publicPath($finalName),
             'file_name' => $finalName,
             'file_type' => $mimeType,
             'file_size' => filesize($absolutePath),
