@@ -144,7 +144,7 @@ export default function HeroSection() {
         {images[index]?.variant?.fallback && (
           <img src={images[index].variant.fallback} alt={images[index].alt || ''} className="sr-only" />
         )}
-        <div className="inline-flex flex-col gap-4 px-6 py-5 rounded-2xl bg-black/45 backdrop-blur-md shadow-xl max-w-3xl mx-auto">
+        <div className="hero-copy-shell inline-flex flex-col gap-4 px-6 py-5 rounded-2xl bg-black/45 backdrop-blur-md shadow-xl max-w-3xl mx-auto">
           {heroCopy.title && (
             <h1 className="text-4xl md:text-5xl font-heading font-extrabold tracking-tight text-brand-cream drop-shadow-sm">
               {heroCopy.title}
@@ -156,7 +156,7 @@ export default function HeroSection() {
             </p>
           )}
         </div>
-        <div className="flex gap-4 justify-center flex-wrap mt-8">
+        <div className="hero-cta-row flex gap-4 justify-center flex-wrap mt-8">
           {heroCopy.ctas.map((cta, idx) => (
             <a
               key={`${cta.label}-${idx}`}

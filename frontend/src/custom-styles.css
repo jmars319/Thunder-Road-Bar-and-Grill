@@ -405,6 +405,18 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(15, 23, 36, 0.92);
 }
 
+/* Reserve space for hero text + CTAs to avoid CLS when copy loads asynchronously */
+.hero-copy-shell {
+  min-height: 12rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.hero-cta-row {
+  min-height: 3.5rem;
+  align-items: center;
+}
+
 /* Card Hover Effects */
 .card-hover {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
