@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/MediaPipeline.php';
+require_once __DIR__ . '/MediaProfiles.php';
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Logger.php';
 
@@ -25,6 +26,40 @@ class MediaResponseBuilder {
         }
         $decoded = json_decode($value, true);
         return is_array($decoded) ? $decoded : null;
+    }
+
+    private static function backfillVariantWidths($variants, $context) {
+        if (!is_array($variants) || empty($variants)) {
+            return [];
+        }
+        $ladder = MediaProfiles::getVariantWidths($context);
+        $suffixMap = [
+            '1x' => 0,
+            '2x' => 1,
+            '3x' => 2
+        ];
+        return array_map(function ($variant) use ($ladder, $suffixMap) {
+            if (!empty($variant['width'])) {
+                $variant['width'] = (int) $variant['width'];
+                return $variant;
+            }
+            $source = $variant['url'] ?? $variant['path'] ?? '';
+            if (!$source) {
+                return $variant;
+            }
+            if (preg_match('/-w(\d+)\./', $source, $match)) {
+                $variant['width'] = (int) $match[1];
+                return $variant;
+            }
+            if (preg_match('/-([123])x\.(?:webp|jpe?g|png|gif)$/', $source, $match)) {
+                $suffix = $match[1] . 'x';
+                $index = $suffixMap[$suffix] ?? null;
+                if ($index !== null && isset($ladder[$index])) {
+                    $variant['width'] = (int) $ladder[$index];
+                }
+            }
+            return $variant;
+        }, $variants);
     }
 
     private static function buildSrcsetFromVariants($variants) {
@@ -85,6 +120,10 @@ class MediaResponseBuilder {
         if (!MediaPipeline::fileExistsByUrl($row['file_url'] ?? null)) {
             $missingFile = true;
         }
+
+        $context = self::normalizeContext($row['category'] ?? null);
+        $variants['optimized'] = self::backfillVariantWidths($variants['optimized'] ?? [], $context);
+        $variants['webp'] = self::backfillVariantWidths($variants['webp'] ?? [], $context);
 
         $filteredOptimized = self::filterExistingVariants($variants['optimized'] ?? [], $row['id'] ?? null, 'optimized');
         $filteredWebp = self::filterExistingVariants($variants['webp'] ?? [], $row['id'] ?? null, 'webp');

@@ -24,6 +24,8 @@ class MediaPipeline {
         'manifests'
     ];
 
+    private const VARIANT_SUFFIXES = ['1x', '2x', '3x'];
+
     private static function uploadDir() {
         $dir = trim(Config::get('UPLOAD_DIR', 'uploads'));
         return $dir === '' ? 'uploads' : $dir;
@@ -266,12 +268,11 @@ class MediaPipeline {
         $webpVariants = [];
         $optimizedExt = in_array($mimeType, ['image/png', 'image/gif'], true) ? '.png' : '.jpg';
 
-        $suffixes = ['1x', '2x', '3x'];
         foreach ($variantWidths as $index => $width) {
-            if ($index >= 3) {
+            if ($index >= count(self::VARIANT_SUFFIXES)) {
                 break;
             }
-            $suffix = $suffixes[$index] ?? ($index + 1) . 'x';
+            $suffix = self::VARIANT_SUFFIXES[$index];
             $resized = self::resizeImage($image, $width, $mimeType);
             if (!$resized) {
                 continue;
