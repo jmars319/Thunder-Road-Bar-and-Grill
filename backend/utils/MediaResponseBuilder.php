@@ -5,6 +5,17 @@ require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Logger.php';
 
 class MediaResponseBuilder {
+    private static function normalizeContext($value) {
+        if (!$value) {
+            return 'gallery';
+        }
+        $normalized = strtolower(trim($value));
+        if ($normalized === '' || $normalized === 'general') {
+            return 'gallery';
+        }
+        return $normalized;
+    }
+
     private static function decodeVariants($value) {
         if (!$value) {
             return null;
@@ -87,6 +98,10 @@ class MediaResponseBuilder {
         $row['responsive_variants'] = $variants;
         $row['image_variants'] = $variants;
         $row['fallback_original'] = $row['file_url'];
+
+        $normalizedContext = self::normalizeContext($row['category'] ?? null);
+        $row['context'] = $normalizedContext;
+        $row['category'] = $normalizedContext;
 
         if (empty($row['optimized_srcset'])) {
             $row['optimized_srcset'] = self::buildSrcsetFromVariants($variants['optimized'] ?? []);

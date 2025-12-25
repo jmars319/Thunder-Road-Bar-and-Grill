@@ -14,21 +14,20 @@ const TAB_CONFIG = [
 const CATEGORY_LABELS = {
   hero: 'Hero Images',
   menu: 'Menu Images',
-  general: 'Other'
+  gallery: 'Other'
 };
 
 const CATEGORY_OPTIONS = [
   { value: 'hero', label: 'Hero Images' },
   { value: 'menu', label: 'Menu Images' },
-  { value: 'general', label: 'Other / Misc' }
+  { value: 'gallery', label: 'Other / Misc' }
 ];
 
 const normalizeCategory = (value) => {
-  if (!value) return 'general';
-  const normalized = String(value).toLowerCase();
+  const normalized = String(value ?? '').toLowerCase();
   if (normalized === 'hero' || normalized === 'menu') return normalized;
-  if (normalized === 'gallery') return 'menu';
-  return 'general';
+  if (!normalized || normalized === 'gallery' || normalized === 'general') return 'gallery';
+  return normalized;
 };
 
 const formatBytes = (bytes) => {

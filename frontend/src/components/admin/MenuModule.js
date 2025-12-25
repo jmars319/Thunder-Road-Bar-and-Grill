@@ -198,7 +198,7 @@ function MenuModule() {
   };
 
   // Upload helper: XMLHttpRequest-based so we can track progress and cancel
-  const uploadFile = (file, category = 'general') => {
+  const uploadFile = (file, category = 'gallery') => {
     if (!file) return Promise.resolve(null);
     return new Promise((resolve, reject) => {
       setUploading(true);

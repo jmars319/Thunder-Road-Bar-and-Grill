@@ -20,9 +20,14 @@ class MediaProfiles {
     }
 
     private static function normalizeCategory($category) {
-        return $category && is_string($category)
-            ? strtolower(trim($category))
-            : 'general';
+        if (!$category || !is_string($category)) {
+            return 'gallery';
+        }
+        $normalized = strtolower(trim($category));
+        if ($normalized === '' || $normalized === 'general') {
+            return 'gallery';
+        }
+        return $normalized;
     }
 
     private static function sanitizeWidths($widths) {
@@ -49,8 +54,12 @@ class MediaProfiles {
             return self::MENU_PROFILE;
         }
         $envProfiles = self::getEnvProfiles();
-        if (isset($envProfiles[$normalized])) {
-            $profile = self::sanitizeWidths($envProfiles[$normalized]);
+        $envKey = $normalized;
+        if ($normalized === 'gallery' && isset($envProfiles['general'])) {
+            $envKey = 'general';
+        }
+        if (isset($envProfiles[$envKey])) {
+            $profile = self::sanitizeWidths($envProfiles[$envKey]);
             if (!empty($profile)) {
                 return $profile;
             }

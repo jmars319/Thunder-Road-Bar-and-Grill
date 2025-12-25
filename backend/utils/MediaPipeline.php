@@ -85,9 +85,13 @@ class MediaPipeline {
 
     private static function normalizeCategory($category) {
         if (!$category) {
-            return 'general';
+            return 'gallery';
         }
-        return strtolower(trim($category));
+        $normalized = strtolower(trim($category));
+        if ($normalized === '' || $normalized === 'general') {
+            return 'gallery';
+        }
+        return $normalized;
     }
 
     public static function absolutePathFromUrl($url) {

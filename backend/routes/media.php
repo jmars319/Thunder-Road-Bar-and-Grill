@@ -14,6 +14,24 @@ class MediaRoutes {
         $this->db = Database::getInstance();
     }
 
+    protected function normalizeContextValue($value, $allowNull = false) {
+        if ($value === null) {
+            return $allowNull ? null : 'gallery';
+        }
+        $normalized = strtolower(trim((string) $value));
+        if ($normalized === '' && $allowNull) {
+            return null;
+        }
+        if ($normalized === '' || $normalized === 'general') {
+            return 'gallery';
+        }
+        return $normalized;
+    }
+
+    protected function buildGalleryWhereClause() {
+        return "(category IS NULL OR category = '' OR category = 'general' OR category = 'gallery')";
+    }
+
     private function describeUploadError($code) {
         switch ($code) {
             case UPLOAD_ERR_INI_SIZE:
@@ -43,17 +61,20 @@ class MediaRoutes {
      */
     public function getAllMedia() {
         try {
-            $category = isset($_GET['category']) && $_GET['category'] !== 'all'
-                ? strtolower(trim($_GET['category']))
-                : null;
+            $contextParam = $_GET['context'] ?? $_GET['category'] ?? null;
+            $context = $this->normalizeContextValue($contextParam, true);
             $limit = min(max((int) ($_GET['limit'] ?? 48), 1), 200);
             $offset = max((int) ($_GET['offset'] ?? 0), 0);
 
             $where = '';
             $params = [];
-            if ($category) {
-                $where = 'WHERE category = ?';
-                $params[] = $category;
+            if ($context !== null) {
+                if ($context === 'gallery') {
+                    $where = 'WHERE ' . $this->buildGalleryWhereClause();
+                } else {
+                    $where = 'WHERE category = ?';
+                    $params[] = $context;
+                }
             }
 
             $count = $this->db->fetchOne("SELECT COUNT(*) AS total FROM media_library {$where}", $params);
@@ -114,7 +135,7 @@ class MediaRoutes {
         $title = trim($_POST['title'] ?? $file['name']);
         $altText = trim($_POST['alt_text'] ?? '');
         $caption = trim($_POST['caption'] ?? '');
-        $category = strtolower(trim($_POST['category'] ?? 'general'));
+        $category = $this->normalizeContextValue($_POST['category'] ?? null);
 
         if ($category === 'logo') {
             ErrorHandler::respond('Logo uploads are no longer supported', 400, ['success' => false]);
@@ -214,10 +235,11 @@ class MediaRoutes {
             if (array_key_exists($field, $input)) {
                 $value = $input[$field];
                 if ($field === 'category') {
-                    $normalized = strtolower(trim($value));
+                    $normalized = $this->normalizeContextValue($value);
                     if ($normalized === 'resume' || $normalized === 'logo') {
                         ErrorHandler::respond(ucfirst($normalized) . ' category is not allowed', 400, ['success' => false]);
                     }
+                    $value = $normalized;
                 }
                 $fields[] = "{$field} = ?";
                 $params[] = $value;
