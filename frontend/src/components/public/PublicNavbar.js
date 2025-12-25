@@ -138,9 +138,24 @@ export default function PublicNavbar({ onGoToAdmin }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
   <div className="flex justify-between items-center h-16 md:h-20">
           <div className="flex items-center gap-3">
-            <div className="logo-badge">
+            <a
+              href="#top"
+              onClick={(e) => {
+                try {
+                  const topEl = document.getElementById('top');
+                  if (topEl) {
+                    e.preventDefault();
+                    topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                } catch {
+                  // if anything fails just let the href handle it
+                }
+              }}
+              className="logo-badge inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              aria-label="Back to top"
+            >
               <BrandLogo className="h-full w-auto object-contain" />
-            </div>
+            </a>
             <div>
               <div className="text-lg font-bold text-text-primary font-heading">
                 {siteSettings?.business_name || 'Thunder Road Bar and Grill'}
