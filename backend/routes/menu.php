@@ -161,9 +161,11 @@ class MenuRoutes {
                 $mediaId = $row['category_gallery_image_id'] ?? null;
                 if ($mediaId && isset($mediaMap[$mediaId])) {
                     $media = $this->simplifyMedia($mediaMap[$mediaId]);
-                    $categories[$catId]['gallery_image_url'] = $media['fallback_original'];
-                    $categories[$catId]['gallery_image_responsive'] = $media;
-                    $categories[$catId]['gallery_image_variants'] = $media['responsive_variants'];
+                    if ($media) {
+                        $categories[$catId]['gallery_image_url'] = $media['fallback_original'];
+                        $categories[$catId]['gallery_image_responsive'] = $media;
+                        $categories[$catId]['gallery_image_variants'] = $media['responsive_variants'];
+                    }
                 }
             }
 
