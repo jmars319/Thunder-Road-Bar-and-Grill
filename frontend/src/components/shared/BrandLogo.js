@@ -14,8 +14,8 @@ export default function BrandLogo({
   className,
   alt = 'Thunder Road Bar and Grill',
   sizes,
-  width,
-  height,
+  width = 133,
+  height = 80,
   loading = 'lazy',
   decoding = 'async'
 }) {
