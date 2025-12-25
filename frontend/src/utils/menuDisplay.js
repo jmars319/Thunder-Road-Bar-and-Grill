@@ -12,9 +12,17 @@ export function normalizeMenuCategory(cat = {}) {
           alt_text: cat.name
         }
       : null);
-  const heroVariant = responsiveEntry && hasRenderableImageVariant(responsiveEntry)
-    ? buildImageVariant(responsiveEntry, { sizes: '100vw' })
+  let heroVariant = responsiveEntry && hasRenderableImageVariant(responsiveEntry)
+    ? buildImageVariant(responsiveEntry, { sizes: '(max-width: 768px) 90vw, 640px' })
     : null;
+  if (!heroVariant && fallbackUrl) {
+    heroVariant = {
+      fallback: prefixUploadUrl(fallbackUrl),
+      optimizedSrcset: '',
+      webpSrcset: '',
+      sizes: '(max-width: 768px) 90vw, 640px'
+    };
+  }
 
   return {
     ...cat,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { icons } from '../../icons';
 import { sanitizeRichText } from '../../utils/richText';
+import ResponsiveImage from '../common/ResponsiveImage';
 
 export default function MenuDisplay({
   categories = [],
@@ -26,12 +27,11 @@ export default function MenuDisplay({
 
         <div className="space-y-4">
           {categories.map(category => {
-            const backgroundImageUrl =
-              category.heroVariant?.fallback_original ||
-              category.heroVariant?.file_url ||
-              category.gallery_image_url ||
-              null;
-            const hasBackground = Boolean(backgroundImageUrl);
+            const heroVariant = category.heroVariant || null;
+            const fallbackBackground = category.gallery_image_url || null;
+            const hasResponsiveHero = Boolean(heroVariant?.fallback || heroVariant?.optimizedSrcset || heroVariant?.webpSrcset);
+            const hasFallbackImage = Boolean(fallbackBackground);
+            const hasBackground = hasResponsiveHero || hasFallbackImage;
             return (
             <div
               key={category.id}
@@ -41,11 +41,31 @@ export default function MenuDisplay({
                 type="button"
                 onClick={() => onToggleCategory(category.id)}
                 className={`relative w-full text-left overflow-hidden transition ${hasBackground ? 'min-h-[180px]' : 'hover:bg-surface-warm'}`}
-                style={hasBackground ? { backgroundImage: `url(${backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
                 aria-expanded={expandedCategory === category.id}
                 aria-controls={`menu-cat-${category.id}`}
               >
-                {hasBackground && <div className="absolute inset-0 bg-black/35" aria-hidden="true"></div>}
+                {hasBackground && (
+                  <div className="absolute inset-0" aria-hidden="true">
+                    {hasResponsiveHero ? (
+                      <ResponsiveImage
+                        variant={heroVariant}
+                        alt=""
+                        loading="lazy"
+                        pictureClassName="absolute inset-0 block w-full h-full"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        sizes="(max-width: 768px) 100vw, 640px"
+                      />
+                    ) : (
+                      <img
+                        src={fallbackBackground}
+                        alt=""
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/35" />
+                  </div>
+                )}
                 <div className="relative z-10 flex items-center justify-between p-4">
                   <div className={`text-left max-w-3xl ${hasBackground ? 'text-white' : ''}`}>
                     <div className={`inline-flex flex-col gap-2 px-4 py-3 rounded-lg ${hasBackground ? 'bg-black/35 backdrop-blur-md' : ''}`}>

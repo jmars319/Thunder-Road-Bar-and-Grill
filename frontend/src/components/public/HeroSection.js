@@ -48,7 +48,7 @@ export default function HeroSection() {
             .map((hero) => ({
               id: hero.id,
               alt: hero.alt_text || hero.title || '',
-              variant: buildImageVariant(hero, { sizes: '100vw' })
+              variant: buildImageVariant(hero, { sizes: '(max-width: 1280px) 100vw, 1280px' })
             }))
             .filter((entry) => entry.variant);
           if (normalized.length) {
@@ -68,7 +68,7 @@ export default function HeroSection() {
           const variants = filtered.map((entry) => ({
             id: entry.id,
             alt: entry.alt_text || entry.title || '',
-            variant: buildImageVariant(entry, { sizes: '100vw' })
+            variant: buildImageVariant(entry, { sizes: '(max-width: 1280px) 100vw, 1280px' })
           })).filter((img) => img.variant);
           setImages(variants);
         }
@@ -87,29 +87,6 @@ export default function HeroSection() {
     }, interval);
     return () => window.clearInterval(id);
   }, [images, slideshowSpeed]);
-
-  // Render the hero as image elements so Lighthouse and browsers can discover
-  // and prioritize the LCP image. Use object-fit to maintain cover behavior
-  // and preload the first image with high priority to improve LCP.
-  useEffect(() => {
-    if (!images.length) return;
-    const first = images[0];
-    if (!first?.variant?.fallback) return;
-    let link;
-    try {
-      link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = first.variant.webpSrcset ? first.variant.webpSrcset.split(' ')[0] : first.variant.fallback;
-      link.setAttribute('fetchpriority', 'high');
-      document.head.appendChild(link);
-    } catch (e) {
-      // ignore
-    }
-    return () => {
-      if (link && link.parentNode) link.parentNode.removeChild(link);
-    };
-  }, [images]);
 
   return (
     <div className="hero-gradient text-text-inverse py-20 relative overflow-hidden">
