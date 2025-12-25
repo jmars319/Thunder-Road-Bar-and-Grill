@@ -139,22 +139,26 @@ export default function ReservationSection() {
   return (
     <div id="reservations" className="py-10 bg-background">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        {copy.heading && <h2 className="text-2xl font-heading font-bold text-center mb-2">{copy.heading}</h2>}
-        {copy.intro && <p className="text-center text-text-secondary mb-4">{copy.intro}</p>}
+        <div className="reservation-copy-block">
+          {copy.heading && <h2 className="text-2xl font-heading font-bold text-center mb-2">{copy.heading}</h2>}
+          {copy.intro && <p className="text-center text-text-secondary mb-0">{copy.intro}</p>}
+        </div>
 
-        {submitted && (
-          <div className="bg-success/10 border border-success rounded-lg p-3 mb-4 flex items-center gap-3">
-            {React.createElement(icons.CheckCircle, { size: 20, className: 'text-success' })}
-            <p className="text-success">{copy.success || "Reservation submitted! We'll contact you to confirm."}</p>
-          </div>
-        )}
+        <div className="reservation-alert-slot" aria-live="polite">
+          {submitted && (
+            <div className="w-full bg-success/10 border border-success rounded-lg p-3 flex items-center gap-3">
+              {React.createElement(icons.CheckCircle, { size: 20, className: 'text-success' })}
+              <p className="text-success m-0">{copy.success || "Reservation submitted! We'll contact you to confirm."}</p>
+            </div>
+          )}
 
-        {error && (
-          <div className="bg-error/10 border border-error rounded-lg p-3 mb-4 flex items-center gap-3">
-            {React.createElement(icons.AlertCircle, { size: 20, className: 'text-error' })}
-            <p className="text-error">{copy.failure || error}</p>
-          </div>
-        )}
+          {!submitted && error && (
+            <div className="w-full bg-error/10 border border-error rounded-lg p-3 flex items-center gap-3">
+              {React.createElement(icons.AlertCircle, { size: 20, className: 'text-error' })}
+              <p className="text-error m-0">{copy.failure || error}</p>
+            </div>
+          )}
+        </div>
 
         <div className="bg-surface-warm rounded-lg shadow-lg p-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

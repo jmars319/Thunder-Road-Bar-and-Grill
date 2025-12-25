@@ -3,9 +3,6 @@
    Styles that complement Tailwind classes
    ============================================ */
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@700&family=Pacifico&display=swap');
-
 /* CSS Variables (matching PHP project) */
 :root {
   /* Colors */
@@ -70,6 +67,21 @@
   object-fit: contain;
 }
 
+.reservation-copy-block {
+  min-height: 4.25rem; /* reserve space for heading/intro copy */
+  margin-bottom: 1.5rem;
+}
+
+.reservation-alert-slot {
+  min-height: 64px;
+  margin-bottom: 1.5rem;
+}
+
+.reservation-alert-slot > * {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
 
 /* Responsive sizing of the badge is handled by the .logo-badge width/height
    rules further down so the graphic scales to fill that area. */
