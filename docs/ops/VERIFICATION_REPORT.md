@@ -6,10 +6,12 @@ Scope
 -----
 This report covers the focused frontend accessibility and styling pass executed across the project, primarily in `frontend/src` components. The goal was to replace inline color usage with semantic tokens, add runtime theme support, make the logo recolorable, and improve accessibility for admin modules.
 
+> Update (2025-12-24): Logos are now static assets committed under `/public/assets/logo/` and rendered through `frontend/src/components/shared/BrandLogo.js`. References below to `frontend/src/logo.svg` describe the legacy implementation that the new BrandLogo component replaced.
+
 Files changed (high level)
 -------------------------
-- frontend/src/logo.svg — switched to `fill="currentColor"` to allow recoloring via CSS tokens.
-- frontend/src/custom-styles.css — added/updated CSS token definitions and small helpers for recolorable logos.
+- public/assets/logo/* + frontend/src/components/shared/BrandLogo.js — new static logo assets rendered via a shared component (replaces the old editable `logo.svg` flow referenced in earlier iterations of this report).
+- frontend/src/custom-styles.css — added/updated CSS token definitions (including `.logo-badge` helpers used by the static BrandLogo component).
 - frontend/src/components/public/* — multiple public components received ARIA/annotation updates (Navbar, Hero, MenuSection, ReservationSection, AboutSection, PublicFooter, etc.).
 - frontend/src/components/admin/* — updated admin modules:
 	- DashboardModule.js
@@ -30,7 +32,7 @@ Automated checks performed
 Manual checks
 -------------
 - Grep for literal Tailwind color utilities and hex codes — most hex values are intentionally present in the token SOT (`custom-styles.css`) and `tailwind.config.js` fallback values. Post-edit, active JSX files use token classes.
-- Inline SVGs: `frontend/src/logo.svg` is recolorable; note that external `<img>`-hosted logos will not recolor without inlining or providing theme-specific assets.
+- Inline SVGs: the previous recolorable `frontend/src/logo.svg` implementation has been superseded by the static BrandLogo component. Logos now render from `/public/assets/logo/` so recoloring guidance in this section only applies to the historical SVG approach.
 
 Outstanding items / recommendations
 ---------------------------------
@@ -79,7 +81,7 @@ Frontend tests
 Files changed during the cleanup
 -------------------------------
 - `frontend/src/custom-styles.css` — consolidated token definitions and CSS variable fallbacks.
-- `frontend/src/logo.svg` — recolorable SVG using `currentColor`.
+- `frontend/src/components/shared/BrandLogo.js` — shared React component rendering the static PNG logo srcSet.
 - Multiple frontend components under `frontend/src/components/*` — replaced literal color utilities with token classes and applied small accessibility updates.
 - `../notes/DEVELOPERS.md`, `../INDEX.md`, and `../guides/TESTING.md` — documentation updated to include self-contained migration and verification guidance so developers do not need to consult any local-only styling docs.
 

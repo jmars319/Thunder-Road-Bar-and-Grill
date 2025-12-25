@@ -1,7 +1,7 @@
 # TRBG Image Pipeline Spec
 
 ## 1) Quick Start Overview
-- **Who uploads:** Administrators use the React `MediaModule` inside the admin panel to list media, choose files per category (logo/hero/menu/general), and trigger uploads over raw `XMLHttpRequest` so progress and processing states can be surfaced (`frontend/src/components/admin/MediaModule.js:200-377`).
+- **Who uploads:** Administrators use the React `MediaModule` inside the admin panel to manage hero/menu/general image categories. Brand logos are static assets committed under `/public/assets/logo/`, so no admin action is required for them. Uploads occur over raw `XMLHttpRequest` so progress and processing states can be surfaced (`frontend/src/components/admin/MediaModule.js`).
 - **High-level flow:** The UI streams files to `POST /api/media`, the PHP backend writes the original under `backend/uploads/`, generates optimized + WebP variants plus a manifest, inserts an enriched row into `media_library`, and returns the hydrated record (`backend/routes/media.php:83-168`, `backend/utils/MediaPipeline.php:8-210`, `database/schema.sql:175-201`).
 - **Primary endpoints:**  
   - `POST /api/media` – upload & process images.  
@@ -32,7 +32,6 @@
 - **Width profiles:**  
   - Hero: `[1600, 3200, 4800]`  
   - Menu: `[1440, 2880, 4320]`  
-  - Logo: `[160, 320, 640]`  
   - Default: `[480, 768, 1024, 1600]`  
   Defined in `MediaProfiles` and enforced per category, with optional overrides via `RESPONSIVE_IMAGE_WIDTH_PROFILES` (`backend/utils/MediaProfiles.php:5-66`).  
 - **1x/2x/3x guarantee:** Hero/menu profiles are explicitly the base, 2x, and 3x widths listed above, so each upload produces exactly those three raster widths per required class.  
@@ -103,7 +102,7 @@
 - **Menu images not reused for gallery:** `menu_categories.gallery_image_id` explicitly references media rows, and the public API returns responsive metadata per category, meaning menu cards exclusively render whichever media entry is assigned via the admin picker (`backend/routes/menu.php:80-157`).  
 - **Locked width profiles:** Hero `[1600, 3200, 4800]` and menu `[1440, 2880, 4320]` are hard-coded constants in `MediaProfiles` (`backend/utils/MediaProfiles.php:5-51`).  
 - **Resume uploads blocked:** `POST /api/media` rejects `category=resume`, `PUT /api/media/:id` disallows switching to resume, and `backend/scripts/remove_resume_media.php` purges historical entries while clearing job application references (`backend/routes/media.php:102-107`, `backend/routes/media.php:194-205`, `backend/scripts/remove_resume_media.php:1-41`).  
-- **Menu images only:** Nothing references a “gallery target” concept; the only enforced categories are hero/logo/menu/general, aligning with TRBG’s requirement that menu art be its own class.
+- **Menu images only:** Nothing references a “gallery target” concept; the only enforced upload categories are hero/menu/general, aligning with TRBG’s requirement that menu art be its own class. Logos are static assets outside the pipeline.
 
 ## 8) Verification Checklist
 1. **Upload test:** From the admin panel, upload a hero image and a menu image. Confirm the progress UI runs, the cards appear in their respective sections, and the manifest/variant files show up under `backend/uploads/variants/*` plus `/backend/uploads/manifests/*.json` (verify via filesystem).  

@@ -65,7 +65,7 @@ DB_HOST=localhost
 DB_USER=<godaddy-mysql-user>
 DB_PASSWORD=<godaddy-mysql-password>
 DB_NAME=thunder_road
-FRONTEND_URL=https://trbgmidway.com,https://www.trbgmidway.com
+FRONTEND_URL=https://trbgmidway.com
 SEND_EMAILS=false     # keep false until production smoke tests complete
 ```
 
@@ -568,7 +568,7 @@ public_html/
 **Status:** 5 commits ready to deploy (tested locally, not yet on production)
 
 ### What Changed
-1. **Gallery Image ID Fix** - Menu categories properly preserve gallery images when edited
+1. **Menu Image ID Fix** - Menu categories properly preserve menu images when edited
 2. **Rate Limiting Removed** - Admin endpoints no longer rate limited (JWT auth sufficient)
 3. **Smart Column Layout** - Category descriptions AND item descriptions support pipe-separated columns
 4. **Image Preservation** - Backend correctly preserves images when fields not provided

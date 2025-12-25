@@ -24,7 +24,7 @@ Overview
 This repository received a focused styling and accessibility pass that:
 - Replaced literal color utilities with semantic design token classes (Tailwind mapped to CSS variables).
 - Implemented runtime theming (light/dark) via CSS variables and a `ThemeToggle` component that persists the selection to localStorage and toggles `data-theme` on `<html>`.
-- Converted the repository logo to be recolorable (SVG uses `currentColor`) and added small CSS helpers so inline SVG logos inherit design tokens.
+- Moved the brand logo into static assets (`/public/assets/logo/`) and added a shared `BrandLogo` component so every surface renders the same density-aware logo.
 - Improved accessibility (ARIA roles, labels, button types) and added concise developer header comments to admin modules and public components.
 
 Key locations
@@ -32,19 +32,8 @@ Key locations
 - Design tokens / SOT: `frontend/src/custom-styles.css`
 - Tailwind mapping: `frontend/tailwind.config.js`
 - Theme code: `frontend/src/context/ThemeContext.js` (or equivalent ThemeToggle component under `src/components`)
-- Recolorable logo: `frontend/src/logo.svg`
+- Brand logo component & assets: `frontend/src/components/shared/BrandLogo.js` rendering `/public/assets/logo/` images
 - Admin modules updated: `frontend/src/components/admin/{DashboardModule.js,InboxModule.js,MenuModule.js,JobsModule.js,MediaModule.js}`
-
-How to add a recolorable logo
--------------------------------
-Preferred (inline SVG)
-1. Place the SVG content directly in a React component or import the SVG as a React component (tooling permitting).
-2. Ensure colorable parts use `fill="currentColor"` (or `stroke="currentColor"`).
-3. Use a wrapper element with a token-driven color class, e.g. `<div className="logo-badge text-text-primary"><LogoSvg /></div>`.
-
-If you must use an external image (`<img src="..." />`)
-- External raster images cannot be recolored by CSS. Consider providing a secondary SVG variant or using a CSS mask if the asset is a single-color shape.
-- Alternatively, fetch and inline the SVG at runtime (carefully sanitize) or host a recolorable SVG asset per theme.
 
 Developer notes
 ---------------

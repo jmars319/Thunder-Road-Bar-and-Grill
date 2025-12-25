@@ -55,7 +55,7 @@ Operational guidance: Docs remind operators that uploads sit under backend/uploa
 Storage protections: .htaccess forbids executing scripts from the uploads tree and caches binary assets aggressively (immutable 1-year TTL) while forcing manifests/JSON to stay uncached so variant metadata refreshes immediately (.htaccess (lines 1-27)).
 Request/Response Reference
 POST /api/media: multipart (fields above), 200 success payload shown earlier; 400 on validation failure; 500 on server error (index.php (lines 4891-4950)).
-GET /api/media: optional ?category=logo|hero|gallery|other|all, returns media[] each with DB columns plus image_variants, srcsets, fallback_original; 500 on failure (index.php (lines 4861-4888)).
+GET /api/media: optional ?category=hero|menu|general|all, returns media[] each with DB columns plus image_variants, srcsets, fallback_original; 500 on failure (index.php (lines 4861-4888)).
 PUT /api/media/:id: JSON body { "category": "hero", "alt_text": "...", "caption": "..." }, 200 success with { "success": true }, 500 failure logs error (index.php (lines 4953-4966)).
 DELETE /api/media/:id: no body; success returns { "success": true }, 404 if ID missing, 500 on error (index.php (lines 4969-4989)).
 GET /api/settings: returns { "success": true, "settings": { ..., "hero_images_variants": [...], "tgp_hero_images_variants": [...] } } so frontend hero modules stay responsive; 500 on failure (index.php (lines 4993-5005)).
