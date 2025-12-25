@@ -9,7 +9,7 @@
   - Uses a small mock IntersectionObserver to keep tests deterministic.
 */
 /* eslint-env jest */
-/* global beforeAll, afterAll, jest, describe, test, expect */
+/* global globalThis */
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';

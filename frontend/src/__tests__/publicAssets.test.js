@@ -9,7 +9,6 @@
   - Keeps the runtime public folder consistent for builds and deployment.
 */
 /* eslint-env jest, node */
-/* global require, __dirname, it, describe, expect */
 const fs = require('fs');
 const path = require('path');
 
@@ -47,7 +46,7 @@ describe('public assets', () => {
   it('referenced OG images exist under public/og', () => {
     const html = read(INDEX_HTML);
     const manifest = read(MANIFEST);
-    const ogRegex = /%PUBLIC_URL%\/([\w\-\/]+og[\w\-]*\.png)/g;
+    const ogRegex = /%PUBLIC_URL%\/([\w/-]+og[\w-]*\.png)/g;
     const matches = findMatches(html + '\n' + manifest, ogRegex);
     const missing = checkExistence(matches);
     expect(missing).toEqual([]);
@@ -55,7 +54,7 @@ describe('public assets', () => {
 
   it('referenced apple-splash images exist under public/splash', () => {
     const html = read(INDEX_HTML);
-    const splashRegex = /%PUBLIC_URL%\/([\w\-\/]*apple-splash[\w\-]*-?\d+x\d+\.png)/g;
+    const splashRegex = /%PUBLIC_URL%\/([\w/-]*apple-splash[\w-]*-?\d+x\d+\.png)/g;
     const matches = findMatches(html, splashRegex);
     const missing = checkExistence(matches);
     expect(missing).toEqual([]);

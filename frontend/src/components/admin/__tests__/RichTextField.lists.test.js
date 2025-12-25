@@ -1,7 +1,7 @@
 import { render, fireEvent } from '@testing-library/react';
 import RichTextField from '../RichTextField';
 
-const getEditor = (container) => container.querySelector('[contenteditable=\"true\"]');
+const getEditor = (container) => container.querySelector('[contenteditable="true"]');
 
 const setCollapsedCaret = (node, offset = 0) => {
   const range = document.createRange();

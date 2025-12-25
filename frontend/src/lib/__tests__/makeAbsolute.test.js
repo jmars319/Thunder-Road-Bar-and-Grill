@@ -9,7 +9,6 @@
   - Keeps environment overrides local to the test and restores process env after.
 */
 /* eslint-env jest,node */
-/* global require, afterAll */
 const makeAbsolute = require('../makeAbsolute');
 
 const OLD_API = process.env.REACT_APP_API_BASE;

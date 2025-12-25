@@ -6,7 +6,7 @@
  * Tests theme switching functionality and localStorage persistence.
  */
 
-/* global jest, beforeEach, afterEach, describe, test, expect */
+/* eslint-env jest */
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import ThemeToggle from '../ThemeToggle';

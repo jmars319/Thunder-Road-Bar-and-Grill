@@ -6,7 +6,7 @@
  * Tests error catching and fallback UI rendering.
  */
 
-/* global jest, beforeEach, describe, test, expect */
+/* eslint-env jest */
 
 import { render, screen } from '@testing-library/react';
 import React from 'react';
