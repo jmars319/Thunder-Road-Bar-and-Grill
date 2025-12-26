@@ -264,15 +264,27 @@ class MediaPipeline {
         if (empty($variantWidths)) {
             $variantWidths = [768, 1536, 2304];
         }
+        $variantWidths = array_values(array_unique($variantWidths));
+        $sourceWidth = (int) ($metadata['width'] ?? 0);
+        if ($sourceWidth > 0) {
+            $filtered = array_values(array_filter($variantWidths, function ($width) use ($sourceWidth) {
+                return $width <= $sourceWidth;
+            }));
+            if (empty($filtered)) {
+                $filtered[] = $sourceWidth;
+            }
+            $variantWidths = $filtered;
+        }
         $optimizedVariants = [];
         $webpVariants = [];
         $optimizedExt = in_array($mimeType, ['image/png', 'image/gif'], true) ? '.png' : '.jpg';
 
-        foreach ($variantWidths as $index => $width) {
-            if ($index >= count(self::VARIANT_SUFFIXES)) {
+        $generatedCount = 0;
+        foreach ($variantWidths as $width) {
+            if ($generatedCount >= count(self::VARIANT_SUFFIXES)) {
                 break;
             }
-            $suffix = self::VARIANT_SUFFIXES[$index];
+            $suffix = self::VARIANT_SUFFIXES[$generatedCount];
             $resized = self::resizeImage($image, $width, $mimeType);
             if (!$resized) {
                 continue;
@@ -298,6 +310,7 @@ class MediaPipeline {
             }
 
             self::destroyImage($resized);
+            $generatedCount++;
         }
 
         $originalMeta = [
