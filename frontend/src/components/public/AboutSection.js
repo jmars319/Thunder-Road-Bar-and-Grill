@@ -17,6 +17,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import cachedFetch from '../../lib/cachedFetch';
 import { icons } from '../../icons';
 import { getApiUrl } from '../../config/api';
+import { sanitizeRichText } from '../../utils/richText';
 
 function buildMapsEmbedUrlFromAddress(address) {
   if (!address) return null;
@@ -58,6 +59,8 @@ export default function AboutSection() {
 
     load();
   }, []);
+
+  const safeParagraph = useMemo(() => sanitizeRichText(about?.paragraph || ''), [about?.paragraph]);
 
   const mapInfo = useMemo(() => {
     if (!about && !siteSettings) return null;
@@ -127,13 +130,14 @@ export default function AboutSection() {
   return (
   <div id="about" className="py-12 bg-surface-warm">
   <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-heading font-bold text-center mb-2">{siteSettings?.about_heading || 'About Us'}</h2>
-        {siteSettings?.about_intro && <p className="text-center text-text-secondary mb-4">{siteSettings.about_intro}</p>}
+        <h2 className="text-3xl font-heading font-bold text-center mb-2">{about?.header || 'About Us'}</h2>
   <div className="bg-surface rounded-lg shadow-lg px-4 py-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch">
             <div className="h-full md:col-span-3 pr-0 md:pr-4 md:pl-0">
-              <h3 className="text-xl font-heading font-semibold mb-3 text-text-primary">{about?.header}</h3>
-              <p className="text-text-secondary mb-3">{about?.paragraph}</p>
+              <div
+                className="text-text-secondary mb-3 richtext-html"
+                dangerouslySetInnerHTML={{ __html: safeParagraph }}
+              />
             </div>
 
             <div className="h-full md:col-span-2 pl-0 md:pl-4 flex flex-col">
