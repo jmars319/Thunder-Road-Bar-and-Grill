@@ -1006,3 +1006,31 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(8px) scale(0.98);
 }
 /* stylelint-disable rule-empty-line-before */
+
+.media-upload-button {
+  background-color: var(--accent-color);
+  color: var(--surface-dark);
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border: none;
+  border-radius: 0.65rem;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.15);
+  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.media-upload-button:hover:not(:disabled),
+.media-upload-button:focus-visible:not(:disabled) {
+  background-color: #ffb347;
+  color: var(--surface-dark);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.18);
+}
+
+.media-upload-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}

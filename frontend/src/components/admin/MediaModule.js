@@ -23,6 +23,9 @@ const CATEGORY_OPTIONS = [
   { value: 'gallery', label: 'Other / Misc' }
 ];
 
+const VARIANT_SUFFIXES = ['1x', '2x', '3x'];
+const DEFAULT_VARIANT_WIDTHS = [768, 1536, 2304];
+
 const normalizeCategory = (value) => {
   const normalized = String(value ?? '').toLowerCase();
   if (normalized === 'hero' || normalized === 'menu') return normalized;
@@ -59,6 +62,33 @@ const getCopyUrl = (media) => {
       media.fallback_original ||
       ''
   );
+};
+
+const describeVariantSummary = (entry) => {
+  if (!entry) return null;
+  const variants = entry.responsive_variants || entry.image_variants || {};
+  const optimized = Array.isArray(variants.optimized) ? variants.optimized : [];
+  const collected = optimized
+    .map((variant) => Number(variant.width) || 0)
+    .filter((value) => value > 0);
+  const uniqueWidths = [];
+  collected.forEach((value) => {
+    if (!uniqueWidths.includes(value)) {
+      uniqueWidths.push(value);
+    }
+  });
+  const widthsToUse = uniqueWidths.length
+    ? uniqueWidths.slice(0, VARIANT_SUFFIXES.length)
+    : DEFAULT_VARIANT_WIDTHS;
+  if (!widthsToUse.length) {
+    return null;
+  }
+  const suffixCount = Math.min(widthsToUse.length, VARIANT_SUFFIXES.length);
+  const suffixLabel = VARIANT_SUFFIXES.slice(0, suffixCount).join('/');
+  const widthLabel = uniqueWidths.length ? widthsToUse.slice(0, suffixCount).join('/') : '';
+  return widthLabel
+    ? `Generated variants: ${suffixLabel} (${widthLabel})`
+    : `Generated variants: ${suffixLabel}`;
 };
 
 const defaultUploadState = {
@@ -433,7 +463,7 @@ export default function MediaModule() {
             <div className="flex gap-3">
               <button
                 type="button"
-                className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition disabled:opacity-50"
+                className="media-upload-button"
                 onClick={handleUpload}
                 disabled={!uploadState.file || uploadState.uploading || uploadState.processing}
               >
@@ -498,6 +528,7 @@ export default function MediaModule() {
                 const menuTooltip = menuInfo && menuInfo.length
                   ? `Used by: ${menuInfo.join(', ')}`
                   : '';
+                const variantSummary = describeVariantSummary(item);
                 return (
                 <div key={item.id} className="border border-divider rounded-lg overflow-hidden bg-background flex flex-col">
                   <div className="relative">
@@ -537,6 +568,9 @@ export default function MediaModule() {
                       <p className="text-2xs text-text-secondary truncate">{item.file_name}</p>
                     </div>
                     <p className="text-2xs text-text-secondary">Size: {formatBytes(item.file_size)}</p>
+                    {variantSummary && (
+                      <p className="text-2xs text-text-secondary">{variantSummary}</p>
+                    )}
                     {menuInfo && menuInfo.length > 0 && (
                       <p className="text-2xs text-text-secondary truncate" title={menuTooltip}>
                         Used by: {menuInfo.slice(0, 2).join(', ')}{menuInfo.length > 2 ? ` +${menuInfo.length - 2}` : ''}
