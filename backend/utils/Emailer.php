@@ -239,52 +239,102 @@ class Emailer
 
     private static function buildHtml(array $sections): string
     {
-        $blocks = [];
+        $service = htmlspecialchars(Config::get('SERVICE_NAME', 'Thunder Road Bar & Grill'), ENT_QUOTES, 'UTF-8');
+        $support = htmlspecialchars(Config::get('SUPPORT_EMAIL', 'support@jamarq.digital'), ENT_QUOTES, 'UTF-8');
+
+        $blocks = '';
         foreach ($sections as $title => $rows) {
             $rowsHtml = '';
             foreach ($rows as $label => $value) {
                 $rowsHtml .= sprintf(
-                    '<tr><td style="padding:4px 8px;font-weight:bold;">%s</td><td style="padding:4px 8px;">%s</td></tr>',
+                    '<tr><td style="padding:6px 12px;font-weight:600;width:160px;vertical-align:top;">%s</td><td style="padding:6px 12px;">%s</td></tr>',
                     htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8'),
                     self::formatHtmlValue($value)
                 );
             }
-            $blocks[] = sprintf(
-                '<h3 style="margin:16px 0 8px;font-family:Arial,sans-serif;">%s</h3><table style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%%;max-width:640px;">%s</table>',
+            $blocks .= sprintf(
+                '<tr><td colspan="2" style="padding:20px 0 8px;font-size:15px;font-weight:700;color:#111827;font-family:Arial,sans-serif;">%s</td></tr><tr><td colspan="2"><table role="presentation" style="width:100%%;border-collapse:collapse;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">%s</table></td></tr>',
                 htmlspecialchars((string) $title, ENT_QUOTES, 'UTF-8'),
                 $rowsHtml
             );
         }
 
-        return '<div style="font-family:Arial,sans-serif;font-size:15px;color:#1f2933;">' .
-            implode('', $blocks) .
-            '</div>';
+        $body = sprintf(
+            '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%%;background:#111827;padding:24px 0;">
+                <tr>
+                    <td style="padding:0 16px;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;max-width:640px;width:100%%;background:#ffffff;border-radius:12px;padding:32px;box-shadow:0 10px 25px rgba(15,23,42,0.12);font-family:Arial,sans-serif;color:#111827;font-size:15px;">
+                            <tr>
+                                <td style="border-bottom:1px solid #e5e7eb;padding-bottom:16px;margin-bottom:16px;">
+                                    <div style="font-size:20px;font-weight:700;">%s</div>
+                                    <div style="font-size:13px;color:#6b7280;">Operational Notification</div>
+                                </td>
+                            </tr>
+                            %s
+                            <tr>
+                                <td style="padding-top:24px;font-size:13px;color:#6b7280;border-top:1px solid #e5e7eb;">Need help? Contact %s</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>',
+            $service,
+            $blocks,
+            $support
+        );
+
+        return trim(preg_replace('/\s+/', ' ', $body));
     }
 
     private static function buildText(array $sections): string
     {
         $lines = [];
+        $service = Config::get('SERVICE_NAME', 'Thunder Road Bar & Grill');
+        $lines[] = $service . ' Notification';
+        $lines[] = str_repeat('=', strlen($lines[0]));
+        $lines[] = '';
+
         foreach ($sections as $title => $rows) {
-            $lines[] = strtoupper($title);
+            $lines[] = strtoupper((string) $title);
             foreach ($rows as $label => $value) {
                 $lines[] = sprintf('%s: %s', $label, self::formatTextValue($value));
             }
             $lines[] = '';
         }
-        return trim(implode(PHP_EOL, $lines));
+
+        $lines[] = 'Support: ' . Config::get('SUPPORT_EMAIL', 'support@jamarq.digital');
+        return implode(PHP_EOL, array_map('rtrim', $lines));
+    }
+
+    private static function normalizeValue($value): string
+    {
+        if (is_null($value) || $value === '') {
+            return '(not provided)';
+        }
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        if (is_scalar($value)) {
+            return trim((string) $value) !== '' ? (string) $value : '(not provided)';
+        }
+        if (is_array($value)) {
+            $encoded = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return $encoded !== false ? $encoded : '(not provided)';
+        }
+        return '(not provided)';
     }
 
     private static function formatHtmlValue($value): string
     {
-        $normalized = is_array($value) ? implode(', ', $value) : (string) $value;
+        $normalized = self::normalizeValue($value);
         $safe = htmlspecialchars($normalized, ENT_QUOTES, 'UTF-8');
         return nl2br($safe);
     }
 
     private static function formatTextValue($value): string
     {
-        $normalized = is_array($value) ? implode(', ', $value) : (string) $value;
-        return preg_replace('/\s+/', ' ', trim($normalized));
+        $normalized = self::normalizeValue($value);
+        return preg_replace('/[\r\n]+/', ' ', trim($normalized));
     }
 
     private static function sanitizeEmail(?string $email): ?string
