@@ -199,12 +199,19 @@ class MediaPipeline {
         return $result;
     }
 
-    private static function saveWebpVariant($resource, $path) {
+    private static function saveWebpVariant($resource, $path, $quality) {
         if (!function_exists('imagewebp')) {
             return false;
         }
-        $quality = max(1, min(100, (int) Config::get('IMAGE_WEBP_QUALITY', 85)));
         return imagewebp($resource, $path, $quality);
+    }
+
+    private static function webpQualityForCategory($category) {
+        $normalized = strtolower((string) $category);
+        if (in_array($normalized, ['hero', 'menu'], true)) {
+            return max(60, min(95, (int) Config::get('IMAGE_WEBP_PHOTO_QUALITY', 82)));
+        }
+        return max(60, min(100, (int) Config::get('IMAGE_WEBP_QUALITY', 85)));
     }
 
     private static function buildSrcset($variants) {
@@ -278,6 +285,7 @@ class MediaPipeline {
         $optimizedVariants = [];
         $webpVariants = [];
         $optimizedExt = in_array($mimeType, ['image/png', 'image/gif'], true) ? '.png' : '.jpg';
+        $webpQuality = self::webpQualityForCategory($category);
 
         $generatedCount = 0;
         foreach ($variantWidths as $width) {
@@ -301,7 +309,7 @@ class MediaPipeline {
 
             $webpFilename = $basename . '-' . $suffix . '.webp';
             $webpPath = self::uploadRoot() . '/variants/webp/' . $webpFilename;
-            if (self::saveWebpVariant($resized, $webpPath)) {
+            if (self::saveWebpVariant($resized, $webpPath, $webpQuality)) {
                 $webpVariants[] = [
                     'width' => $width,
                     'url' => self::publicPath('variants/webp/' . $webpFilename),

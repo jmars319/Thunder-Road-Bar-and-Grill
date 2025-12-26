@@ -94,21 +94,25 @@ export default function HeroSection() {
       <div className="absolute inset-0 z-0" aria-hidden={images.length === 0}>
         {images.length > 0 && (
           <>
-            {images.map((img, i) => (
+            {images.map((img, i) => {
+              const variant = i === 0 ? img.variant : limitHeroVariantToSingle(img.variant);
+              return (
               <div
                 key={img.id || i}
                 className={`absolute inset-0 w-full h-full ${i === index ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}
               >
                 <ResponsiveImage
-                  variant={img.variant}
+                  variant={variant}
                   alt={img.alt || ''}
                   loading={i === 0 ? 'eager' : 'lazy'}
                   pictureClassName="absolute inset-0 block w-full h-full"
                   className="absolute inset-0 w-full h-full object-cover"
+                  sizes="100vw"
                   imgProps={i === 0 ? { fetchpriority: 'high' } : {}}
                 />
               </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>
@@ -150,4 +154,20 @@ export default function HeroSection() {
       </div>
     </div>
   );
+}
+
+function limitHeroVariantToSingle(variant) {
+  if (!variant) return null;
+  const clampSrcset = (srcset) => {
+    if (!srcset) return '';
+    const [first] = srcset.split(',');
+    return first ? first.trim() : '';
+  };
+  const limitedOptimized = clampSrcset(variant.optimizedSrcset);
+  const limitedWebp = clampSrcset(variant.webpSrcset);
+  return {
+    ...variant,
+    optimizedSrcset: limitedOptimized,
+    webpSrcset: limitedWebp
+  };
 }

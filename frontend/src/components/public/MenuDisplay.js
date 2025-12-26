@@ -53,7 +53,7 @@ export default function MenuDisplay({
                         loading="lazy"
                         pictureClassName="absolute inset-0 block w-full h-full"
                         className="absolute inset-0 w-full h-full object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 70vw"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 520px"
                       />
                     ) : (
                       <img
