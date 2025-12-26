@@ -393,8 +393,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
   entity_type VARCHAR(100) NULL,
   entity_id VARCHAR(100) NULL,
   meta_json JSON NULL,
+  KEY idx_created_at (created_at),
   KEY idx_action_created (action, created_at),
-  KEY idx_entity (entity_type, entity_id)
+  KEY idx_actor_type (actor_type, actor_id, created_at),
+  KEY idx_entity_created (entity_type, entity_id, created_at)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
