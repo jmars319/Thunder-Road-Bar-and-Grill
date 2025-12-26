@@ -26,6 +26,7 @@ import JobsModule from '../components/admin/JobsModule';
 import MediaModule from '../components/admin/MediaModule';
 import SettingsModule from '../components/admin/SettingsModule';
 import PasswordChangeModule from '../components/admin/PasswordChangeModule';
+import AuditLogModule from '../components/admin/AuditLogModule';
 import Snackbar from '../components/ui/Snackbar';
 
 const AdminModules = {
@@ -35,6 +36,7 @@ const AdminModules = {
   reservations: { component: ReservationsModule, name: 'Reservations', icon: icons.Calendar },
   jobs: { component: JobsModule, name: 'Jobs', icon: icons.Briefcase },
   media: { component: MediaModule, name: 'Media', icon: icons.Image },
+  auditLog: { component: AuditLogModule, name: 'Audit Log', icon: icons.FileText || icons.Navigation },
   settings: { component: SettingsModule, name: 'Settings', icon: icons.Settings },
   password: { component: PasswordChangeModule, name: 'Change Password', icon: icons.Key },
   // newsletters: { component: NewsletterModule, name: 'Newsletter', icon: icons.Mail }, // Hidden for now
