@@ -52,7 +52,7 @@ function MetaModal({ entry, onClose }) {
             <div className="text-lg font-heading text-text-primary">{entry.action}</div>
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-warm text-text-primary" aria-label="Close">
-            {icons.X && icons.X({ size: 20 })}
+            {icons.X ? <icons.X size={20} /> : null}
           </button>
         </div>
         <div className="px-6 py-4 space-y-3 overflow-auto max-h-[70vh] text-sm">
