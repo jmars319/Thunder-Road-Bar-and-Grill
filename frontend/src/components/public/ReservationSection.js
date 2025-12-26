@@ -144,23 +144,23 @@ export default function ReservationSection() {
           {copy.intro && <p className="text-center text-text-secondary mb-0">{copy.intro}</p>}
         </div>
 
-        <div className="reservation-alert-slot" aria-live="polite">
-          {submitted && (
+        <div className="reservation-alert-slot min-h-[64px] my-4" aria-live="polite">
+          {submitted ? (
             <div className="w-full bg-success/10 border border-success rounded-lg p-3 flex items-center gap-3">
               {React.createElement(icons.CheckCircle, { size: 20, className: 'text-success' })}
               <p className="text-success m-0">{copy.success || "Reservation submitted! We'll contact you to confirm."}</p>
             </div>
-          )}
-
-          {!submitted && error && (
+          ) : error ? (
             <div className="w-full bg-error/10 border border-error rounded-lg p-3 flex items-center gap-3">
               {React.createElement(icons.AlertCircle, { size: 20, className: 'text-error' })}
               <p className="text-error m-0">{copy.failure || error}</p>
             </div>
+          ) : (
+            <div className="h-0" aria-hidden="true" />
           )}
         </div>
 
-        <div className="bg-surface-warm rounded-lg shadow-lg p-6 space-y-3">
+        <div className="bg-surface-warm rounded-lg shadow-lg p-6 space-y-3 min-h-[520px]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label htmlFor="res-name" className="block text-sm font-medium text-text-primary mb-2">Name *</label>
