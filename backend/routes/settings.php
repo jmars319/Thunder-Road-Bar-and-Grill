@@ -84,6 +84,7 @@ class SettingsRoutes {
             $map = $ids ? MediaResponseBuilder::hydrateByIds($this->db, $ids) : [];
             $heroVariants = [];
             foreach ($heroImagesRaw as $entry) {
+                $heroImages[] = $entry;
                 $id = $entry['id'] ?? null;
                 if (!$id || !isset($map[$id])) {
                     Logger::info('Skipping hero image reference with missing media record', ['id' => $id]);
@@ -94,7 +95,6 @@ class SettingsRoutes {
                     Logger::info('Skipping hero image due to missing files', ['id' => $id]);
                     continue;
                 }
-                $heroImages[] = $entry;
                 $heroVariants[] = [
                     'id' => $id,
                     'title' => $entry['title'] ?? $hydrated['title'],
