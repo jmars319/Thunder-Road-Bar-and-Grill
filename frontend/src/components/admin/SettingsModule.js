@@ -324,7 +324,7 @@ function SettingsModule() {
     heroDragIndexRef.current = null;
   };
 
-  const saveSiteSettings = async (fieldSubset) => {
+  const saveSiteSettings = useCallback(async (fieldSubset) => {
     try {
       let payload = {};
       const orig = originalSettingsRef.current || {};
@@ -410,7 +410,7 @@ function SettingsModule() {
       // swallow for now; could show toast on failure
     }
     return false;
-  };
+  }, [siteSettings]);
 
   const saveAboutContent = async () => {
     try {
