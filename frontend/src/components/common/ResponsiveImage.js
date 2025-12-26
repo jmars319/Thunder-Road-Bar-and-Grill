@@ -16,6 +16,9 @@ export default function ResponsiveImage({
 }) {
   if (!variant) return null;
   const resolvedSizes = sizes || variant.sizes || '100vw';
+  const firstOptimized = variant.optimizedSrcset?.split(',')?.[0]?.trim().split(' ')?.[0];
+  const firstWebp = variant.webpSrcset?.split(',')?.[0]?.trim().split(' ')?.[0];
+  const fallbackSrc = variant.fallback || firstOptimized || firstWebp || '';
   return (
     <picture className={pictureClassName}>
       {variant.webpSrcset && (
@@ -25,7 +28,7 @@ export default function ResponsiveImage({
         <source srcSet={variant.optimizedSrcset} type="image/jpeg" sizes={resolvedSizes} />
       )}
       <img
-        src={variant.fallback}
+        src={fallbackSrc}
         alt={alt}
         className={className}
         loading={loading}

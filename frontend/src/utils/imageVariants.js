@@ -44,15 +44,17 @@ export function buildImageVariant(entry, options = {}) {
   if (!normalized.optimized.length && !normalized.webp.length) {
     return null;
   }
+  const smallestOptimized = normalized.optimized[0] || null;
+  const smallestWebp = normalized.webp[0] || null;
+  const fallbackCandidate = smallestOptimized?.url || smallestWebp?.url || '';
   const optimizedSrcset = normalized.optimized
     .map((variant) => `${variant.url} ${variant.width}w`)
     .join(', ');
   const webpSrcset = normalized.webp
     .map((variant) => `${variant.url} ${variant.width}w`)
     .join(', ');
-  const fallback = absolutize(entry?.fallback_original || entry?.file_url);
   return {
-    fallback,
+    fallback: fallbackCandidate ? absolutize(fallbackCandidate) : '',
     optimizedSrcset,
     webpSrcset,
     sizes,

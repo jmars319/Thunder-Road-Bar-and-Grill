@@ -117,9 +117,11 @@ export default function HeroSection() {
   <div className="absolute inset-0 z-10 overlay-gradient" aria-hidden="true" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20">
-        {/* Accessibility: render an offscreen image with active slide alt text for screen readers */}
-        {images[index]?.variant?.fallback && (
-          <img src={images[index].variant.fallback} alt={images[index].alt || ''} className="sr-only" />
+        {/* Accessibility: provide current slide text for screen readers without triggering extra image downloads */}
+        {images[index]?.alt && (
+          <span className="sr-only" aria-live="polite">
+            {images[index].alt}
+          </span>
         )}
         <div className="hero-copy-shell inline-flex flex-col gap-4 px-6 py-5 rounded-2xl bg-black/45 backdrop-blur-md shadow-xl max-w-3xl mx-auto">
           {heroCopy.title && (

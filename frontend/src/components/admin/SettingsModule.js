@@ -15,10 +15,10 @@ import { clearCacheFor } from '../../lib/cachedFetch';
 import { icons } from '../../icons';
 import { authenticatedFetch, API_BASE } from '../../utils/api';
 import RichTextField from './RichTextField';
-import NavigationEditor from './NavigationEditor';
 import Spinner from '../ui/Spinner';
 import makeAbsolute from '../../lib/makeAbsolute';
 import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
+import { sanitizeRichText } from '../../utils/richText';
 
 const normalizeHeroImages = (rawValue, fallbackVariants = []) => {
   const asArray = (() => {
@@ -87,6 +87,7 @@ function SettingsModule() {
   const [heroMedia, setHeroMedia] = useState([]);
   const [loadingHeroMedia, setLoadingHeroMedia] = useState(false);
   const [heroMediaError, setHeroMediaError] = useState('');
+  const [sectionSaveState, setSectionSaveState] = useState({});
   const [openSections, setOpenSections] = useState({
     business: true,
     heroCopy: true,
@@ -96,7 +97,6 @@ function SettingsModule() {
     about: true,
     jobs: true,
     footer: true,
-    navigation: false,
     businessHours: true
   });
   const originalSettingsRef = useRef({});
@@ -324,29 +324,41 @@ function SettingsModule() {
     heroDragIndexRef.current = null;
   };
 
-  const saveSiteSettings = async () => {
+  const saveSiteSettings = async (fieldSubset) => {
     try {
-      // Send only fields that changed to avoid overwriting unrelated values
+      let payload = {};
       const orig = originalSettingsRef.current || {};
-      const payload = {};
-      const keys = [
-        'business_name','tagline','phone','email','address','hero_images','hero_slideshow_speed','instagram','facebook','google',
-        'hero_title','hero_subtitle','hero_cta_primary_label','hero_cta_primary_href','hero_cta_secondary_label','hero_cta_secondary_href',
-        'menu_heading','menu_intro',
-        'reservations_heading','reservations_intro','reservations_success_copy','reservations_error_copy',
-        'about_heading','about_intro',
-        'jobs_success_copy','jobs_error_copy',
-        'jobs_sidebar_heading','jobs_sidebar_intro','jobs_sidebar_benefits','jobs_positions_label'
-      ];
-      for (const k of keys) {
-        const cur = siteSettings[k];
-        const o = orig[k];
-        if (Array.isArray(cur) || Array.isArray(o)) {
-          const curJson = JSON.stringify(cur || []);
-          const oJson = JSON.stringify(o || []);
-          if (curJson !== oJson) payload[k] = cur;
-        } else if (cur !== o) {
-          payload[k] = cur;
+
+      if (Array.isArray(fieldSubset) && fieldSubset.length > 0) {
+        fieldSubset.forEach((key) => {
+          if (key === 'hero_images') {
+            payload[key] = Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : [];
+            return;
+          }
+          if (typeof siteSettings[key] !== 'undefined') {
+            payload[key] = siteSettings[key];
+          }
+        });
+      } else {
+        // Send only fields that changed to avoid overwriting unrelated values
+        const keys = [
+          'business_name','tagline','phone','email','address','hero_images','hero_slideshow_speed','instagram','facebook','google',
+          'hero_title','hero_subtitle','hero_cta_primary_label','hero_cta_primary_href','hero_cta_secondary_label','hero_cta_secondary_href',
+          'menu_heading','menu_intro',
+          'reservations_heading','reservations_intro','reservations_success_copy','reservations_error_copy',
+          'jobs_success_copy','jobs_error_copy',
+          'jobs_sidebar_heading','jobs_sidebar_intro','jobs_sidebar_benefits','jobs_positions_label'
+        ];
+        for (const k of keys) {
+          const cur = siteSettings[k];
+          const o = orig[k];
+          if (Array.isArray(cur) || Array.isArray(o)) {
+            const curJson = JSON.stringify(cur || []);
+            const oJson = JSON.stringify(o || []);
+            if (curJson !== oJson) payload[k] = cur;
+          } else if (cur !== o) {
+            payload[k] = cur;
+          }
         }
       }
 
@@ -354,7 +366,7 @@ function SettingsModule() {
       if (Object.keys(payload).length === 0) {
         setSaved(true);
         setTimeout(() => setSaved(false), 1200);
-        return;
+        return true;
       }
 
       // Ensure google is always sent when present in the UI. Some browsers or
@@ -388,14 +400,16 @@ function SettingsModule() {
         // update original copy to reflect saved state
         try { originalSettingsRef.current = { ...(originalSettingsRef.current || {}), ...payload }; } catch (e) {}
         // show a small toast if the menu description was part of the save
-        if (siteSettings.menu_intro && siteSettings.menu_intro.length > 0) {
+        if (!fieldSubset && siteSettings.menu_intro && siteSettings.menu_intro.length > 0) {
           setMenuSaved(true);
           setTimeout(() => setMenuSaved(false), 2500);
         }
+        return true;
       }
     } catch {
       // swallow for now; could show toast on failure
     }
+    return false;
   };
 
   const saveAboutContent = async () => {
@@ -403,6 +417,9 @@ function SettingsModule() {
       // If admin pasted a full <iframe ...> HTML snippet into the Map Embed URL
       // field, extract the src attribute and store that instead of the raw HTML.
       const payload = { ...aboutContent };
+      if (typeof payload.paragraph === 'string') {
+        payload.paragraph = sanitizeRichText(payload.paragraph);
+      }
       if (payload.map_embed_url && typeof payload.map_embed_url === 'string') {
         const trimmed = payload.map_embed_url.trim();
         // Detect an iframe tag quickly
@@ -430,6 +447,40 @@ function SettingsModule() {
   } catch {
     // swallow for now; consider showing an error toast
     }
+  };
+
+  const handleSectionSave = useCallback(async (sectionKey, fields) => {
+    if (!Array.isArray(fields) || fields.length === 0) return;
+    setSectionSaveState((prev) => ({ ...prev, [sectionKey]: 'saving' }));
+    const ok = await saveSiteSettings(fields);
+    setSectionSaveState((prev) => ({ ...prev, [sectionKey]: ok ? 'saved' : 'error' }));
+    setTimeout(() => {
+      setSectionSaveState((prev) => {
+        const next = { ...prev };
+        next[sectionKey] = null;
+        return next;
+      });
+    }, 2500);
+  }, [saveSiteSettings]);
+
+  const SectionSaveButton = ({ sectionKey, fields, label }) => {
+    const state = sectionSaveState[sectionKey];
+    return (
+      <div className="flex items-center justify-end gap-3 mt-4">
+        {state === 'saving' && <span className="text-xs text-text-secondary">Saving…</span>}
+        {state === 'saved' && <span className="text-xs text-success">Saved</span>}
+        {state === 'error' && <span className="text-xs text-error">Save failed</span>}
+        <button
+          type="button"
+          onClick={() => handleSectionSave(sectionKey, fields)}
+          disabled={state === 'saving'}
+          className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2 disabled:opacity-60"
+        >
+          <icons.Save size={16} />
+          {label || 'Save'}
+        </button>
+      </div>
+    );
   };
 
   // Update a single day's hours. Returns the fetch Response so callers can handle errors.
@@ -512,6 +563,7 @@ function SettingsModule() {
             helper="Appears beneath the hero title if no hero subtitle is set."
           />
         </div>
+        <SectionSaveButton sectionKey="business" fields={['business_name', 'tagline']} label="Save Business Identity" />
       </CollapsibleCard>
 
       <CollapsibleCard
@@ -528,6 +580,18 @@ function SettingsModule() {
           <Field label="Secondary CTA Label" value={siteSettings.hero_cta_secondary_label || ''} onChange={(v) => setSiteSettings({ ...siteSettings, hero_cta_secondary_label: v })} />
           <Field label="Secondary CTA Link" value={siteSettings.hero_cta_secondary_href || ''} onChange={(v) => setSiteSettings({ ...siteSettings, hero_cta_secondary_href: v })} helper="Accepts full URLs or #section anchors." />
         </div>
+        <SectionSaveButton
+          sectionKey="heroCopy"
+          fields={[
+            'hero_title',
+            'hero_subtitle',
+            'hero_cta_primary_label',
+            'hero_cta_primary_href',
+            'hero_cta_secondary_label',
+            'hero_cta_secondary_href'
+          ]}
+          label="Save Hero Copy"
+        />
       </CollapsibleCard>
 
       <CollapsibleCard
@@ -536,6 +600,7 @@ function SettingsModule() {
         isOpen={openSections.heroImages}
         onToggle={() => toggleSection('heroImages')}
       >
+        <div className="space-y-4">
           {heroMediaError && (
             <div className="mb-4 bg-error/10 border border-error text-error px-4 py-2 rounded flex items-center gap-2 text-sm">
               <icons.AlertTriangle size={16} />
@@ -708,6 +773,12 @@ function SettingsModule() {
               </div>
             </div>
           )}
+          <SectionSaveButton
+            sectionKey="heroImages"
+            fields={['hero_images', 'hero_slideshow_speed']}
+            label="Save Hero Images"
+          />
+        </div>
       </CollapsibleCard>
 
       <CollapsibleCard
@@ -725,6 +796,7 @@ function SettingsModule() {
           onChange={(html) => setSiteSettings({ ...siteSettings, menu_intro: html })}
           helperText="Allows bold, italic, line breaks, and short lists."
         />
+        <SectionSaveButton sectionKey="menuCopy" fields={['menu_heading', 'menu_intro']} label="Save Menu Copy" />
       </CollapsibleCard>
 
       <CollapsibleCard
@@ -739,6 +811,11 @@ function SettingsModule() {
           <Field label="Success Message" value={siteSettings.reservations_success_copy || ''} onChange={(v) => setSiteSettings({ ...siteSettings, reservations_success_copy: v })} textarea rows={2} />
           <Field label="Error Message" value={siteSettings.reservations_error_copy || ''} onChange={(v) => setSiteSettings({ ...siteSettings, reservations_error_copy: v })} textarea rows={2} />
         </div>
+        <SectionSaveButton
+          sectionKey="reservations"
+          fields={['reservations_heading', 'reservations_intro', 'reservations_success_copy', 'reservations_error_copy']}
+          label="Save Reservations Copy"
+        />
       </CollapsibleCard>
 
       <CollapsibleCard
@@ -748,25 +825,6 @@ function SettingsModule() {
         onToggle={() => toggleSection('about')}
       >
         <div className="space-y-6">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h4 className="text-sm font-semibold text-text-primary">Homepage About copy</h4>
-                <p className="text-2xs text-text-secondary">Controls the heading + intro paragraph shown on the homepage.</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="About Heading" value={siteSettings.about_heading || ''} onChange={(v) => setSiteSettings({ ...siteSettings, about_heading: v })} />
-            </div>
-            <Field
-              label="About Intro"
-              value={siteSettings.about_intro || ''}
-              onChange={(v) => setSiteSettings({ ...siteSettings, about_intro: v })}
-              textarea
-              rows={3}
-            />
-          </div>
-
           <div className="pt-4 border-t border-divider">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -784,15 +842,12 @@ function SettingsModule() {
                   className="w-full form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Paragraph</label>
-                <textarea
-                  value={aboutContent.paragraph || ''}
-                  onChange={(e) => setAboutContent({ ...aboutContent, paragraph: e.target.value })}
-                  className="w-full form-input"
-                  rows="4"
-                />
-              </div>
+              <RichTextField
+                label="Paragraph"
+                value={aboutContent.paragraph || ''}
+                onChange={(html) => setAboutContent({ ...aboutContent, paragraph: html })}
+                helperText="Supports the same tags as menu descriptions."
+              />
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Map Embed URL</label>
                 <input
@@ -826,8 +881,8 @@ function SettingsModule() {
           <Field label="Jobs Error Message" value={siteSettings.jobs_error_copy || ''} onChange={(v) => setSiteSettings({ ...siteSettings, jobs_error_copy: v })} textarea rows={2} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Sidebar Heading" value={siteSettings.jobs_sidebar_heading || ''} onChange={(v) => setSiteSettings({ ...siteSettings, jobs_sidebar_heading: v })} />
-          <Field label="Positions Label" value={siteSettings.jobs_positions_label || ''} onChange={(v) => setSiteSettings({ ...siteSettings, jobs_positions_label: v })} />
+        <Field label="Sidebar Heading" value={siteSettings.jobs_sidebar_heading || ''} onChange={(v) => setSiteSettings({ ...siteSettings, jobs_sidebar_heading: v })} />
+        <Field label="Positions Label" value={siteSettings.jobs_positions_label || ''} onChange={(v) => setSiteSettings({ ...siteSettings, jobs_positions_label: v })} />
         </div>
         <Field label="Sidebar Intro" value={siteSettings.jobs_sidebar_intro || ''} onChange={(v) => setSiteSettings({ ...siteSettings, jobs_sidebar_intro: v })} textarea rows={3} />
         <RichTextField
@@ -835,6 +890,18 @@ function SettingsModule() {
           value={siteSettings.jobs_sidebar_benefits || ''}
           onChange={(html) => setSiteSettings({ ...siteSettings, jobs_sidebar_benefits: html })}
           helperText="Use short paragraphs or bullet lists to highlight perks. Supports the same tags as menu descriptions."
+        />
+        <SectionSaveButton
+          sectionKey="jobs"
+          fields={[
+            'jobs_success_copy',
+            'jobs_error_copy',
+            'jobs_sidebar_heading',
+            'jobs_sidebar_intro',
+            'jobs_sidebar_benefits',
+            'jobs_positions_label'
+          ]}
+          label="Save Jobs Copy"
         />
       </CollapsibleCard>
 
@@ -852,6 +919,11 @@ function SettingsModule() {
         <Field label="Instagram URL" value={siteSettings.instagram || ''} onChange={(v) => setSiteSettings({ ...siteSettings, instagram: v })} />
         <Field label="Facebook URL" value={siteSettings.facebook || ''} onChange={(v) => setSiteSettings({ ...siteSettings, facebook: v })} />
         <Field label="Google Listing URL" value={siteSettings.google || ''} onChange={(v) => setSiteSettings({ ...siteSettings, google: v })} />
+        <SectionSaveButton
+          sectionKey="footer"
+          fields={['phone','email','address','instagram','facebook','google']}
+          label="Save Footer Contact"
+        />
       </CollapsibleCard>
 
       <div className="flex flex-wrap gap-3 justify-end">
@@ -871,18 +943,6 @@ function SettingsModule() {
           </div>
         </div>
       )}
-
-      <CollapsibleCard
-        title="Navigation Links"
-        helper="Source of truth for the public navigation menu."
-        isOpen={openSections.navigation}
-        onToggle={() => toggleSection('navigation')}
-      >
-        <p className="text-xs text-text-secondary mb-4">
-          Toggle visibility to hide links without redeploying.
-        </p>
-        <NavigationEditor />
-      </CollapsibleCard>
 
       {/* Business Hours: show Kitchen and Bar side-by-side */}
       <CollapsibleCard
