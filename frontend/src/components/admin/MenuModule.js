@@ -140,6 +140,32 @@ function MenuModule() {
     };
   };
 
+  const ensureCategoryResponsiveEntry = useCallback((category) => {
+    if (!category) return null;
+    if (category.gallery_image_responsive) {
+      return category.gallery_image_responsive;
+    }
+    if (category.gallery_image_variants) {
+      return {
+        image_variants: category.gallery_image_variants,
+        responsive_variants: category.gallery_image_variants,
+        fallback_original: category.gallery_image_url || '',
+        file_url: category.gallery_image_url || '',
+        alt_text: category.name || ''
+      };
+    }
+    if (category.gallery_image_url) {
+      return {
+        image_variants: {},
+        responsive_variants: {},
+        fallback_original: category.gallery_image_url,
+        file_url: category.gallery_image_url,
+        alt_text: category.name || ''
+      };
+    }
+    return null;
+  }, []);
+
   const ResponsiveImagePreview = ({ entry, fallbackUrl, alt = '', className = '', sizes = '320px' }) => {
     const variant = entry && hasRenderableImageVariant(entry)
       ? buildImageVariant(entry, { sizes })
@@ -1036,7 +1062,11 @@ function MenuModule() {
                 <button
                   type="button"
                   onClick={() => {
-                    setEditingCategory({ ...category, is_active: category.is_active == null ? 1 : category.is_active });
+                    setEditingCategory({
+                      ...category,
+                      is_active: category.is_active == null ? 1 : category.is_active,
+                      gallery_image_responsive: ensureCategoryResponsiveEntry(category)
+                    });
                   }}
                   className="text-text-inverse hover:bg-surface-warm p-2 rounded"
                   aria-label={`Edit category ${category.name}`}

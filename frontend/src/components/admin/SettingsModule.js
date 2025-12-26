@@ -185,9 +185,24 @@ function SettingsModule() {
     });
   }, []);
 
-  const heroSelection = useMemo(() => (
-    Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : []
-  ), [siteSettings.hero_images]);
+  const heroSelection = useMemo(() => {
+    const base = Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : [];
+    if (base.length > 0) {
+      return base;
+    }
+
+    const fallbackList = Array.isArray(siteSettings.hero_images_variants)
+      ? siteSettings.hero_images_variants
+      : [];
+
+    return fallbackList
+      .map((entry) => ({
+        id: typeof entry.id === 'number' ? entry.id : Number(entry.id),
+        title: entry.title || '',
+        alt_text: entry.alt_text || ''
+      }))
+      .filter((entry) => Number.isFinite(entry.id));
+  }, [siteSettings.hero_images, siteSettings.hero_images_variants]);
 
   const heroSelectionIds = useMemo(() => heroSelection.map((entry) => Number(entry.id)), [heroSelection]);
 
