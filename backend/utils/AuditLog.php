@@ -3,6 +3,7 @@
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Logger.php';
 require_once __DIR__ . '/RequestContext.php';
+require_once __DIR__ . '/Config.php';
 
 class AuditLog
 {
@@ -15,6 +16,11 @@ class AuditLog
     ];
 
     private const META_MAX_BYTES = 8192;
+    private const PRUNE_PROBABILITY = 100; // 1 in 100 chance
+    private const PRUNE_BATCH_LIMIT = 1000;
+    private const PRUNE_MAX_BATCHES = 3;
+
+    private static bool $pruneAttempted = false;
 
     /**
      * Record an audit event. Never throws outward; failures are logged quietly.
@@ -59,11 +65,46 @@ class AuditLog
                     $metaJson,
                 ]
             );
+
+            self::maybePrune($db);
         } catch (Throwable $e) {
             Logger::warning('AuditLog record failed', [
                 'action' => $action,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    private static function maybePrune(Database $db): void
+    {
+        if (self::$pruneAttempted) {
+            return;
+        }
+
+        $retention = (int) Config::get('AUDIT_LOG_RETENTION_DAYS', 90);
+        if ($retention <= 0) {
+            return;
+        }
+
+        if (random_int(1, self::PRUNE_PROBABILITY) !== 1) {
+            return;
+        }
+
+        self::$pruneAttempted = true;
+
+        try {
+            for ($batch = 0; $batch < self::PRUNE_MAX_BATCHES; $batch++) {
+                $deleted = $db->delete(
+                    'DELETE FROM audit_log WHERE created_at < (NOW() - INTERVAL ? DAY) LIMIT ?',
+                    [$retention, self::PRUNE_BATCH_LIMIT]
+                );
+
+                if ($deleted < self::PRUNE_BATCH_LIMIT) {
+                    break;
+                }
+            }
+        } catch (Throwable $e) {
+            // swallow errors; pruning must never break request flow
         }
     }
 
