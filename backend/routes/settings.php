@@ -35,6 +35,28 @@ class SettingsRoutes {
         $this->db = Database::getInstance();
     }
 
+    private function fetchFallbackHeroMedia() {
+        $rows = $this->db->fetchAll(
+            'SELECT * FROM media_library WHERE category = ? ORDER BY uploaded_at DESC LIMIT 12',
+            ['hero']
+        );
+        return MediaResponseBuilder::hydrateRows($rows);
+    }
+
+    private function formatHeroVariantFromMedia($media) {
+        return [
+            'id' => $media['id'] ?? null,
+            'title' => $media['title'] ?? '',
+            'alt_text' => $media['alt_text'] ?? '',
+            'file_url' => $media['file_url'] ?? null,
+            'responsive_variants' => $media['responsive_variants'] ?? [],
+            'image_variants' => $media['image_variants'] ?? [],
+            'optimized_srcset' => $media['optimized_srcset'] ?? '',
+            'webp_srcset' => $media['webp_srcset'] ?? '',
+            'fallback_original' => $media['fallback_original'] ?? ($media['file_url'] ?? null)
+        ];
+    }
+
     /**
      * GET /api/site-settings - Get site settings
      */
@@ -78,6 +100,7 @@ class SettingsRoutes {
                 $heroImagesRaw = json_decode($settings['hero_images'], true) ?: [];
             }
             $heroImages = [];
+            $heroSelectionForResponse = [];
             $ids = array_values(array_filter(array_map(function ($entry) {
                 return isset($entry['id']) ? (int) $entry['id'] : null;
             }, $heroImagesRaw)));
@@ -107,7 +130,32 @@ class SettingsRoutes {
                     'fallback_original' => $hydrated['fallback_original']
                 ];
             }
-            $settings['hero_images'] = $heroImages;
+            if (empty($heroVariants)) {
+                $fallbackMedia = $this->fetchFallbackHeroMedia();
+                if (!empty($fallbackMedia)) {
+                    foreach ($fallbackMedia as $media) {
+                        if (!$media || !empty($media['missing_file']) || empty($media['fallback_original'])) {
+                            continue;
+                        }
+                        $formatted = $this->formatHeroVariantFromMedia($media);
+                        $heroVariants[] = $formatted;
+                        if (empty($heroImagesRaw)) {
+                            $heroSelectionForResponse[] = [
+                                'id' => $formatted['id'],
+                                'title' => $formatted['title'] ?? '',
+                                'alt_text' => $formatted['alt_text'] ?? '',
+                                'is_fallback' => true
+                            ];
+                        }
+                    }
+                }
+            }
+
+            if (empty($heroSelectionForResponse)) {
+                $heroSelectionForResponse = $heroImages;
+            }
+
+            $settings['hero_images'] = $heroSelectionForResponse;
             $settings['hero_images_variants'] = $heroVariants;
             header('Cache-Control: public, max-age=60');
             echo json_encode(['success' => true, 'settings' => $settings]);
