@@ -18,6 +18,7 @@ require_once __DIR__ . '/utils/RequestContext.php';
 require_once __DIR__ . '/utils/Logger.php';
 require_once __DIR__ . '/utils/Database.php';
 require_once __DIR__ . '/utils/Router.php';
+require_once __DIR__ . '/utils/AuditLog.php';
 
 // Load middleware
 require_once __DIR__ . '/middleware/ErrorHandler.php';
@@ -467,6 +468,20 @@ $router->get('/subscribers', function() use ($newsletterRoutes) {
 $router->post('/newsletter/subscribe', function() use ($newsletterRoutes) {
     RateLimitMiddleware::strict($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     $newsletterRoutes->subscribe();
+});
+
+// ============================================
+// Audit Log Routes
+// ============================================
+require_once __DIR__ . '/routes/audit_log.php';
+$auditLogRoutes = new AuditLogRoutes();
+
+$router->get('/audit-log', function() use ($auditLogRoutes) {
+    $auditLogRoutes->listEntries();
+});
+
+$router->get('/audit-log/export', function() use ($auditLogRoutes) {
+    $auditLogRoutes->exportEntries();
 });
 
 // ============================================

@@ -19,6 +19,8 @@ require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../middleware/RateLimitMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
+require_once __DIR__ . '/../utils/RequestContext.php';
 
 class AuthRoutes {
     private $db;
@@ -66,7 +68,13 @@ class AuthRoutes {
             if (!$user) {
                 // Track failed attempt
                 RateLimitMiddleware::trackFailedLogin($username);
-                
+                AuditLog::record('admin_login_failed', [
+                    'actor_type' => 'system',
+                    'meta' => [
+                        'username' => $username,
+                    ],
+                ]);
+
                 ErrorHandler::respond('Invalid credentials', 401, [
                     'success' => false,
                     'message' => 'Invalid credentials'
@@ -91,7 +99,14 @@ class AuthRoutes {
                     $remaining = 5 - $failedAttempts;
                     $message .= ". Warning: {$remaining} attempts remaining before account lockout.";
                 }
-                
+                AuditLog::record('admin_login_failed', [
+                    'actor_type' => 'system',
+                    'actor_id' => $user['id'] ?? null,
+                    'meta' => [
+                        'username' => $username,
+                    ],
+                ]);
+
                 ErrorHandler::respond($message, 401, [
                     'success' => false,
                     'message' => $message
@@ -112,6 +127,14 @@ class AuthRoutes {
                 'id' => $user['id'],
                 'username' => $user['username'],
                 'role' => $user['role']
+            ]);
+
+            AuditLog::record('admin_login_success', [
+                'actor_type' => 'admin',
+                'actor_id' => $user['id'],
+                'meta' => [
+                    'username' => $user['username'],
+                ],
             ]);
 
             // Return success with token and user info (no sensitive data)

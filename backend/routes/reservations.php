@@ -13,6 +13,8 @@ require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 require_once __DIR__ . '/../utils/Emailer.php';
+require_once __DIR__ . '/../utils/RequestContext.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class ReservationsRoutes {
     private $db;
@@ -119,6 +121,18 @@ class ReservationsRoutes {
         );
 
         Logger::info("New reservation created: ID=$id, Name=$name, Date=$reservationDate");
+        AuditLog::record('reservation_submit', [
+            'actor_type' => 'public',
+            'entity_type' => 'reservation',
+            'entity_id' => $id,
+            'meta' => [
+                'name' => $name,
+                'email' => $email,
+                'guests' => $numberOfGuests,
+                'date' => $reservationDate,
+                'time' => $reservationTime,
+            ],
+        ]);
         
         // Send email notification
         try {

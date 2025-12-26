@@ -14,6 +14,8 @@ require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 require_once __DIR__ . '/../utils/Emailer.php';
+require_once __DIR__ . '/../utils/RequestContext.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class ContactRoutes {
     private $db;
@@ -113,6 +115,16 @@ class ContactRoutes {
         );
 
         Logger::info("New contact message: ID=$id, From=$name ($email)");
+        AuditLog::record('contact_submit', [
+            'actor_type' => 'public',
+            'entity_type' => 'contact_message',
+            'entity_id' => $id,
+            'meta' => [
+                'name' => $name,
+                'email' => $email,
+                'subject' => $subject,
+            ],
+        ]);
 
         try {
             Emailer::sendOpsNotification(

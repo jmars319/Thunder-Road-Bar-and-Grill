@@ -24,6 +24,8 @@ require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 require_once __DIR__ . '/../utils/Emailer.php';
+require_once __DIR__ . '/../utils/RequestContext.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class JobsRoutes {
     private $db;
@@ -115,6 +117,17 @@ class JobsRoutes {
             );
             
             Logger::info("New job application: ID=$id, Name=$name, Position=$position");
+            AuditLog::record('job_application_submit', [
+                'actor_type' => 'public',
+                'entity_type' => 'job_application',
+                'entity_id' => $id,
+                'meta' => [
+                    'name' => $name,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'position' => $position,
+                ],
+            ]);
             
             // Send email notification
             try {
@@ -160,7 +173,7 @@ class JobsRoutes {
      * Get all job positions (admin)
      */
     public function getAllJobPositions() {
-        AdminAuthMiddleware::verify();
+        $user = AdminAuthMiddleware::verify();
         
         try {
             $results = $this->db->fetchAll('SELECT * FROM job_positions ORDER BY id');
@@ -187,6 +200,13 @@ class JobsRoutes {
 
         try {
             $id = $this->db->insert('INSERT INTO job_positions (name, is_active) VALUES (?, ?)', [$name, $isActive]);
+            AuditLog::record('job_position_create', [
+                'actor_type' => 'admin',
+                'actor_id' => $user['id'] ?? null,
+                'entity_type' => 'job_position',
+                'entity_id' => $id,
+                'meta' => ['name' => $name],
+            ]);
             echo json_encode(['id' => $id, 'message' => 'Position created']);
         } catch (PDOException $e) {
             Logger::error('Create position error: ' . $e->getMessage());
