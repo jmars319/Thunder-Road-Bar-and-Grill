@@ -2,9 +2,15 @@
   RewriteEngine On
   RewriteBase /
   
+  # Serve uploaded media directly from /api/uploads while keeping /uploads URLs stable
+  RewriteRule ^uploads/(.*)$ api/uploads/$1 [L]
+  
   # Don't rewrite files or directories
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Don't rewrite static uploads
+  RewriteCond %{REQUEST_URI} !^/uploads
   
   # Don't rewrite API requests
   RewriteCond %{REQUEST_URI} !^/api
