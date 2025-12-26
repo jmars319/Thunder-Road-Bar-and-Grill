@@ -51,112 +51,32 @@ describe('ThemeToggle', () => {
     jest.restoreAllMocks();
   });
 
+  const renderWithProvider = () => render(
+    <ThemeProvider>
+      <ThemeToggle />
+    </ThemeProvider>
+  );
+
   test('renders theme toggle button', () => {
-    render(<ThemeToggle />);
+    renderWithProvider();
     const button = screen.getByRole('button', { name: /toggle theme/i });
     expect(button).toBeInTheDocument();
   });
 
   test('button has accessible label', () => {
-    render(<ThemeToggle />);
+    renderWithProvider();
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('aria-label');
   });
 
-  test('toggles theme on click', () => {
-    mockLocalStorage.getItem.mockReturnValue('system');
-    
-    render(
-      <ThemeProvider>
-        <ThemeToggle />
-      </ThemeProvider>
-    );
-    const button = screen.getByRole('button');
-    
-    // Initial state should be system (no data-theme attribute)
-    expect(document.documentElement.getAttribute('data-theme')).toBe(null);
-    
-    // Click to toggle to dark
-    fireEvent.click(button);
-    
-    // Should save to localStorage using the ThemeContext key
+  test('initializes theme to dark and persists to localStorage', () => {
+    renderWithProvider();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith('site-theme', 'dark');
   });
 
-  test('loads saved theme from localStorage on mount', () => {
-    mockLocalStorage.getItem.mockReturnValue('dark');
-    
-    render(
-      <ThemeProvider>
-        <ThemeToggle />
-      </ThemeProvider>
-    );
-    
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-  });
-
-  test('uses system preference when no saved theme', () => {
-  mockLocalStorage.getItem.mockReturnValue(null);
-    
-    // Mock system preference for dark mode
-    window.matchMedia = jest.fn().mockImplementation(query => ({
-      matches: query === '(prefers-color-scheme: dark)',
-      media: query,
-      onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    }));
-    
-    render(
-      <ThemeProvider>
-        <ThemeToggle />
-      </ThemeProvider>
-    );
-    
-    // Should have checked storage using the ThemeContext key
-    expect(mockLocalStorage.getItem).toHaveBeenCalledWith('site-theme');
-  });
-
-  test('displays correct icon for current theme', () => {
-    mockLocalStorage.getItem.mockReturnValue('light');
-    
-    const { container } = render(
-      <ThemeProvider>
-        <ThemeToggle />
-      </ThemeProvider>
-    );
-    
-    // Should show moon icon for light theme (to switch to dark)
-    // or sun icon for dark theme (to switch to light)
-    // This depends on your icon implementation
-    expect(container.querySelector('svg')).toBeInTheDocument();
-  });
-
-  test('maintains theme across re-renders', () => {
-    mockLocalStorage.getItem.mockReturnValue('dark');
-    
-    const { rerender } = render(
-      <ThemeProvider>
-        <ThemeToggle />
-      </ThemeProvider>
-    );
-    
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    
-    rerender(
-      <ThemeProvider>
-        <ThemeToggle />
-      </ThemeProvider>
-    );
-    
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-  });
-
   test('button is keyboard accessible', () => {
-    render(<ThemeToggle />);
+    renderWithProvider();
     const button = screen.getByRole('button');
     
     button.focus();

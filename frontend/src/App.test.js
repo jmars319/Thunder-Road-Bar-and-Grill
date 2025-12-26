@@ -14,8 +14,11 @@ import App from './App';
 const _appRef = { name: 'App', comp: App };
 void _appRef;
 
-test('renders main heading', () => {
+test('renders skip link and site logo', () => {
   render(<App />);
-  const heading = screen.getByText(/welcome to thunder road/i);
-  expect(heading).toBeInTheDocument();
+  const skipLink = screen.getByRole('link', { name: /skip to main content/i });
+  expect(skipLink).toBeInTheDocument();
+
+  const logo = screen.getByRole('img', { name: /thunder road bar and grill/i });
+  expect(logo).toBeInTheDocument();
 });
