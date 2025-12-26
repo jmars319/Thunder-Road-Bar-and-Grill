@@ -1,49 +1,57 @@
 @font-face {
   font-family: 'Merriweather';
   font-style: normal;
-  font-weight: 300 700;
+  font-weight: 400;
   font-display: swap;
-  src: url('./Merriweather-Variable.woff2') format('woff2-variations');
+  src: url('./Merriweather-400.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Merriweather';
-  font-style: italic;
-  font-weight: 300 700;
+  font-style: normal;
+  font-weight: 700;
   font-display: swap;
-  src: url('./Merriweather-Italic-Variable.woff2') format('woff2-variations');
+  src: url('./Merriweather-700.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 400;
   font-display: swap;
-  src: url('./Roboto-Variable.woff2') format('woff2-variations');
+  src: url('./Roboto-400.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Roboto';
-  font-style: italic;
-  font-weight: 100 900;
+  font-style: normal;
+  font-weight: 500;
   font-display: swap;
-  src: url('./Roboto-Italic-Variable.woff2') format('woff2-variations');
+  src: url('./Roboto-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./Roboto-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./Roboto-700.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Roboto Mono';
   font-style: normal;
-  font-weight: 100 700;
+  font-weight: 700;
   font-display: swap;
-  src: url('./RobotoMono-Variable.woff2') format('woff2-variations');
-}
-
-@font-face {
-  font-family: 'Roboto Mono';
-  font-style: italic;
-  font-weight: 100 700;
-  font-display: swap;
-  src: url('./RobotoMono-Italic-Variable.woff2') format('woff2-variations');
+  src: url('./RobotoMono-700.woff2') format('woff2');
 }
 
 @font-face {
