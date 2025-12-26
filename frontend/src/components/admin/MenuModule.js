@@ -25,6 +25,7 @@ import { sanitizeRichText } from '../../utils/richText';
 import { normalizeMenuCategory } from '../../utils/menuDisplay';
 import MenuDisplay from '../public/MenuDisplay';
 import RichTextField from './RichTextField';
+import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
 // ensure imports are recognized by some linters when used only in JSX
 const __usedSpinner = Spinner;
 void __usedSpinner;
@@ -125,6 +126,63 @@ function MenuModule() {
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
     if (u.startsWith('/')) return `${apiOrigin}${u}`;
     return `${apiOrigin}/${u}`;
+  };
+
+  const mediaToResponsiveEntry = (media, fallbackInput = '') => {
+    if (!media) return null;
+    const fallback = fallbackInput || media.fallback_original || media.file_url || '';
+    return {
+      image_variants: media.image_variants || media.responsive_variants || media.variants || {},
+      responsive_variants: media.responsive_variants || media.image_variants || media.variants || {},
+      fallback_original: fallback,
+      file_url: fallback,
+      alt_text: media.alt_text || media.title || ''
+    };
+  };
+
+  const ResponsiveImagePreview = ({ entry, fallbackUrl, alt = '', className = '', sizes = '320px' }) => {
+    const variant = entry && hasRenderableImageVariant(entry)
+      ? buildImageVariant(entry, { sizes })
+      : null;
+    const fallback = variant?.fallback || (fallbackUrl ? normalizeUrl(fallbackUrl) : '');
+
+    if (variant) {
+      return (
+        <picture>
+          {variant.webpSrcset && (
+            <source type="image/webp" srcSet={variant.webpSrcset} sizes={variant.sizes} />
+          )}
+          {variant.optimizedSrcset && (
+            <source type="image/jpeg" srcSet={variant.optimizedSrcset} sizes={variant.sizes} />
+          )}
+          <img
+            src={fallback}
+            alt={alt}
+            className={className}
+            loading="lazy"
+            sizes={variant.sizes}
+            srcSet={variant.optimizedSrcset || undefined}
+          />
+        </picture>
+      );
+    }
+
+    if (fallback) {
+      return (
+        <img
+          src={fallback}
+          alt={alt}
+          className={className}
+          loading="lazy"
+        />
+      );
+    }
+
+    return (
+      <div className={`bg-surface-warm text-text-secondary text-xs flex items-center justify-center ${className}`}>
+        No image selected
+      </div>
+    );
   };
 
   const fetchCategories = useCallback(async () => {
@@ -516,7 +574,8 @@ function MenuModule() {
               hide_descriptions: 0,
               is_active: 1,
               gallery_image_id: null,
-              gallery_image_url: ''
+              gallery_image_url: '',
+              gallery_image_responsive: null
             })}
             className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
             aria-label="Add menu category"
@@ -635,10 +694,12 @@ function MenuModule() {
                         try {
                           const media = await uploadFile(file, 'menu');
                           if (media?.id) {
+                            const fallback = media.fallback_original || media.file_url || '';
                             setEditingCategory((prev) => ({
                               ...prev,
                               gallery_image_id: media.id,
-                              gallery_image_url: media.fallback_original || media.file_url || ''
+                              gallery_image_url: fallback,
+                              gallery_image_responsive: mediaToResponsiveEntry(media, fallback)
                             }));
                             setSelectedMediaId(String(media.id));
                             try {
@@ -676,16 +737,16 @@ function MenuModule() {
                     </button>
                   </div>
                 )}
-                {editingCategory.gallery_image_url && (
                   <div className="mt-2">
-                    <img
-                      loading="lazy"
-                      src={normalizeUrl(editingCategory.gallery_image_url)}
-                      alt="menu preview"
-                      className="h-24 rounded object-cover"
+                    <ResponsiveImagePreview
+                      entry={editingCategory.gallery_image_responsive}
+                      fallbackUrl={editingCategory.gallery_image_url}
+                      alt="Menu preview"
+                      className="h-24 w-full rounded object-cover"
+                      sizes="(max-width: 768px) 80vw, 320px"
                     />
                   </div>
-                )}
+                }
               </div>
               <div className="flex gap-2">
                   <button
@@ -725,7 +786,8 @@ function MenuModule() {
                       setEditingCategory(c => ({
                         ...c,
                         gallery_image_url: media.fallback_original || media.file_url || '',
-                        gallery_image_id: media.id
+                        gallery_image_id: media.id,
+                        gallery_image_responsive: mediaToResponsiveEntry(media, media.fallback_original || media.file_url || '')
                       }));
                     }
                     setShowMediaPicker(false);
@@ -923,9 +985,13 @@ function MenuModule() {
                   {expandedCategory === category.id ? <icons.ChevronUp size={20} /> : <icons.ChevronDown size={20} />}
                 </div>
                 <div className="flex items-center gap-3">
-                  {category.gallery_image_url && (
-                    <img loading="lazy" src={normalizeUrl(category.gallery_image_url)} alt="thumb" className="w-12 h-8 object-cover rounded" />
-                  )}
+                  <ResponsiveImagePreview
+                    entry={category.gallery_image_responsive}
+                    fallbackUrl={category.gallery_image_url}
+                    alt={`${category.name} preview`}
+                    className="w-12 h-8 object-cover rounded"
+                    sizes="80px"
+                  />
                   <div>
                     <h3 className="font-bold text-lg text-text-primary">{category.name}</h3>
                     {category.description ? (() => {

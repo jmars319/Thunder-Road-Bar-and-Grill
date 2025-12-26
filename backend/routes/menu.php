@@ -228,6 +228,16 @@ class MenuRoutes {
 
         $results = $this->db->fetchAll($query);
 
+        $galleryIds = [];
+        foreach ($results as $row) {
+            if (!empty($row['category_gallery_image_id'])) {
+                $galleryIds[(int) $row['category_gallery_image_id']] = true;
+            }
+        }
+        $mediaMap = $galleryIds
+            ? MediaResponseBuilder::hydrateByIds($this->db, array_keys($galleryIds))
+            : [];
+
         $categories = [];
         foreach ($results as $row) {
             $catId = $row['category_id'];
@@ -252,6 +262,7 @@ class MenuRoutes {
                     if ($media) {
                         $categories[$catId]['gallery_image_responsive'] = $media;
                         $categories[$catId]['gallery_image_variants'] = $media['responsive_variants'];
+                        $categories[$catId]['gallery_image_url'] = $media['fallback_original'] ?? $media['file_url'] ?? $categories[$catId]['gallery_image_url'];
                     }
                 }
             }

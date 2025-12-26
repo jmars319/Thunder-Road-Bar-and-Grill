@@ -18,6 +18,7 @@ import RichTextField from './RichTextField';
 import NavigationEditor from './NavigationEditor';
 import Spinner from '../ui/Spinner';
 import makeAbsolute from '../../lib/makeAbsolute';
+import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
 
 const normalizeHeroImages = (rawValue, fallbackVariants = []) => {
   const asArray = (() => {
@@ -193,29 +194,51 @@ function SettingsModule() {
   const heroMediaMap = useMemo(() => {
     return heroMedia.reduce((acc, item) => {
       if (item && typeof item.id !== 'undefined') {
-        acc[item.id] = item;
+        const key = String(item.id);
+        acc[key] = item;
       }
       return acc;
     }, {});
   }, [heroMedia]);
+
+  const heroVariantMap = useMemo(() => {
+    const list = Array.isArray(siteSettings.hero_images_variants)
+      ? siteSettings.hero_images_variants
+      : [];
+    return list.reduce((acc, entry) => {
+      if (!entry) return acc;
+      const id = Number(entry.id);
+      if (Number.isFinite(id)) {
+        acc[String(id)] = entry;
+      }
+      return acc;
+    }, {});
+  }, [siteSettings.hero_images_variants]);
 
   const availableHeroMedia = useMemo(() => {
     if (!heroMedia.length) return [];
     return heroMedia.filter((item) => !heroSelectionIds.includes(Number(item.id)));
   }, [heroMedia, heroSelectionIds]);
 
-  const heroSelectionHydrated = heroSelection.map((entry) => ({
-    ...entry,
-    media: heroMediaMap[entry.id]
-  }));
+  const heroSelectionHydrated = heroSelection.map((entry) => {
+    const key = String(entry.id);
+    return {
+      ...entry,
+      media: heroMediaMap[key] || heroVariantMap[key]
+    };
+  });
 
   const heroPreviewUrl = (media) => {
     if (!media) return '';
+    if (hasRenderableImageVariant(media)) {
+      const variant = buildImageVariant(media, { sizes: '320px' });
+      if (variant?.fallback) return variant.fallback;
+    }
     return makeAbsolute(
-      media.optimized_path ||
-        media.webp_path ||
+      media.fallback_original ||
         media.file_url ||
-        media.fallback_original ||
+        media.optimized_path ||
+        media.webp_path ||
         ''
     );
   };
