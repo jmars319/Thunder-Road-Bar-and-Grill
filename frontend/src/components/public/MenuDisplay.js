@@ -10,9 +10,12 @@ export default function MenuDisplay({
   expandedCategory,
   onToggleCategory,
   panelsRef,
-  measurePanel
+  measurePanel,
+  isLoaded = false
 }) {
   const safeMenuIntro = sanitizeRichText(menuIntro || '');
+  const hasCategories = Array.isArray(categories) && categories.length > 0;
+  const placeholderCount = 3;
 
   return (
     <div className="py-12 bg-surface-warm">
@@ -25,8 +28,18 @@ export default function MenuDisplay({
           />
         )}
 
-        <div className="space-y-4">
-          {categories.map(category => {
+        <div className="space-y-4 min-h-[420px]" aria-busy={!isLoaded}>
+          {!isLoaded ? (
+            <div className="grid gap-4" aria-hidden="true">
+              {Array.from({ length: placeholderCount }).map((_, idx) => (
+                <div
+                  key={`menu-skeleton-${idx}`}
+                  className="h-36 md:h-44 rounded-xl bg-surface shadow-inner border border-divider/60 animate-pulse"
+                />
+              ))}
+            </div>
+          ) : hasCategories ? (
+            categories.map(category => {
             const heroVariant = category.heroVariant || null;
             const fallbackBackground = category.gallery_image_url || null;
             const hasResponsiveHero = Boolean(heroVariant?.fallback || heroVariant?.optimizedSrcset || heroVariant?.webpSrcset);
@@ -53,7 +66,7 @@ export default function MenuDisplay({
                         loading="lazy"
                         pictureClassName="absolute inset-0 block w-full h-full"
                         className="absolute inset-0 w-full h-full object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 520px"
+                        sizes="(max-width: 639px) 100vw, (max-width: 1279px) calc(100vw - 64px), 960px"
                       />
                     ) : (
                       <img
@@ -148,7 +161,11 @@ export default function MenuDisplay({
               </div>
             </div>
             );
-          })}
+          })) : (
+            <div className="p-6 text-center text-text-muted border border-dashed border-divider rounded-xl">
+              Menu is being updated. Please check back soon.
+            </div>
+          )}
         </div>
       </div>
     </div>

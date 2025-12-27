@@ -24,6 +24,8 @@ export default function MenuSection() {
   const [siteMenuDescription, setSiteMenuDescription] = useState('');
   const [siteMenuHeading, setSiteMenuHeading] = useState('');
   const [expandedCategory, setExpandedCategory] = useState(null);
+  const [menuLoaded, setMenuLoaded] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const panelsRef = useRef({});
 
   const measurePanel = (id) => {
@@ -66,8 +68,12 @@ export default function MenuSection() {
         if (!mounted) return;
         const normalized = (Array.isArray(data) ? data : []).map(normalizeMenuCategory);
         setCategories(normalized);
+        setMenuLoaded(true);
       } catch (e) {
-        if (mounted) setCategories([]);
+        if (mounted) {
+          setCategories([]);
+          setMenuLoaded(true);
+        }
       }
     }
 
@@ -83,10 +89,12 @@ export default function MenuSection() {
         const settings = payload?.settings || {};
         setSiteMenuDescription(settings.menu_intro || '');
         setSiteMenuHeading(settings.menu_heading || '');
+        setSettingsLoaded(true);
       } catch (e) {
         if (!mounted) return;
         setSiteMenuDescription('');
         setSiteMenuHeading('');
+        setSettingsLoaded(true);
       }
     }
 
@@ -138,7 +146,7 @@ export default function MenuSection() {
   }, [expandedCategory]);
 
   return (
-  <div id="menu" className="py-12 bg-surface-warm">
+  <div id="menu" className="py-12 bg-surface-warm min-h-[720px] md:min-h-[880px]">
       <MenuDisplay
         categories={categories}
         menuHeading={siteMenuHeading}
@@ -147,6 +155,7 @@ export default function MenuSection() {
         onToggleCategory={(id) => setExpandedCategory(prev => (prev === id ? null : id))}
         panelsRef={panelsRef}
         measurePanel={measurePanel}
+        isLoaded={menuLoaded && settingsLoaded}
       />
     </div>
   );

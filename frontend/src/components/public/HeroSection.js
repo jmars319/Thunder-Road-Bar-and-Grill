@@ -19,6 +19,8 @@ import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
 
+const HERO_SIZES = '(max-width: 767px) 100vw, (max-width: 1279px) calc(100vw - 32px), calc(100vw - 48px)';
+
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
   // images: array of { src, alt }
@@ -82,7 +84,7 @@ export default function HeroSection() {
             if (!variantSource) {
               return;
             }
-            const variant = buildImageVariant(variantSource, { sizes: '100vw' });
+            const variant = buildImageVariant(variantSource, { sizes: HERO_SIZES });
             if (!variant) {
               return;
             }
@@ -127,9 +129,9 @@ export default function HeroSection() {
   const hasSlides = images.length > 0;
 
   return (
-    <div className={`hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden`}>
+    <div className={`hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden px-0 md:px-4 lg:px-6`}>
       {/* image slideshow: using <img> so it's discoverable and preloadable */}
-      <div className="absolute inset-0 z-0" aria-hidden={images.length === 0}>
+      <div className="absolute inset-0 md:inset-x-4 lg:inset-x-6 z-0" aria-hidden={images.length === 0}>
         {images.length > 0 && (
           <>
             {images.map((img, i) => {
@@ -145,7 +147,7 @@ export default function HeroSection() {
                   loading={i === 0 ? 'eager' : 'lazy'}
                   pictureClassName="absolute inset-0 block w-full h-full"
                   className="absolute inset-0 w-full h-full object-cover"
-                  sizes="100vw"
+                  sizes={HERO_SIZES}
                   imgProps={i === 0 ? { fetchpriority: 'high' } : {}}
                 />
               </div>
@@ -156,7 +158,7 @@ export default function HeroSection() {
       </div>
 
   {/* overlay gradient must sit above images but below content */}
-  <div className="absolute inset-0 z-10 overlay-gradient" aria-hidden="true" />
+  <div className="absolute inset-0 md:inset-x-4 lg:inset-x-6 z-10 overlay-gradient" aria-hidden="true" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20">
         {/* Accessibility: provide current slide text for screen readers without triggering extra image downloads */}
@@ -206,6 +208,7 @@ function limitHeroVariantToSingle(variant) {
   return {
     ...variant,
     optimizedSrcset: limitedOptimized,
-    webpSrcset: limitedWebp
+    webpSrcset: limitedWebp,
+    sizes: HERO_SIZES
   };
 }

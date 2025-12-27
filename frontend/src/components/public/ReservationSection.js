@@ -44,6 +44,7 @@ export default function ReservationSection() {
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
   const [copy, setCopy] = useState({ heading: '', intro: '', success: '', failure: '' });
+  const [copyLoaded, setCopyLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,10 +58,12 @@ export default function ReservationSection() {
           success: settings.reservations_success_copy || '',
           failure: settings.reservations_error_copy || ''
         });
+        setCopyLoaded(true);
       })
       .catch(() => {
         if (!cancelled) {
           setCopy({ heading: '', intro: '', success: '', failure: '' });
+          setCopyLoaded(true);
         }
       });
     return () => {
@@ -144,7 +147,7 @@ export default function ReservationSection() {
   };
 
   return (
-    <div id="reservations" className="py-10 bg-background">
+    <div id="reservations" className="py-10 bg-background min-h-[640px] md:min-h-[720px]" aria-busy={!copyLoaded}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="reservation-copy-block">
           {copy.heading && <h2 className="text-2xl font-heading font-bold text-center mb-2">{copy.heading}</h2>}
