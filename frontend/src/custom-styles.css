@@ -90,11 +90,14 @@
 .navbar-link:link,
 .navbar-link:visited {
   position: relative;
-  padding: 0.75rem 0.5rem;
+  padding: 0.75rem 1.1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 9999px;
   min-height: 44px;
+  min-width: 44px;
+  margin: 0 0.15rem;
   color: var(--text-secondary);
   text-decoration: none;
 }
@@ -107,8 +110,18 @@
 .footer-link {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
-  padding: 0.5rem 0;
+  min-height: 44px;
+  padding: 0.25rem 0;
+  line-height: 1.3;
+}
+
+.footer-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
 }
 
 /* Responsive sizing of the badge is handled by the .logo-badge width/height

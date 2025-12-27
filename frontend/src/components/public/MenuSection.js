@@ -146,7 +146,7 @@ export default function MenuSection() {
   }, [expandedCategory]);
 
   return (
-  <div id="menu" className="py-12 bg-surface-warm min-h-[720px] md:min-h-[880px]">
+  <div id="menu" className="py-12 bg-surface-warm min-h-[960px] md:min-h-[1200px]">
       <MenuDisplay
         categories={categories}
         menuHeading={siteMenuHeading}

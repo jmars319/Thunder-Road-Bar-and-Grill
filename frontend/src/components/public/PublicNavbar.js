@@ -205,7 +205,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
               type="button"
               onClick={() => setOrderOpen(true)}
               title="Order Online - coming soon"
-              className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm font-semibold"
+              className="bg-primary text-text-inverse px-5 py-2.5 rounded-xl hover:bg-primary-dark transition text-sm font-semibold min-h-[44px]"
             >
               Order Online
             </button>
@@ -215,7 +215,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1 rounded-lg hover:bg-surface-warm"
+            className="md:hidden p-2 rounded-lg hover:bg-surface-warm min-h-[44px] min-w-[44px]"
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-menu"
             aria-label="Toggle navigation menu"
@@ -246,7 +246,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                     <a
                       key={link.id}
                       href={renderUrl}
-                      className="text-text-primary hover:text-primary font-medium transition-colors px-3 py-1 hover:bg-surface-warm rounded"
+                      className="text-text-primary hover:text-primary font-medium transition-colors px-4 py-3 hover:bg-surface-warm rounded-lg min-h-[44px]"
                       onClick={(e) => handleNavClick(e, renderUrl)}
                     >
                       {renderLabel}
@@ -257,7 +257,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                 onClick={() => { setMobileMenuOpen(false); setOrderOpen(true); }}
                 type="button"
                 title="Order Online - coming soon"
-                className="bg-primary text-text-inverse px-3 py-1 rounded-lg hover:bg-primary-dark transition text-sm font-semibold mx-2"
+                className="bg-primary text-text-inverse px-4 py-3 rounded-xl hover:bg-primary-dark transition text-sm font-semibold mx-2 min-h-[48px]"
               >
                 Order Online
               </button>
@@ -273,7 +273,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
                 }}
                 type="button"
                 aria-label="Admin login"
-                className="bg-surface text-text-primary px-3 py-1 rounded-lg hover:bg-surface-warm transition text-sm font-semibold mx-2"
+                className="bg-surface text-text-primary px-4 py-3 rounded-xl hover:bg-surface-warm transition text-sm font-semibold mx-2 min-h-[48px]"
               >
                 Admin Login
               </button>
@@ -290,7 +290,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
             aria-label="Back to top"
             aria-describedby="back-to-top-desc"
             title="Back to top"
-            className="fixed right-4 bottom-4 z-50 bg-primary text-text-inverse p-2 rounded-full shadow-sm hover:bg-primary-dark transition-transform duration-200 transform-gpu focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            className="fixed right-4 bottom-4 z-50 bg-primary text-text-inverse p-2 rounded-full shadow-sm hover:bg-primary-dark transition-transform duration-200 transform-gpu focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary min-h-[44px] min-w-[44px]"
           >
             <span id="back-to-top-desc" className="sr-only">Scroll to top of page</span>
             {React.createElement(icons.ChevronUp, { size: 18 })}

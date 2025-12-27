@@ -113,22 +113,22 @@ export default function PublicFooter({ onGoToAdmin }) {
             <div className="flex flex-col items-start md:items-start ml-3">
             <div className="mb-1 text-xs text-text-secondary">
               © {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'} · Powered by{' '}
-              <a 
-                href="https://jamarq.digital" 
-                target="_blank" 
+              <a
+                href="https://jamarq.digital"
+                target="_blank"
                 rel="noopener noreferrer"
-                className="text-text-muted hover:text-text-primary underline"
+                className="footer-link text-text-muted hover:text-text-primary underline px-0"
               >
                 JAMARQ
               </a>
             </div>
             <div className="flex flex-col items-start gap-1">
               {siteSettings?.phone && (
-                <a href={`tel:${siteSettings.phone}`} className="text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.phone}</a>
+                <a href={`tel:${siteSettings.phone}`} className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight px-0">{siteSettings.phone}</a>
               )}
 
               {siteSettings?.email && (
-                <a href={`mailto:${siteSettings.email}`} className="text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.email}</a>
+                <a href={`mailto:${siteSettings.email}`} className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight px-0">{siteSettings.email}</a>
               )}
 
               {siteSettings?.address && (
@@ -139,7 +139,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                 <button
                   type="button"
                   onClick={() => setShowContact(true)}
-                  className="text-text-muted hover:text-text-primary underline text-xs"
+                  className="footer-link text-text-muted hover:text-text-primary underline text-xs px-0"
                   aria-haspopup="dialog"
                 >
                   Contact
@@ -148,7 +148,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                 <button
                   type="button"
                   onClick={() => setShowHours(true)}
-                  className="text-text-muted hover:text-text-primary underline text-xs"
+                  className="footer-link text-text-muted hover:text-text-primary underline text-xs px-0"
                   aria-haspopup="dialog"
                 >
                   Hours
@@ -164,7 +164,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Thunder Road on Instagram"
-                    className="text-text-muted hover:text-text-primary transition"
+                    className="footer-social-link text-text-muted hover:text-text-primary transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
                       <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -178,7 +178,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Instagram"
-                    className="text-text-muted hover:text-text-primary transition"
+                    className="footer-social-link text-text-muted hover:text-text-primary transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
                       <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -196,7 +196,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Thunder Road on Facebook"
-                    className="text-text-muted hover:text-text-primary transition"
+                    className="footer-social-link text-text-muted hover:text-text-primary transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
                       <path d="M18 2h-3a4 4 0 0 0-4 4v3H8v4h3v8h4v-8h3l1-4h-4V6a1 1 0 0 1 1-1h3z"></path>
@@ -208,7 +208,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Facebook"
-                    className="text-text-muted hover:text-text-primary transition"
+                    className="footer-social-link text-text-muted hover:text-text-primary transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
                       <path d="M18 2h-3a4 4 0 0 0-4 4v3H8v4h3v8h4v-8h3l1-4h-4V6a1 1 0 0 1 1-1h3z"></path>

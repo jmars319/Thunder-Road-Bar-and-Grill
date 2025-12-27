@@ -28,13 +28,13 @@ export default function MenuDisplay({
           />
         )}
 
-        <div className="space-y-4 min-h-[420px]" aria-busy={!isLoaded}>
+        <div className="space-y-4 min-h-[720px] md:min-h-[900px]" aria-busy={!isLoaded}>
           {!isLoaded ? (
             <div className="grid gap-4" aria-hidden="true">
               {Array.from({ length: placeholderCount }).map((_, idx) => (
                 <div
                   key={`menu-skeleton-${idx}`}
-                  className="h-36 md:h-44 rounded-xl bg-surface shadow-inner border border-divider/60 animate-pulse"
+                  className="h-44 md:h-48 rounded-xl bg-surface shadow-inner border border-divider/60 animate-pulse"
                 />
               ))}
             </div>

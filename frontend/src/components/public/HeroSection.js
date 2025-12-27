@@ -31,6 +31,8 @@ export default function HeroSection() {
   const [slideshowSpeed, setSlideshowSpeed] = useState(6000);
   const idxRef = useRef(0);
   const [index, setIndex] = useState(0);
+  const [firstImageLoaded, setFirstImageLoaded] = useState(false);
+  const [slideshowActive, setSlideshowActive] = useState(false);
 
   const applySlides = useCallback((slides) => {
     if (!Array.isArray(slides)) {
@@ -118,17 +120,72 @@ export default function HeroSection() {
     };
   }, [applySlides]);
 
+  const firstImageKey = images.length ? images[0]?.id ?? images[0]?.variant?.fallback ?? 'hero' : 'empty';
+
   useEffect(() => {
-    if (!images.length) return;
+    setFirstImageLoaded(false);
+    setSlideshowActive(false);
+  }, [firstImageKey]);
+
+  useEffect(() => {
+    if (!images.length || !slideshowActive || images.length <= 1) {
+      return undefined;
+    }
     const interval = slideshowSpeed || 6000;
     const id = window.setInterval(() => {
       idxRef.current = (idxRef.current + 1) % images.length;
       setIndex(idxRef.current);
     }, interval);
     return () => window.clearInterval(id);
-  }, [images, slideshowSpeed]);
+  }, [images, slideshowActive, slideshowSpeed]);
+
+  useEffect(() => {
+    if (!firstImageLoaded) return undefined;
+    const activate = () => setSlideshowActive(true);
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(() => activate(), { timeout: 1500 });
+      return () => {
+        try {
+          window.cancelIdleCallback(idleId);
+        } catch (e) {
+          // ignore
+        }
+      };
+    }
+    const timer = window.setTimeout(activate, 1500);
+    return () => window.clearTimeout(timer);
+  }, [firstImageLoaded]);
+
+  const firstVariantKey = images.length
+    ? images[0]?.variant?.webpSrcset || images[0]?.variant?.optimizedSrcset || images[0]?.variant?.fallback
+    : null;
+
+  useEffect(() => {
+    if (!firstVariantKey || typeof document === 'undefined') return undefined;
+    const variant = images[0]?.variant;
+    if (!variant) return undefined;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.dataset.heroPreload = 'true';
+    if (variant.webpSrcset || variant.optimizedSrcset) {
+      const srcset = variant.webpSrcset || variant.optimizedSrcset;
+      link.setAttribute('imagesrcset', srcset);
+      link.setAttribute('imagesizes', variant.sizes || HERO_SIZES);
+    }
+    link.href = variant.fallback || '';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, [firstVariantKey, images]);
 
   const hasSlides = images.length > 0;
+  const handleFirstImageLoad = () => {
+    if (!firstImageLoaded) {
+      setFirstImageLoaded(true);
+    }
+  };
 
   return (
     <div className={`hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden px-0 md:px-4 lg:px-6`}>
@@ -138,10 +195,20 @@ export default function HeroSection() {
           <>
             {images.map((img, i) => {
               const variant = i === 0 ? img.variant : limitHeroVariantToSingle(img.variant);
+              const isVisible = i === index;
+              const transitionClass = slideshowActive ? 'transition-opacity duration-1000' : '';
+              const imgProps =
+                i === 0
+                  ? {
+                      fetchpriority: 'high',
+                      decoding: 'async',
+                      onLoad: handleFirstImageLoad
+                    }
+                  : {};
               return (
               <div
                 key={img.id || i}
-                className={`absolute inset-0 w-full h-full ${i === index ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}
+                className={`absolute inset-0 w-full h-full ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${transitionClass}`}
               >
                 <ResponsiveImage
                   variant={variant}
@@ -150,7 +217,7 @@ export default function HeroSection() {
                   pictureClassName="absolute inset-0 block w-full h-full"
                   className="absolute inset-0 w-full h-full object-cover"
                   sizes={HERO_SIZES}
-                  imgProps={i === 0 ? { fetchpriority: 'high' } : {}}
+                  imgProps={imgProps}
                 />
               </div>
               );
