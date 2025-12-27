@@ -14,11 +14,9 @@
 // React 17+ with new JSX transform doesn't require importing React for JSX usage.
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
+import { buildImageVariant } from '../../utils/imageVariants';
 import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
-
-const FALLBACK_HERO = '/og/og-image-1200x630-with-badge.png';
 
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
@@ -30,28 +28,13 @@ export default function HeroSection() {
   const [index, setIndex] = useState(0);
 
   const applySlides = useCallback((slides) => {
-    if (!Array.isArray(slides) || slides.length === 0) {
+    if (!Array.isArray(slides)) {
       return;
     }
     idxRef.current = 0;
     setIndex(0);
     setImages(slides);
   }, []);
-
-  const setFallbackImage = useCallback((title = '') => {
-    applySlides([
-      {
-        id: 'fallback',
-        alt: title || 'Thunder Road Bar & Grill hero',
-        variant: {
-          fallback: FALLBACK_HERO,
-          optimizedSrcset: '',
-          webpSrcset: '',
-          sizes: '100vw'
-        }
-      }
-    ]);
-  }, [applySlides]);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,62 +95,16 @@ export default function HeroSection() {
         }
         if (orderedSlides.length) {
           applySlides(orderedSlides);
-          return;
-        }
-        if (heroVariants.length) {
-          const normalized = heroVariants
-            .map((hero) => {
-              const variant = buildImageVariant(hero, { sizes: '100vw' });
-              if (!variant) {
-                return null;
-              }
-              return {
-                id: hero.id,
-                alt: hero.alt_text || hero.title || '',
-                variant
-              };
-            })
-            .filter(Boolean);
-          if (normalized.length) {
-            applySlides(normalized);
-            return;
-          }
-        }
-
-        try {
-          const mediaResponse = await fetch(getApiUrl('/media?category=hero'));
-          if (!mediaResponse.ok) {
-            throw new Error('Failed to load hero media');
-          }
-          const mediaPayload = await mediaResponse.json();
-          if (cancelled) return;
-          const heroes = Array.isArray(mediaPayload?.media)
-            ? mediaPayload.media
-            : (Array.isArray(mediaPayload) ? mediaPayload : []);
-          const filtered = heroes.filter((entry) => hasRenderableImageVariant(entry));
-          if (filtered.length) {
-            const variants = filtered
-              .map((entry) => ({
-                id: entry.id,
-                alt: entry.alt_text || entry.title || '',
-                variant: buildImageVariant(entry, { sizes: '100vw' })
-              }))
-              .filter((img) => img.variant);
-            if (variants.length) {
-              applySlides(variants);
-              return;
-            }
-          }
-        } catch (mediaError) {
-          // swallow media fallback failures
-        }
-
-        if (!cancelled) {
-          setFallbackImage(settings.hero_title || '');
+        } else {
+          idxRef.current = 0;
+          setIndex(0);
+          setImages([]);
         }
       } catch (error) {
         if (!cancelled) {
-          setFallbackImage();
+          idxRef.current = 0;
+          setIndex(0);
+          setImages([]);
         }
       }
     };
@@ -175,7 +112,7 @@ export default function HeroSection() {
     return () => {
       cancelled = true;
     };
-  }, [applySlides, setFallbackImage]);
+  }, [applySlides]);
 
   useEffect(() => {
     if (!images.length) return;
@@ -187,8 +124,10 @@ export default function HeroSection() {
     return () => window.clearInterval(id);
   }, [images, slideshowSpeed]);
 
+  const hasSlides = images.length > 0;
+
   return (
-    <div className="hero-gradient text-text-inverse py-20 relative overflow-hidden">
+    <div className={`hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden`}>
       {/* image slideshow: using <img> so it's discoverable and preloadable */}
       <div className="absolute inset-0 z-0" aria-hidden={images.length === 0}>
         {images.length > 0 && (
