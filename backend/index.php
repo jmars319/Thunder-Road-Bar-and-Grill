@@ -29,8 +29,11 @@ require_once __DIR__ . '/middleware/RateLimitMiddleware.php';
 RequestContext::init();
 ErrorHandler::setup();
 
-// Ensure PHP upload limits line up with our pipeline limit (default 8MB)
-$uploadLimitBytes = (int) Config::get('IMAGE_UPLOAD_MAX_BYTES', 8388608);
+// Ensure PHP upload limits line up with our pipeline limit (default 15MB if unset)
+$uploadLimitBytes = (int) Config::get('IMAGE_UPLOAD_MAX_BYTES', (int) Config::get('MAX_UPLOAD_SIZE', 15728640));
+if ($uploadLimitBytes <= 0) {
+    $uploadLimitBytes = 15728640;
+}
 $uploadLimitMb = max(8, (int) ceil($uploadLimitBytes / 1048576));
 @ini_set('upload_max_filesize', $uploadLimitMb . 'M');
 @ini_set('post_max_size', max($uploadLimitMb * 2, $uploadLimitMb + 2) . 'M');

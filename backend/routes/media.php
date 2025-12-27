@@ -1,17 +1,35 @@
 <?php
 
+require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../utils/Database.php';
 require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../utils/MediaPipeline.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
+require_once __DIR__ . '/../utils/RequestContext.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 
 class MediaRoutes {
     private $db;
+    private $uploadLimitBytes;
 
     public function __construct() {
         $this->db = Database::getInstance();
+        $configured = (int) Config::get('IMAGE_UPLOAD_MAX_BYTES', (int) Config::get('MAX_UPLOAD_SIZE', 15728640));
+        $this->uploadLimitBytes = $configured > 0 ? $configured : 15728640;
+    }
+
+    private function respondUploadError($message, $status = 400, $errorKey = 'bad_request', array $details = []) {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'error' => $errorKey,
+            'message' => $message,
+            'details' => $details,
+            'requestId' => RequestContext::getRequestId(),
+            'timestampUTC' => gmdate('c')
+        ]);
+        exit;
     }
 
     protected function normalizeContextValue($value, $allowNull = false) {
@@ -121,15 +139,33 @@ class MediaRoutes {
     public function uploadMedia() {
         $user = AdminAuthMiddleware::require();
 
-        if (!isset($_FILES['file'])) {
-            ErrorHandler::respond('No file uploaded', 400, ['success' => false]);
+        $file = $_FILES['file'] ?? $_FILES['image'] ?? null;
+        if (!$file) {
+            $this->respondUploadError('No file uploaded', 400, 'missing_file');
         }
 
-        $file = $_FILES['file'];
         if ($file['error'] !== UPLOAD_ERR_OK) {
             $message = $this->describeUploadError($file['error']);
             Logger::error('POST /api/media upload_error', ['code' => $file['error'], 'message' => $message]);
-            ErrorHandler::respond($message, 400, ['success' => false]);
+            $this->respondUploadError($message, 400, 'upload_error', ['code' => $file['error']]);
+        }
+
+        $fileSize = isset($file['size']) ? (int) $file['size'] : 0;
+        if ($fileSize <= 0 || empty($file['tmp_name'])) {
+            $this->respondUploadError('Uploaded file is empty', 400, 'empty_file');
+        }
+
+        if ($fileSize > $this->uploadLimitBytes) {
+            $maxMb = max(1, round($this->uploadLimitBytes / 1048576, 1));
+            $this->respondUploadError(
+                "File too large. Max size is {$maxMb} MB.",
+                400,
+                'file_too_large',
+                [
+                    'maxBytes' => $this->uploadLimitBytes,
+                    'receivedBytes' => $fileSize
+                ]
+            );
         }
 
         $title = trim($_POST['title'] ?? $file['name']);
@@ -138,11 +174,11 @@ class MediaRoutes {
         $category = $this->normalizeContextValue($_POST['category'] ?? null);
 
         if ($category === 'logo') {
-            ErrorHandler::respond('Logo uploads are no longer supported', 400, ['success' => false]);
+            $this->respondUploadError('Logo uploads are no longer supported', 400, 'unsupported_category');
         }
 
         if ($category === 'resume') {
-            ErrorHandler::respond('Resume uploads are not supported', 400, ['success' => false]);
+            $this->respondUploadError('Resume uploads are not supported', 400, 'unsupported_category');
         }
 
         $processed = null;
@@ -213,9 +249,11 @@ class MediaRoutes {
                     MediaPipeline::deleteOriginalByUrl($processed['file_url']);
                 }
             }
-            $status = $e->getCode() === 400 ? 400 : 500;
+            $status = $e->getCode() >= 400 && $e->getCode() < 600 ? (int) $e->getCode() : 500;
             $message = $status === 400 ? $e->getMessage() : 'Upload failed';
-            ErrorHandler::respond($message, $status, ['success' => false]);
+            $errorKey = $status === 400 ? 'bad_request' : 'upload_failed';
+            $details = $status === 400 ? ['reason' => $e->getMessage()] : [];
+            $this->respondUploadError($message, $status, $errorKey, $details);
         }
     }
 

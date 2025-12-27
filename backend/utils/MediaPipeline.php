@@ -358,12 +358,17 @@ class MediaPipeline {
     public static function processUploadedFile($tmpPath, $originalName, $mimeType, $fileSize, $category) {
         self::ensureStructure();
 
+        $maxBytes = (int) Config::get('IMAGE_UPLOAD_MAX_BYTES', (int) Config::get('MAX_UPLOAD_SIZE', 15728640));
+        if ($maxBytes <= 0) {
+            $maxBytes = 15728640;
+        }
+
         $validation = FileValidator::validate(
             $tmpPath,
             $mimeType,
             $fileSize,
             self::ALLOWED_IMAGE_MIME_TYPES,
-            (int) Config::get('IMAGE_UPLOAD_MAX_BYTES', 8388608)
+            $maxBytes
         );
 
         if (!$validation['valid']) {

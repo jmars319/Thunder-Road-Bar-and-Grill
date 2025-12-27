@@ -16,6 +16,7 @@ import { createPortal } from 'react-dom';
 import { icons } from '../../icons';
 import BrandLogo from '../shared/BrandLogo';
 import { getApiUrl } from '../../config/api';
+import cachedFetch from '../../lib/cachedFetch';
 // Lazy-load the OrderModal so it's only fetched when a user opens the modal.
 // This keeps the initial JS bundle smaller and loads the placeholder only on
 // demand. If you add analytics for interest in ordering, dispatch analytics
@@ -55,8 +56,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
 
   useEffect(() => {
     // Load site-level settings (logo, name, tagline). Keep errors silent for now.
-    fetch(getApiUrl('/settings'))
-      .then(res => res.json())
+    cachedFetch(getApiUrl('/settings'))
       .then(payload => setSiteSettings(payload?.settings || {}))
       .catch(() => {});
 

@@ -175,6 +175,7 @@ export default function MediaModule() {
       setMedia(list);
     } catch (err) {
       setError('Unable to load media. Please try again in a moment.');
+      setMedia([]);
     } finally {
       setLoading(false);
     }
@@ -274,7 +275,8 @@ export default function MediaModule() {
       if (status >= 200 && status < 300) {
         resolve(response);
       } else {
-        reject(new Error(response?.message || 'Upload failed. Please try again.'));
+        const message = response?.message || response?.error || 'Upload failed. Please try again.';
+        reject(new Error(message));
       }
     };
     xhr.send(formData);
@@ -284,7 +286,7 @@ export default function MediaModule() {
     if (!uploadState.file) return;
     setError('');
     setMessage('');
-    setUploadState((prev) => ({ ...prev, uploading: true }));
+    setUploadState((prev) => ({ ...prev, uploading: true, processing: false }));
     try {
       await uploadMedia(uploadState.file, uploadCategory);
       setMessage('File uploaded successfully');
@@ -293,8 +295,10 @@ export default function MediaModule() {
       try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
     } catch (err) {
       setError(err.message || 'Upload failed. Please try again.');
+      setUploadState((prev) => ({ ...prev, uploading: false, processing: false }));
+      return;
     } finally {
-      setUploadState(defaultUploadState);
+      setUploadState((prev) => ({ ...prev, uploading: false, processing: false }));
     }
   };
 

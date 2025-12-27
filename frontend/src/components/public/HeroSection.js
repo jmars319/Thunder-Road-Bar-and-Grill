@@ -17,6 +17,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { buildImageVariant } from '../../utils/imageVariants';
 import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
+import cachedFetch from '../../lib/cachedFetch';
 
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
@@ -40,11 +41,10 @@ export default function HeroSection() {
     let cancelled = false;
     const loadHero = async () => {
       try {
-        const response = await fetch(getApiUrl('/settings'));
-        if (!response.ok) {
+        const payload = await cachedFetch(getApiUrl('/settings'));
+        if (!payload) {
           throw new Error('Failed to load site settings');
         }
-        const payload = await response.json();
         if (cancelled) return;
         const settings = payload?.settings || {};
         const heroSelection = Array.isArray(settings?.hero_images)

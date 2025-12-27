@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { icons } from '../../icons';
 import { getApiUrl } from '../../config/api';
+import cachedFetch from '../../lib/cachedFetch';
 
 /*
   ReservationSection
@@ -45,9 +46,10 @@ export default function ReservationSection() {
   const [copy, setCopy] = useState({ heading: '', intro: '', success: '', failure: '' });
 
   useEffect(() => {
-    fetch(getApiUrl('/settings'))
-      .then((res) => res.ok ? res.json() : null)
+    let cancelled = false;
+    cachedFetch(getApiUrl('/settings'))
       .then((data) => {
+        if (cancelled) return;
         const settings = data?.settings || {};
         setCopy({
           heading: settings.reservations_heading || '',
@@ -57,8 +59,13 @@ export default function ReservationSection() {
         });
       })
       .catch(() => {
-        setCopy({ heading: '', intro: '', success: '', failure: '' });
+        if (!cancelled) {
+          setCopy({ heading: '', intro: '', success: '', failure: '' });
+        }
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSubmit = async () => {

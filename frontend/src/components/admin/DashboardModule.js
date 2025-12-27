@@ -88,6 +88,7 @@ function DashboardModule() {
     type: null
   });
   const enableTestEmail = process.env.REACT_APP_ENABLE_TEST_EMAIL === 'true';
+  const newsletterEnabled = process.env.REACT_APP_NEWSLETTER_ENABLED === 'true';
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +109,13 @@ function DashboardModule() {
     };
 
     const fetchActiveSubscribers = async () => {
+      if (!newsletterEnabled) {
+        return 0;
+      }
       const res = await authenticatedFetch('/subscribers');
+      if (res.status === 404) {
+        return 0;
+      }
       if (!res.ok) return 0;
       const list = await res.json();
       if (!Array.isArray(list)) return 0;
@@ -151,7 +158,7 @@ function DashboardModule() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [newsletterEnabled]);
 
   const triggerTestEmail = async (type) => {
     if (!enableTestEmail) return;

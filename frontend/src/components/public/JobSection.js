@@ -16,6 +16,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import Toast from '../ui/Toast';
 import { sanitizeRichText } from '../../utils/richText';
 import { getApiUrl } from '../../config/api';
+import cachedFetch from '../../lib/cachedFetch';
 
 // Public-facing job application form (frontend-only integration)
 export default function JobSection() {
@@ -188,9 +189,10 @@ export default function JobSection() {
       })
       .catch(() => {});
 
-    fetch(getApiUrl('/settings'))
-      .then((r) => r.ok ? r.json() : null)
+    let cancelled = false;
+    cachedFetch(getApiUrl('/settings'))
       .then((data) => {
+        if (cancelled) return;
         const settings = data?.settings || {};
         setCopy({
           success: settings.jobs_success_copy || '',
@@ -201,14 +203,22 @@ export default function JobSection() {
           positionsLabel: settings.jobs_positions_label || ''
         });
       })
-      .catch(() => setCopy({
-        success: '',
-        failure: '',
-        sidebarHeading: '',
-        sidebarIntro: '',
-        sidebarBenefits: '',
-        positionsLabel: ''
-      }));
+      .catch(() => {
+        if (!cancelled) {
+          setCopy({
+            success: '',
+            failure: '',
+            sidebarHeading: '',
+            sidebarIntro: '',
+            sidebarBenefits: '',
+            positionsLabel: ''
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const sidebarBenefitsHtml = useMemo(() => sanitizeRichText(copy.sidebarBenefits || ''), [copy.sidebarBenefits]);
