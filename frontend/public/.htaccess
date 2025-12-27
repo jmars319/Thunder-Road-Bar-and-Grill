@@ -27,10 +27,15 @@
   ExpiresByType text/javascript "access plus 1 year"
   ExpiresByType text/css "access plus 1 year"
   ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
   ExpiresDefault "access plus 1 month"
 </IfModule>
 
-<FilesMatch "\.(js|css|woff2)$">
+<FilesMatch "\.(js|css|woff2|png|jpe?g|gif|svg|webp)$">
   <IfModule mod_headers.c>
     Header set Cache-Control "public, max-age=31536000, immutable"
   </IfModule>
@@ -39,5 +44,11 @@
 <FilesMatch "\.(html)$">
   <IfModule mod_headers.c>
     Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </IfModule>
+</FilesMatch>
+
+<FilesMatch "^(robots\.txt|sitemap\.xml)$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=3600, must-revalidate"
   </IfModule>
 </FilesMatch>

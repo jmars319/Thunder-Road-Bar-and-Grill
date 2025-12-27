@@ -37,8 +37,21 @@ if ($uri !== '/') {
         if (isset($mimeTypes[$ext])) {
             header('Content-Type: ' . $mimeTypes[$ext]);
         }
-        
-        header('Cache-Control: public, max-age=31536000'); // 1 year cache
+
+        $lastModified = gmdate('D, d M Y H:i:s', filemtime($uploadPath)) . ' GMT';
+        $etag = '"' . md5_file($uploadPath) . '"';
+        header('Cache-Control: public, max-age=31536000, immutable');
+        header('Last-Modified: ' . $lastModified);
+        header('ETag: ' . $etag);
+
+        $ifNoneMatch = $_SERVER['HTTP_IF_NONE_MATCH'] ?? null;
+        $ifModifiedSince = $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? null;
+        if (($ifNoneMatch && trim($ifNoneMatch) === $etag) ||
+            ($ifModifiedSince && trim($ifModifiedSince) === $lastModified)) {
+            header('HTTP/1.1 304 Not Modified');
+            exit;
+        }
+
         readfile($uploadPath);
         exit;
     }
