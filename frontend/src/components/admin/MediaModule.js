@@ -276,7 +276,11 @@ export default function MediaModule() {
         resolve(response);
       } else {
         const message = response?.message || response?.error || 'Upload failed. Please try again.';
-        reject(new Error(message));
+        const error = new Error(message);
+        error.code = response?.error || null;
+        error.status = status;
+        error.details = response?.details || null;
+        reject(error);
       }
     };
     xhr.send(formData);
@@ -294,7 +298,21 @@ export default function MediaModule() {
       await loadMedia();
       try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
     } catch (err) {
-      setError(err.message || 'Upload failed. Please try again.');
+      if (err?.code === 'file_too_large' || err?.status === 413) {
+        const detailBytes =
+          Number(err?.details?.max_bytes) ||
+          Number(err?.details?.effective_bytes) ||
+          Number(err?.details?.env_MAX_UPLOAD_SIZE) ||
+          0;
+        const humanLabel =
+          err?.details?.max_human ||
+          err?.details?.effective_human ||
+          (detailBytes ? formatBytes(detailBytes) : null);
+        const labelText = humanLabel ? ` is ~${humanLabel}` : ' reached';
+        setError(`Upload too large. Server limit${labelText}.`);
+      } else {
+        setError(err?.message || 'Upload failed. Please try again.');
+      }
       setUploadState((prev) => ({ ...prev, uploading: false, processing: false }));
       return;
     } finally {

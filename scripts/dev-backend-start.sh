@@ -25,9 +25,15 @@ require_command php
 
 log_info "Starting PHP backend on $BACKEND_HOST:$BACKEND_PORT"
 : > "$BACKEND_LOG_FILE"
+# Use permissive dev-only PHP ini caps so uploads align with UploadLimits helper.
 (
   cd "$BACKEND_DIR"
-  php -d upload_max_filesize=16M -d post_max_size=32M -S "$BACKEND_HOST:$BACKEND_PORT" router.php >"$BACKEND_LOG_FILE" 2>&1 &
+  php \
+    -d upload_max_filesize=20M \
+    -d post_max_size=25M \
+    -d memory_limit=256M \
+    -d max_execution_time=120 \
+    -S "$BACKEND_HOST:$BACKEND_PORT" router.php >"$BACKEND_LOG_FILE" 2>&1 &
   echo $! > "$BACKEND_PID_FILE"
 )
 

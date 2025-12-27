@@ -6,17 +6,15 @@ require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../utils/MediaPipeline.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
 require_once __DIR__ . '/../utils/RequestContext.php';
+require_once __DIR__ . '/../utils/UploadLimits.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 
 class MediaRoutes {
     private $db;
-    private $uploadLimitBytes;
 
     public function __construct() {
         $this->db = Database::getInstance();
-        $configured = (int) Config::get('IMAGE_UPLOAD_MAX_BYTES', (int) Config::get('MAX_UPLOAD_SIZE', 15728640));
-        $this->uploadLimitBytes = $configured > 0 ? $configured : 15728640;
     }
 
     private function respondUploadError($message, $status = 400, $errorKey = 'bad_request', array $details = []) {
@@ -139,6 +137,20 @@ class MediaRoutes {
     public function uploadMedia() {
         $user = AdminAuthMiddleware::require();
 
+        $limits = UploadLimits::getLimitsDebugInfo();
+        $effectiveMax = $limits['effective_bytes'] ?? 0;
+        $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+        if ($effectiveMax > 0 && $contentLength > $effectiveMax) {
+            $this->respondUploadError(
+                'File exceeds server upload limit',
+                413,
+                'file_too_large',
+                array_merge($limits, [
+                    'content_length' => $contentLength
+                ])
+            );
+        }
+
         $file = $_FILES['file'] ?? $_FILES['image'] ?? null;
         if (!$file) {
             $this->respondUploadError('No file uploaded', 400, 'missing_file');
@@ -155,16 +167,14 @@ class MediaRoutes {
             $this->respondUploadError('Uploaded file is empty', 400, 'empty_file');
         }
 
-        if ($fileSize > $this->uploadLimitBytes) {
-            $maxMb = max(1, round($this->uploadLimitBytes / 1048576, 1));
+        if ($effectiveMax > 0 && $fileSize > $effectiveMax) {
             $this->respondUploadError(
-                "File too large. Max size is {$maxMb} MB.",
-                400,
+                'File exceeds server upload limit',
+                413,
                 'file_too_large',
-                [
-                    'maxBytes' => $this->uploadLimitBytes,
-                    'receivedBytes' => $fileSize
-                ]
+                array_merge($limits, [
+                    'received_bytes' => $fileSize
+                ])
             );
         }
 
