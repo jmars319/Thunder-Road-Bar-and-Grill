@@ -20,7 +20,7 @@ import makeAbsolute from '../../lib/makeAbsolute';
 import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
 import { sanitizeRichText } from '../../utils/richText';
 
-const normalizeHeroImages = (rawValue, fallbackVariants = []) => {
+const normalizeHeroImages = (rawValue) => {
   const asArray = (() => {
     if (Array.isArray(rawValue)) return rawValue;
     if (typeof rawValue === 'string') {
@@ -34,28 +34,19 @@ const normalizeHeroImages = (rawValue, fallbackVariants = []) => {
     return [];
   })();
 
-  if (asArray.length > 0) {
-    // Ensure id/title/alt_text fields exist and ids are numeric
-    return asArray
-      .map((entry) => ({
-        id: typeof entry.id === 'number' ? entry.id : Number(entry.id),
-        title: entry.title || '',
-        alt_text: entry.alt_text || ''
-      }))
-      .filter((entry) => Number.isFinite(entry.id));
-  }
-
-  if (!Array.isArray(fallbackVariants) || fallbackVariants.length === 0) {
-    return [];
-  }
-
-  return fallbackVariants
-    .map((variant) => ({
-      id: typeof variant.id === 'number' ? variant.id : Number(variant.id),
-      title: variant.title || '',
-      alt_text: variant.alt_text || ''
+  return asArray
+    .map((entry) => ({
+      id: typeof entry.id === 'number' ? entry.id : Number(entry.id),
+      title: entry.title || '',
+      alt_text: entry.alt_text || '',
+      is_fallback: Boolean(entry.is_fallback)
     }))
-    .filter((entry) => Number.isFinite(entry.id));
+    .filter((entry) => Number.isFinite(entry.id) && !entry.is_fallback)
+    .map(({ id, title, alt_text }) => ({
+      id,
+      title,
+      alt_text
+    }));
 };
 
 /*
@@ -100,34 +91,38 @@ function SettingsModule() {
     businessHours: true
   });
   const originalSettingsRef = useRef({});
-  const heroDragIndexRef = useRef(null);
   const toggleSection = useCallback((key) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const refetchSiteSettings = useCallback(async () => {
+    try {
+      const siteRes = await authenticatedFetch('/settings');
+      if (!siteRes.ok) throw new Error('Failed to load settings');
+      const siteData = await siteRes.json();
+      const settingsPayload = siteData?.settings || {};
+      settingsPayload.hero_images = normalizeHeroImages(settingsPayload.hero_images);
+      const parsedSpeed = parseInt(settingsPayload.hero_slideshow_speed, 10);
+      settingsPayload.hero_slideshow_speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000;
+      const normalizedSettings = JSON.parse(JSON.stringify(settingsPayload));
+      setSiteSettings(normalizedSettings);
+      originalSettingsRef.current = normalizedSettings;
+      return normalizedSettings;
+    } catch {
+      setSiteSettings({});
+      return null;
+    }
   }, []);
 
   useEffect(() => {
     // Load all settings in a single async function with error handling
     const loadAll = async () => {
       try {
-        const [siteRes, aboutRes, hoursRes] = await Promise.all([
-          authenticatedFetch('/settings'),
+        await refetchSiteSettings();
+        const [aboutRes, hoursRes] = await Promise.all([
           authenticatedFetch('/about'),
           authenticatedFetch('/business-hours')
         ]);
-
-        if (siteRes.ok) {
-          const siteData = await siteRes.json();
-          const settingsPayload = siteData?.settings || {};
-          settingsPayload.hero_images = normalizeHeroImages(
-            settingsPayload.hero_images,
-            settingsPayload.hero_images_variants
-          );
-          const parsedSpeed = parseInt(settingsPayload.hero_slideshow_speed, 10);
-          settingsPayload.hero_slideshow_speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000;
-          const normalizedSettings = JSON.parse(JSON.stringify(settingsPayload));
-          setSiteSettings(normalizedSettings);
-          originalSettingsRef.current = normalizedSettings;
-        }
 
         if (aboutRes.ok) {
           const aboutData = await aboutRes.json();
@@ -147,7 +142,7 @@ function SettingsModule() {
     };
 
     loadAll();
-  }, []);
+  }, [refetchSiteSettings]);
 
   const loadHeroMedia = useCallback(async () => {
     setLoadingHeroMedia(true);
@@ -186,23 +181,8 @@ function SettingsModule() {
   }, []);
 
   const heroSelection = useMemo(() => {
-    const base = Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : [];
-    if (base.length > 0) {
-      return base;
-    }
-
-    const fallbackList = Array.isArray(siteSettings.hero_images_variants)
-      ? siteSettings.hero_images_variants
-      : [];
-
-    return fallbackList
-      .map((entry) => ({
-        id: typeof entry.id === 'number' ? entry.id : Number(entry.id),
-        title: entry.title || '',
-        alt_text: entry.alt_text || ''
-      }))
-      .filter((entry) => Number.isFinite(entry.id));
-  }, [siteSettings.hero_images, siteSettings.hero_images_variants]);
+    return Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : [];
+  }, [siteSettings.hero_images]);
 
   const heroSelectionIds = useMemo(() => heroSelection.map((entry) => Number(entry.id)), [heroSelection]);
 
@@ -295,33 +275,6 @@ function SettingsModule() {
       next.splice(targetIndex, 0, item);
       return next;
     });
-  };
-
-  const handleHeroDragStart = (index) => {
-    heroDragIndexRef.current = index;
-  };
-
-  const handleHeroDragOver = (event) => {
-    event.preventDefault();
-  };
-
-  const handleHeroDrop = (targetIndex) => {
-    const from = heroDragIndexRef.current;
-    heroDragIndexRef.current = null;
-    if (from === null || from === targetIndex) return;
-    updateHeroImages((current) => {
-      if (from < 0 || from >= current.length || targetIndex < 0 || targetIndex >= current.length) {
-        return current;
-      }
-      const next = [...current];
-      const [item] = next.splice(from, 1);
-      next.splice(targetIndex, 0, item);
-      return next;
-    });
-  };
-
-  const handleHeroDragEnd = () => {
-    heroDragIndexRef.current = null;
   };
 
   const saveSiteSettings = useCallback(async (fieldSubset) => {
@@ -453,6 +406,9 @@ function SettingsModule() {
     if (!Array.isArray(fields) || fields.length === 0) return;
     setSectionSaveState((prev) => ({ ...prev, [sectionKey]: 'saving' }));
     const ok = await saveSiteSettings(fields);
+    if (ok && sectionKey === 'heroImages') {
+      await refetchSiteSettings();
+    }
     setSectionSaveState((prev) => ({ ...prev, [sectionKey]: ok ? 'saved' : 'error' }));
     setTimeout(() => {
       setSectionSaveState((prev) => {
@@ -461,7 +417,7 @@ function SettingsModule() {
         return next;
       });
     }, 2500);
-  }, [saveSiteSettings]);
+  }, [saveSiteSettings, refetchSiteSettings]);
 
   const SectionSaveButton = ({ sectionKey, fields, label }) => {
     const state = sectionSaveState[sectionKey];
@@ -625,22 +581,17 @@ function SettingsModule() {
                 <div className="p-4 space-y-4">
                   {heroSelectionHydrated.length === 0 ? (
                     <div className="text-sm text-text-secondary">
-                      No hero images selected. Choose from the available hero uploads on the right.
+                      No hero images selected. The site will display a built-in fallback hero image until you add slides.
                     </div>
                   ) : (
                     <>
-                      <p className="text-2xs text-text-secondary">Tip: drag cards to reorder slides.</p>
+                      <p className="text-2xs text-text-secondary">Use the Move buttons to reorder slides.</p>
                       {heroSelectionHydrated.map((entry, index) => {
                         const previewUrl = heroPreviewUrl(entry.media);
                         return (
                           <div
                             key={entry.id || index}
-                            className="border border-divider rounded-lg overflow-hidden bg-surface-warm cursor-grab active:cursor-grabbing"
-                            draggable
-                            onDragStart={() => handleHeroDragStart(index)}
-                            onDragOver={handleHeroDragOver}
-                            onDrop={() => handleHeroDrop(index)}
-                            onDragEnd={handleHeroDragEnd}
+                            className="border border-divider rounded-lg overflow-hidden bg-surface-warm"
                           >
                             <div className="flex flex-col md:flex-row gap-4 p-4">
                               <div className="relative w-full md:w-40 h-32 rounded overflow-hidden bg-background flex-shrink-0">

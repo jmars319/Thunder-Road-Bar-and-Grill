@@ -349,7 +349,7 @@ class MenuRoutes {
      * POST /api/menu/categories - Create category
      */
     public function createCategory() {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';
@@ -415,7 +415,7 @@ class MenuRoutes {
      * PUT /api/menu/categories/:id - Update category
      */
     public function updateCategory($id) {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';

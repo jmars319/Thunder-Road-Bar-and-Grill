@@ -127,7 +127,7 @@ export default function MediaModule() {
           ? sitePayload.settings.hero_images
           : [];
         heroUsage = entries.reduce((acc, entry, index) => {
-          if (entry && entry.id) {
+          if (entry && entry.id && !entry.is_fallback) {
             acc[entry.id] = {
               order: index + 1,
               title: entry.title || `Slide ${index + 1}`

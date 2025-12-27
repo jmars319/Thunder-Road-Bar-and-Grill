@@ -13,10 +13,12 @@
 
 // React 17+ with new JSX transform doesn't require importing React for JSX usage.
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
 import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
+
+const FALLBACK_HERO = '/og/og-image-1200x630-with-badge.png';
 
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
@@ -27,12 +29,44 @@ export default function HeroSection() {
   const idxRef = useRef(0);
   const [index, setIndex] = useState(0);
 
+  const applySlides = useCallback((slides) => {
+    if (!Array.isArray(slides) || slides.length === 0) {
+      return;
+    }
+    idxRef.current = 0;
+    setIndex(0);
+    setImages(slides);
+  }, []);
+
+  const setFallbackImage = useCallback((title = '') => {
+    applySlides([
+      {
+        id: 'fallback',
+        alt: title || 'Thunder Road Bar & Grill hero',
+        variant: {
+          fallback: FALLBACK_HERO,
+          optimizedSrcset: '',
+          webpSrcset: '',
+          sizes: '100vw'
+        }
+      }
+    ]);
+  }, [applySlides]);
+
   useEffect(() => {
-  fetch(getApiUrl('/settings')).then(r => r.ok ? r.json() : {}).then(async payload => {
-        const heroVariants = Array.isArray(payload?.settings?.hero_images_variants)
-          ? payload.settings.hero_images_variants
-          : [];
+    let cancelled = false;
+    const loadHero = async () => {
+      try {
+        const response = await fetch(getApiUrl('/settings'));
+        if (!response.ok) {
+          throw new Error('Failed to load site settings');
+        }
+        const payload = await response.json();
+        if (cancelled) return;
         const settings = payload?.settings || {};
+        const heroVariants = Array.isArray(settings?.hero_images_variants)
+          ? settings.hero_images_variants
+          : [];
         setHeroCopy({
           title: settings.hero_title || '',
           subtitle: settings.hero_subtitle || '',
@@ -52,31 +86,53 @@ export default function HeroSection() {
             }))
             .filter((entry) => entry.variant);
           if (normalized.length) {
-            setImages(normalized);
+            applySlides(normalized);
             return;
           }
         }
 
-      // Fallback: if site settings don't include hero images, fetch recent hero-category media
-      try {
-        const mres = await fetch(getApiUrl('/media?category=hero'));
-        if (!mres.ok) return;
-        const payload = await mres.json();
-        const heroes = Array.isArray(payload?.media) ? payload.media : Array.isArray(payload) ? payload : [];
-        const filtered = heroes.filter((entry) => hasRenderableImageVariant(entry));
-        if (filtered.length) {
-          const variants = filtered.map((entry) => ({
-            id: entry.id,
-            alt: entry.alt_text || entry.title || '',
-            variant: buildImageVariant(entry, { sizes: '100vw' })
-          })).filter((img) => img.variant);
-          setImages(variants);
+        try {
+          const mediaResponse = await fetch(getApiUrl('/media?category=hero'));
+          if (!mediaResponse.ok) {
+            throw new Error('Failed to load hero media');
+          }
+          const mediaPayload = await mediaResponse.json();
+          if (cancelled) return;
+          const heroes = Array.isArray(mediaPayload?.media)
+            ? mediaPayload.media
+            : (Array.isArray(mediaPayload) ? mediaPayload : []);
+          const filtered = heroes.filter((entry) => hasRenderableImageVariant(entry));
+          if (filtered.length) {
+            const variants = filtered
+              .map((entry) => ({
+                id: entry.id,
+                alt: entry.alt_text || entry.title || '',
+                variant: buildImageVariant(entry, { sizes: '100vw' })
+              }))
+              .filter((img) => img.variant);
+            if (variants.length) {
+              applySlides(variants);
+              return;
+            }
+          }
+        } catch (mediaError) {
+          // swallow media fallback failures
         }
-      } catch (e) {
-        // ignore fallback failure
+
+        if (!cancelled) {
+          setFallbackImage(settings.hero_title || '');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setFallbackImage();
+        }
       }
-  }).catch(() => {});
-  }, []);
+    };
+    loadHero();
+    return () => {
+      cancelled = true;
+    };
+  }, [applySlides, setFallbackImage]);
 
   useEffect(() => {
     if (!images.length) return;

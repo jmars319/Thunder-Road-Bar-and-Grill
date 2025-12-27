@@ -27,6 +27,7 @@ require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
 require_once __DIR__ . '/../utils/HtmlSanitizer.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class SettingsRoutes {
     private $db;
@@ -55,6 +56,30 @@ class SettingsRoutes {
             'webp_srcset' => $media['webp_srcset'] ?? '',
             'fallback_original' => $media['fallback_original'] ?? ($media['file_url'] ?? null)
         ];
+    }
+
+    private function sanitizeHeroImages($entries) {
+        if (!is_array($entries)) {
+            return [];
+        }
+        $normalized = [];
+        $seen = [];
+        foreach ($entries as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $id = isset($entry['id']) ? (int) $entry['id'] : null;
+            if (!$id || isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $normalized[] = [
+                'id' => $id,
+                'title' => isset($entry['title']) ? trim((string) $entry['title']) : '',
+                'alt_text' => isset($entry['alt_text']) ? trim((string) $entry['alt_text']) : ''
+            ];
+        }
+        return $normalized;
     }
 
     /**
@@ -99,7 +124,6 @@ class SettingsRoutes {
             if (!empty($settings['hero_images'])) {
                 $heroImagesRaw = json_decode($settings['hero_images'], true) ?: [];
             }
-            $heroImages = [];
             $heroSelectionForResponse = [];
             $ids = array_values(array_filter(array_map(function ($entry) {
                 return isset($entry['id']) ? (int) $entry['id'] : null;
@@ -107,7 +131,6 @@ class SettingsRoutes {
             $map = $ids ? MediaResponseBuilder::hydrateByIds($this->db, $ids) : [];
             $heroVariants = [];
             foreach ($heroImagesRaw as $entry) {
-                $heroImages[] = $entry;
                 $id = $entry['id'] ?? null;
                 if (!$id || !isset($map[$id])) {
                     Logger::info('Skipping hero image reference with missing media record', ['id' => $id]);
@@ -129,6 +152,11 @@ class SettingsRoutes {
                     'webp_srcset' => $hydrated['webp_srcset'],
                     'fallback_original' => $hydrated['fallback_original']
                 ];
+                $heroSelectionForResponse[] = [
+                    'id' => $id,
+                    'title' => $entry['title'] ?? '',
+                    'alt_text' => $entry['alt_text'] ?? ''
+                ];
             }
             if (empty($heroVariants)) {
                 $fallbackMedia = $this->fetchFallbackHeroMedia();
@@ -139,7 +167,7 @@ class SettingsRoutes {
                         }
                         $formatted = $this->formatHeroVariantFromMedia($media);
                         $heroVariants[] = $formatted;
-                        if (empty($heroImagesRaw)) {
+                        if (empty($heroSelectionForResponse)) {
                             $heroSelectionForResponse[] = [
                                 'id' => $formatted['id'],
                                 'title' => $formatted['title'] ?? '',
@@ -149,10 +177,6 @@ class SettingsRoutes {
                         }
                     }
                 }
-            }
-
-            if (empty($heroSelectionForResponse)) {
-                $heroSelectionForResponse = $heroImages;
             }
 
             $settings['hero_images'] = $heroSelectionForResponse;
@@ -306,12 +330,16 @@ class SettingsRoutes {
      * PUT /api/site-settings - Update site settings
      */
     public function updateSiteSettings() {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $input = json_decode(file_get_contents('php://input'), true);
         
         // Get existing settings
         $existing = $this->db->fetchOne('SELECT * FROM site_settings WHERE id = 1') ?: [];
+        $heroImagesBefore = $this->sanitizeHeroImages(
+            !empty($existing['hero_images']) ? (json_decode($existing['hero_images'], true) ?: []) : []
+        );
+        $heroImagesAfter = null;
 
         // Build dynamic UPDATE query
         $fields = [];
@@ -341,7 +369,11 @@ class SettingsRoutes {
                 
                 // Special handling for hero_images
                 if ($field === 'hero_images') {
-                    $value = is_array($value) ? json_encode($value) : null;
+                    $decodedValue = is_array($value)
+                        ? $value
+                        : (is_string($value) ? json_decode($value, true) : []);
+                    $heroImagesAfter = $this->sanitizeHeroImages($decodedValue ?: []);
+                    $value = json_encode($heroImagesAfter);
                 } elseif (in_array($field, $richTextFields, true)) {
                     $value = HtmlSanitizer::sanitizeRichText($value);
                 } elseif (in_array($field, ['hero_cta_primary_href', 'hero_cta_secondary_href'], true)) {
@@ -376,6 +408,66 @@ class SettingsRoutes {
         
         try {
             $this->db->update($sql, $params);
+            if ($heroImagesAfter !== null) {
+                $beforeIds = array_map(function ($entry) {
+                    return isset($entry['id']) ? (int) $entry['id'] : null;
+                }, $heroImagesBefore);
+                $beforeIds = array_values(array_filter($beforeIds, function ($id) {
+                    return $id !== null;
+                }));
+                $afterIds = array_map(function ($entry) {
+                    return isset($entry['id']) ? (int) $entry['id'] : null;
+                }, $heroImagesAfter);
+                $afterIds = array_values(array_filter($afterIds, function ($id) {
+                    return $id !== null;
+                }));
+
+                $added = array_values(array_diff($afterIds, $beforeIds));
+                $removed = array_values(array_diff($beforeIds, $afterIds));
+                $idsChanged = $beforeIds !== $afterIds;
+
+                if (!empty($added)) {
+                    AuditLog::record('hero_slideshow_select', [
+                        'actor_type' => 'admin',
+                        'actor_id' => $user['id'] ?? null,
+                        'entity_type' => 'site_settings',
+                        'entity_id' => 1,
+                        'meta' => ['ids' => $added]
+                    ]);
+                }
+
+                if (!empty($removed)) {
+                    AuditLog::record('hero_slideshow_remove', [
+                        'actor_type' => 'admin',
+                        'actor_id' => $user['id'] ?? null,
+                        'entity_type' => 'site_settings',
+                        'entity_id' => 1,
+                        'meta' => ['ids' => $removed]
+                    ]);
+                }
+
+                if ($idsChanged && empty($added) && empty($removed)) {
+                    AuditLog::record('hero_slideshow_reorder', [
+                        'actor_type' => 'admin',
+                        'actor_id' => $user['id'] ?? null,
+                        'entity_type' => 'site_settings',
+                        'entity_id' => 1,
+                        'meta' => ['order' => $afterIds]
+                    ]);
+                }
+
+                $beforeJson = json_encode($heroImagesBefore);
+                $afterJson = json_encode($heroImagesAfter);
+                if ($beforeJson !== $afterJson && empty($added) && empty($removed) && !$idsChanged) {
+                    AuditLog::record('hero_slideshow_meta_update', [
+                        'actor_type' => 'admin',
+                        'actor_id' => $user['id'] ?? null,
+                        'entity_type' => 'site_settings',
+                        'entity_id' => 1,
+                        'meta' => ['ids' => $afterIds]
+                    ]);
+                }
+            }
             echo json_encode(['message' => 'Settings updated']);
         } catch (PDOException $e) {
             Logger::error('Failed to update site_settings', ['error' => $e->getMessage()]);
