@@ -393,8 +393,8 @@ h1, h2, h3, h4, h5, h6 {
 .hero-gradient {
   background-color: var(--hero-gradient-base);
   background-image:
-    radial-gradient(circle at 10% 20%, rgba(21, 28, 48, 0.85), rgba(11, 16, 32, 0.95)),
-    linear-gradient(140deg, var(--hero-gradient-base), var(--hero-gradient-accent));
+    radial-gradient(circle at 50% 35%, rgba(22, 30, 52, 0.55), rgba(5, 9, 20, 0.95)),
+    linear-gradient(180deg, var(--hero-gradient-base), var(--hero-gradient-accent));
   position: relative;
   overflow: hidden;
 }
@@ -991,8 +991,8 @@ h1, h2, h3, h4, h5, h6 {
   .hero-gradient {
     background-color: var(--hero-gradient-base);
     background-image:
-      radial-gradient(circle at 10% 20%, rgba(21, 28, 48, 0.85), rgba(5, 9, 20, 0.95)),
-      linear-gradient(140deg, var(--hero-gradient-base), var(--hero-gradient-accent));
+      radial-gradient(circle at 50% 35%, rgba(22, 30, 52, 0.55), rgba(5, 9, 20, 0.95)),
+      linear-gradient(180deg, var(--hero-gradient-base), var(--hero-gradient-accent));
   }
   
   .header-scrolled {

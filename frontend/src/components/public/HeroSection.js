@@ -20,6 +20,8 @@ import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
 
 const HERO_SIZES = '(max-width: 767px) 100vw, (max-width: 1279px) calc(100vw - 32px), calc(100vw - 48px)';
+const HERO_FRAME_CLASS = 'absolute inset-0 md:inset-x-4 lg:inset-x-6 rounded-none md:rounded-[32px] overflow-hidden';
+const HERO_OVERLAY_CLASS = 'absolute inset-0 md:inset-x-4 lg:inset-x-6 rounded-none md:rounded-[32px] z-10 overlay-gradient pointer-events-none';
 
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
@@ -131,7 +133,7 @@ export default function HeroSection() {
   return (
     <div className={`hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden px-0 md:px-4 lg:px-6`}>
       {/* image slideshow: using <img> so it's discoverable and preloadable */}
-      <div className="absolute inset-0 md:inset-x-4 lg:inset-x-6 z-0" aria-hidden={images.length === 0}>
+      <div className={`${HERO_FRAME_CLASS} z-0`} aria-hidden={images.length === 0}>
         {images.length > 0 && (
           <>
             {images.map((img, i) => {
@@ -158,7 +160,7 @@ export default function HeroSection() {
       </div>
 
   {/* overlay gradient must sit above images but below content */}
-  <div className="absolute inset-0 md:inset-x-4 lg:inset-x-6 z-10 overlay-gradient" aria-hidden="true" />
+  <div className={HERO_OVERLAY_CLASS} aria-hidden="true" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20">
         {/* Accessibility: provide current slide text for screen readers without triggering extra image downloads */}
