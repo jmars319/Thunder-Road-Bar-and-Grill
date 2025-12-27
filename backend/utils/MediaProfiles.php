@@ -4,8 +4,9 @@ require_once __DIR__ . '/Config.php';
 
 class MediaProfiles {
     private const BASE_PROFILE = [768, 1536, 2304];
-    private const MENU_BASE = [576, 1152, 1728];
-    public const HERO_PROFILE = self::BASE_PROFILE;
+    private const HERO_BASE = [1440, 2880];
+    private const MENU_BASE = [960, 1920];
+    public const HERO_PROFILE = self::HERO_BASE;
     public const MENU_PROFILE = self::MENU_BASE;
     public const DEFAULT_PROFILE = self::BASE_PROFILE;
 

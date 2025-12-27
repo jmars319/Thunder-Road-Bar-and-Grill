@@ -84,7 +84,7 @@ export default function HeroSection() {
             if (!variantSource) {
               return;
             }
-            const variant = buildImageVariant(variantSource, { sizes: HERO_SIZES });
+            const variant = buildImageVariant(variantSource, { sizes: HERO_SIZES, maxVariants: 2 });
             if (!variant) {
               return;
             }

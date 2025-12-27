@@ -34,6 +34,8 @@
   /* Borders */
   --border-color: #e2e8f0;
   --divider-color: #f1f5f9;
+  --hero-gradient-base: #0b1020;
+  --hero-gradient-accent: #151c30;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 5%);
@@ -127,6 +129,8 @@
     --primary-dark: #a30f0f;
     --secondary-color: #b45309;
     --accent-color: #f59e0b;
+    --hero-gradient-base: #050914;
+    --hero-gradient-accent: #0f1724;
   --text-primary: #e6eef8; /* near white */
   --text-secondary: #d5deed;
   --text-muted: #a5b4cf;
@@ -167,6 +171,8 @@
   --text-placeholder: #c7d1ea;
   --border-color: #1f2a37;
   --divider-color: #14202b;
+  --hero-gradient-base: #050914;
+  --hero-gradient-accent: #0f1724;
   --logo-badge-bg: rgb(255 255 255 / 30%);
   --logo-badge-border: rgb(255 255 255 / 16%);
   --logo-badge-shadow: 0 4px 12px rgb(255 255 255 / 4%);
@@ -190,6 +196,8 @@
   --text-placeholder: #5f6674;
   --border-color: #e2e8f0;
   --divider-color: #f1f5f9;
+  --hero-gradient-base: #0b1020;
+  --hero-gradient-accent: #151c30;
 }
 
 /* Global Styles */
@@ -383,9 +391,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Hero Section with Gradient */
 .hero-gradient {
-  /* Use design token for the second gradient stop so runtime theming applies
-     instead of a hard-coded utility color */
-  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  background-color: var(--hero-gradient-base);
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(21, 28, 48, 0.85), rgba(11, 16, 32, 0.95)),
+    linear-gradient(140deg, var(--hero-gradient-base), var(--hero-gradient-accent));
   position: relative;
   overflow: hidden;
 }

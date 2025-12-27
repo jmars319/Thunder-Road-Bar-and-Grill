@@ -40,17 +40,26 @@ export function hasRenderableImageVariant(entry) {
 
 export function buildImageVariant(entry, options = {}) {
   const sizes = options.sizes || '100vw';
+  const maxVariants = Number.isFinite(options.maxVariants) && options.maxVariants > 0
+    ? Math.max(1, Math.floor(options.maxVariants))
+    : null;
   const normalized = normalizeImageVariants(entry);
   if (!normalized.optimized.length && !normalized.webp.length) {
     return null;
   }
-  const smallestOptimized = normalized.optimized[0] || null;
-  const smallestWebp = normalized.webp[0] || null;
+  const clampList = (list) => {
+    if (!maxVariants) return list;
+    return list.slice(0, maxVariants);
+  };
+  const optimizedList = clampList(normalized.optimized);
+  const webpList = clampList(normalized.webp);
+  const smallestOptimized = optimizedList[0] || null;
+  const smallestWebp = webpList[0] || null;
   const fallbackCandidate = smallestOptimized?.url || smallestWebp?.url || '';
-  const optimizedSrcset = normalized.optimized
+  const optimizedSrcset = optimizedList
     .map((variant) => `${variant.url} ${variant.width}w`)
     .join(', ');
-  const webpSrcset = normalized.webp
+  const webpSrcset = webpList
     .map((variant) => `${variant.url} ${variant.width}w`)
     .join(', ');
   return {

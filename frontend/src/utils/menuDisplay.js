@@ -21,15 +21,16 @@ export function normalizeMenuCategory(cat = {}) {
         }
       : null);
   const responsiveEntry = cacheBuster ? applyCacheBusterToEntry(responsiveEntryRaw, cacheBuster) : responsiveEntryRaw;
+  const displaySizes = '(max-width: 639px) 100vw, (max-width: 1279px) calc(100vw - 64px), 960px';
   let heroVariant = responsiveEntry && hasRenderableImageVariant(responsiveEntry)
-    ? buildImageVariant(responsiveEntry, { sizes: '(max-width: 768px) 90vw, 640px' })
+    ? buildImageVariant(responsiveEntry, { sizes: displaySizes, maxVariants: 2 })
     : null;
   if (!heroVariant && fallbackUrl) {
     heroVariant = {
       fallback: fallbackUrl,
       optimizedSrcset: '',
       webpSrcset: '',
-      sizes: '(max-width: 768px) 90vw, 640px'
+      sizes: displaySizes
     };
   }
 

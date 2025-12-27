@@ -25,6 +25,10 @@ class MediaPipeline {
     ];
 
     private const VARIANT_SUFFIXES = ['1x', '2x', '3x'];
+    private const CATEGORY_SUFFIX_MAP = [
+        'hero' => ['1x', '2x'],
+        'menu' => ['1x', '2x']
+    ];
 
     private static function uploadDir() {
         $dir = trim(Config::get('UPLOAD_DIR', 'uploads'));
@@ -83,6 +87,14 @@ class MediaPipeline {
         $hashPart = substr($checksum, 0, 8);
         $rand = bin2hex(random_bytes(3));
         return "event-{$hashPart}-{$rand}";
+    }
+
+    private static function variantSuffixesForCategory($category) {
+        $normalized = self::normalizeCategory($category);
+        if (isset(self::CATEGORY_SUFFIX_MAP[$normalized])) {
+            return self::CATEGORY_SUFFIX_MAP[$normalized];
+        }
+        return self::VARIANT_SUFFIXES;
     }
 
     private static function normalizeCategory($category) {
@@ -282,6 +294,9 @@ class MediaPipeline {
             }
             $variantWidths = $filtered;
         }
+        $suffixes = self::variantSuffixesForCategory($category);
+        $variantWidths = array_slice($variantWidths, 0, count($suffixes));
+
         $optimizedVariants = [];
         $webpVariants = [];
         $optimizedExt = in_array($mimeType, ['image/png', 'image/gif'], true) ? '.png' : '.jpg';
@@ -289,10 +304,10 @@ class MediaPipeline {
 
         $generatedCount = 0;
         foreach ($variantWidths as $width) {
-            if ($generatedCount >= count(self::VARIANT_SUFFIXES)) {
+            if ($generatedCount >= count($suffixes)) {
                 break;
             }
-            $suffix = self::VARIANT_SUFFIXES[$generatedCount];
+            $suffix = $suffixes[$generatedCount];
             $resized = self::resizeImage($image, $width, $mimeType);
             if (!$resized) {
                 continue;
