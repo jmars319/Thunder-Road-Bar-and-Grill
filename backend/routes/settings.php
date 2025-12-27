@@ -65,18 +65,37 @@ class SettingsRoutes {
         $normalized = [];
         $seen = [];
         foreach ($entries as $entry) {
-            if (!is_array($entry)) {
-                continue;
+            $id = null;
+            $title = '';
+            $altText = '';
+            $isFallback = false;
+
+            if (is_array($entry)) {
+                $isFallback = !empty($entry['is_fallback']);
+                if (isset($entry['id'])) {
+                    $id = (int) $entry['id'];
+                } elseif (isset($entry['media_id'])) {
+                    $id = (int) $entry['media_id'];
+                } elseif (isset($entry['value'])) {
+                    $id = (int) $entry['value'];
+                }
+                $title = isset($entry['title']) ? trim((string) $entry['title']) : '';
+                $altText = isset($entry['alt_text']) ? trim((string) $entry['alt_text']) : '';
+            } elseif (is_scalar($entry)) {
+                $candidate = trim((string) $entry);
+                if ($candidate !== '' && is_numeric($candidate)) {
+                    $id = (int) $candidate;
+                }
             }
-            $id = isset($entry['id']) ? (int) $entry['id'] : null;
-            if (!$id || isset($seen[$id]) || !empty($entry['is_fallback'])) {
+
+            if (!$id || isset($seen[$id]) || $isFallback) {
                 continue;
             }
             $seen[$id] = true;
             $normalized[] = [
                 'id' => $id,
-                'title' => isset($entry['title']) ? trim((string) $entry['title']) : '',
-                'alt_text' => isset($entry['alt_text']) ? trim((string) $entry['alt_text']) : ''
+                'title' => $title,
+                'alt_text' => $altText
             ];
         }
         return $normalized;
@@ -95,7 +114,8 @@ class SettingsRoutes {
 
             // Parse hero_images JSON if present
             if (isset($row['hero_images'])) {
-                $row['hero_images'] = json_decode($row['hero_images'], true) ?: [];
+                $decoded = json_decode($row['hero_images'], true) ?: [];
+                $row['hero_images'] = $this->sanitizeHeroImages($decoded);
             } else {
                 $row['hero_images'] = [];
             }
@@ -124,9 +144,13 @@ class SettingsRoutes {
             if (!empty($settings['hero_images'])) {
                 $heroImagesRaw = json_decode($settings['hero_images'], true) ?: [];
             }
+            $heroImagesRaw = $this->sanitizeHeroImages($heroImagesRaw);
             $heroSelectionForResponse = [];
             $ids = array_values(array_filter(array_map(function ($entry) {
-                return isset($entry['id']) ? (int) $entry['id'] : null;
+                if (isset($entry['id'])) {
+                    return (int) $entry['id'];
+                }
+                return null;
             }, $heroImagesRaw)));
             $map = $ids ? MediaResponseBuilder::hydrateByIds($this->db, $ids) : [];
             $heroVariants = [];

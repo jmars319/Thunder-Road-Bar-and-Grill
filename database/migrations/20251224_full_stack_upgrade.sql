@@ -75,7 +75,6 @@ CREATE TABLE IF NOT EXISTS audit_log (
   meta_json JSON NULL,
   KEY idx_action_created (action, created_at),
   KEY idx_created_at (created_at),
-  KEY idx_action_created (action, created_at),
   KEY idx_actor_type (actor_type, actor_id, created_at),
   KEY idx_entity_created (entity_type, entity_id, created_at)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -209,7 +208,19 @@ SET hero_slideshow_speed = COALESCE(hero_slideshow_speed, 6000)
 WHERE id = 1;
 
 /* ------------------------------------------------------------
-   3c) Ensure job_positions/application_fields tables exist
+   3c) Normalize hero_images defaults
+------------------------------------------------------------- */
+UPDATE site_settings
+SET hero_images = '[]'
+WHERE id = 1
+  AND (
+    hero_images IS NULL
+    OR TRIM(hero_images) = ''
+    OR LOWER(TRIM(hero_images)) = 'null'
+  );
+
+/* ------------------------------------------------------------
+   3d) Ensure job_positions/application_fields tables exist
 ------------------------------------------------------------- */
 CREATE TABLE IF NOT EXISTS job_positions (
   id INT PRIMARY KEY AUTO_INCREMENT,

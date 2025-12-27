@@ -64,9 +64,19 @@ export default function HeroSection() {
         const payload = await response.json();
         if (cancelled) return;
         const settings = payload?.settings || {};
+        const heroSelection = Array.isArray(settings?.hero_images)
+          ? settings.hero_images
+          : [];
         const heroVariants = Array.isArray(settings?.hero_images_variants)
           ? settings.hero_images_variants
           : [];
+        const variantMap = heroVariants.reduce((acc, entry) => {
+          if (!entry || typeof entry.id === 'undefined') {
+            return acc;
+          }
+          acc[String(entry.id)] = entry;
+          return acc;
+        }, {});
         setHeroCopy({
           title: settings.hero_title || '',
           subtitle: settings.hero_subtitle || '',
@@ -77,14 +87,47 @@ export default function HeroSection() {
         });
         const parsedSpeed = parseInt(settings.hero_slideshow_speed, 10);
         setSlideshowSpeed(Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000);
+        const orderedSlides = [];
+        if (heroSelection.length) {
+          heroSelection.forEach((entry) => {
+            const rawId = entry && typeof entry === 'object' ? entry.id : entry;
+            const id = Number(rawId);
+            if (!Number.isFinite(id)) {
+              return;
+            }
+            const variantSource = variantMap[String(id)];
+            if (!variantSource) {
+              return;
+            }
+            const variant = buildImageVariant(variantSource, { sizes: '100vw' });
+            if (!variant) {
+              return;
+            }
+            orderedSlides.push({
+              id,
+              alt: (entry?.alt_text || entry?.title || '') || variantSource.alt_text || variantSource.title || '',
+              variant
+            });
+          });
+        }
+        if (orderedSlides.length) {
+          applySlides(orderedSlides);
+          return;
+        }
         if (heroVariants.length) {
           const normalized = heroVariants
-            .map((hero) => ({
-              id: hero.id,
-              alt: hero.alt_text || hero.title || '',
-              variant: buildImageVariant(hero, { sizes: '100vw' })
-            }))
-            .filter((entry) => entry.variant);
+            .map((hero) => {
+              const variant = buildImageVariant(hero, { sizes: '100vw' });
+              if (!variant) {
+                return null;
+              }
+              return {
+                id: hero.id,
+                alt: hero.alt_text || hero.title || '',
+                variant
+              };
+            })
+            .filter(Boolean);
           if (normalized.length) {
             applySlides(normalized);
             return;

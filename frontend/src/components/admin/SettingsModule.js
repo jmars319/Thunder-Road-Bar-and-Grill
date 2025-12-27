@@ -36,13 +36,33 @@ const normalizeHeroImages = (rawValue) => {
   })();
 
   return asArray
-    .map((entry) => ({
-      id: typeof entry.id === 'number' ? entry.id : Number(entry.id),
-      title: entry.title || '',
-      alt_text: entry.alt_text || '',
-      is_fallback: Boolean(entry.is_fallback)
-    }))
-    .filter((entry) => Number.isFinite(entry.id) && !entry.is_fallback)
+    .map((entry) => {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        const rawId = typeof entry.id !== 'undefined'
+          ? entry.id
+          : (typeof entry.media_id !== 'undefined' ? entry.media_id : entry.value);
+        const id = Number(rawId);
+        if (!Number.isFinite(id)) return null;
+        return {
+          id,
+          title: entry.title || '',
+          alt_text: entry.alt_text || '',
+          is_fallback: Boolean(entry.is_fallback)
+        };
+      }
+      if (typeof entry === 'number' || typeof entry === 'string') {
+        const parsed = Number(entry);
+        if (!Number.isFinite(parsed)) return null;
+        return {
+          id: parsed,
+          title: '',
+          alt_text: '',
+          is_fallback: false
+        };
+      }
+      return null;
+    })
+    .filter((entry) => entry && Number.isFinite(entry.id) && !entry.is_fallback)
     .map(({ id, title, alt_text }) => ({
       id,
       title,
