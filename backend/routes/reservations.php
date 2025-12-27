@@ -28,7 +28,7 @@ class ReservationsRoutes {
      */
     public function getAllReservations() {
         require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $page = max(1, (int)($_GET['page'] ?? 1));
         $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
@@ -171,7 +171,7 @@ class ReservationsRoutes {
      */
     public function updateReservation($id) {
         require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $input = json_decode(file_get_contents('php://input'), true);
         $status = $input['status'] ?? '';
@@ -185,6 +185,14 @@ class ReservationsRoutes {
             [$status, $id]
         );
 
+        AuditLog::record('reservation_update', [
+            'actor_type' => 'admin',
+            'actor_id' => $user['id'] ?? null,
+            'entity_type' => 'reservation',
+            'entity_id' => $id,
+            'meta' => ['status' => $status],
+        ]);
+
         echo json_encode(['message' => 'Reservation updated']);
     }
 
@@ -193,9 +201,16 @@ class ReservationsRoutes {
      */
     public function deleteReservation($id) {
         require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $this->db->delete('DELETE FROM reservations WHERE id = ?', [$id]);
+
+        AuditLog::record('reservation_delete', [
+            'actor_type' => 'admin',
+            'actor_id' => $user['id'] ?? null,
+            'entity_type' => 'reservation',
+            'entity_id' => $id,
+        ]);
 
         echo json_encode(['message' => 'Reservation deleted']);
     }

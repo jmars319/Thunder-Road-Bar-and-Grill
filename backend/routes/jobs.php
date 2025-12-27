@@ -188,7 +188,7 @@ class JobsRoutes {
      * Create a job position (admin)
      */
     public function createPosition() {
-        AdminAuthMiddleware::verify();
+        $user = AdminAuthMiddleware::verify();
 
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';
@@ -218,7 +218,7 @@ class JobsRoutes {
      * Update a job position (admin)
      */
     public function updatePosition($id) {
-        AdminAuthMiddleware::verify();
+        $user = AdminAuthMiddleware::verify();
 
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -244,7 +244,14 @@ class JobsRoutes {
         try {
             $sql = 'UPDATE job_positions SET ' . implode(', ', $fields) . ' WHERE id = ?';
             $this->db->query($sql, $params);
-            echo json_encode(['message' => 'Position updated']);
+        AuditLog::record('job_position_update', [
+            'actor_type' => 'admin',
+            'actor_id' => $user['id'] ?? null,
+            'entity_type' => 'job_position',
+            'entity_id' => $id,
+            'meta' => $input,
+        ]);
+        echo json_encode(['message' => 'Position updated']);
         } catch (PDOException $e) {
             Logger::error('Update position error: ' . $e->getMessage());
             ErrorHandler::respond('Failed to update position', 500);
@@ -255,11 +262,17 @@ class JobsRoutes {
      * Delete a job position (admin)
      */
     public function deletePosition($id) {
-        AdminAuthMiddleware::verify();
+        $user = AdminAuthMiddleware::verify();
 
         try {
             $this->db->delete('DELETE FROM job_positions WHERE id = ?', [$id]);
-            echo json_encode(['message' => 'Position deleted']);
+        AuditLog::record('job_position_delete', [
+            'actor_type' => 'admin',
+            'actor_id' => $user['id'] ?? null,
+            'entity_type' => 'job_position',
+            'entity_id' => $id,
+        ]);
+        echo json_encode(['message' => 'Position deleted']);
         } catch (PDOException $e) {
             Logger::error('Delete position error: ' . $e->getMessage());
             ErrorHandler::respond('Failed to delete position', 500);
@@ -270,7 +283,7 @@ class JobsRoutes {
      * Get all job applications (admin)
      */
     public function getAllApplications() {
-        AdminAuthMiddleware::verify();
+        $user = AdminAuthMiddleware::verify();
 
         $page = max(1, (int)($_GET['page'] ?? 1));
         $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
@@ -338,7 +351,7 @@ class JobsRoutes {
      * PUT /api/jobs/:id - Update job application status
      */
     public function updateApplication($id) {
-        AdminAuthMiddleware::verify();
+        $user = AdminAuthMiddleware::verify();
         $input = json_decode(file_get_contents('php://input'), true);
         $status = isset($input['status']) ? trim($input['status']) : null;
         $allowed = ['new', 'reviewing', 'interviewed', 'hired', 'rejected', 'archived'];
@@ -348,6 +361,13 @@ class JobsRoutes {
         }
 
         $this->db->update('UPDATE job_applications SET status = ? WHERE id = ?', [$status, $id]);
+        AuditLog::record('job_application_update', [
+            'actor_type' => 'admin',
+            'actor_id' => $user['id'] ?? null,
+            'entity_type' => 'job_application',
+            'entity_id' => $id,
+            'meta' => ['status' => $status],
+        ]);
         echo json_encode(['message' => 'Application updated']);
     }
 
@@ -355,11 +375,17 @@ class JobsRoutes {
      * DELETE /api/jobs/:id - Delete job application
      */
     public function deleteApplication($id) {
-        AdminAuthMiddleware::verify();
+        $user = AdminAuthMiddleware::verify();
 
         try {
             $this->db->delete('DELETE FROM job_applications WHERE id = ?', [$id]);
-            echo json_encode(['message' => 'Application deleted']);
+        AuditLog::record('job_application_delete', [
+            'actor_type' => 'admin',
+            'actor_id' => $user['id'] ?? null,
+            'entity_type' => 'job_application',
+            'entity_id' => $id,
+        ]);
+        echo json_encode(['message' => 'Application deleted']);
         } catch (PDOException $e) {
             Logger::error('Delete application error: ' . $e->getMessage());
             ErrorHandler::respond('Failed to delete application', 500);
