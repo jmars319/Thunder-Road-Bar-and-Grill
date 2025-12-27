@@ -71,7 +71,7 @@ export default function PublicFooter({ onGoToAdmin }) {
   return (
     <footer className="bg-surface-dark text-text-inverse py-6" role="contentinfo" aria-label="Site footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-4 w-full">
+        <div className="grid gap-6 md:grid-cols-4 w-full">
           <div className="grid gap-6 sm:grid-cols-2 md:col-span-2">
             {columns
               .filter(col => !/(quick links|legal)/i.test(String(col.column_title || '')))
@@ -86,7 +86,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                           <button
                             type="button"
                             onClick={() => setShowPrivacy(true)}
-                            className="footer-link text-text-muted hover:text-text-primary tracking-tight px-0 text-xs"
+                            className="footer-link text-text-muted hover:text-text-primary tracking-tight text-xs"
                           >
                             {link.label}
                           </button>
@@ -94,12 +94,12 @@ export default function PublicFooter({ onGoToAdmin }) {
                           <button
                             type="button"
                             onClick={() => setShowTerms(true)}
-                            className="footer-link text-text-muted hover:text-text-primary tracking-tight px-0 text-xs"
+                            className="footer-link text-text-muted hover:text-text-primary tracking-tight text-xs"
                           >
                             {link.label}
                           </button>
                         ) : (
-                          <a href={link.url} className="footer-link text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight px-0">{link.label}</a>
+                          <a href={link.url} className="footer-link text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight">{link.label}</a>
                         )}
                       </li>
                     ))}
@@ -134,18 +134,18 @@ export default function PublicFooter({ onGoToAdmin }) {
                 href="https://jamarq.digital"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="footer-link text-text-muted hover:text-text-primary underline px-0"
+                className="footer-link text-text-muted hover:text-text-primary underline"
               >
                 JAMARQ
               </a>
             </div>
             <div className="flex flex-col items-start gap-1">
               {siteSettings?.phone && (
-                <a href={`tel:${siteSettings.phone}`} className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight px-0">{siteSettings.phone}</a>
+                <a href={`tel:${siteSettings.phone}`} className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.phone}</a>
               )}
 
               {siteSettings?.email && (
-                <a href={`mailto:${siteSettings.email}`} className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight px-0">{siteSettings.email}</a>
+                <a href={`mailto:${siteSettings.email}`} className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.email}</a>
               )}
 
               {siteSettings?.address && (
@@ -156,7 +156,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                 <button
                   type="button"
                   onClick={() => setShowContact(true)}
-                  className="footer-link text-text-muted hover:text-text-primary underline text-xs px-0"
+                  className="footer-link text-text-muted hover:text-text-primary underline text-xs"
                   aria-haspopup="dialog"
                 >
                   Contact
@@ -165,7 +165,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                 <button
                   type="button"
                   onClick={() => setShowHours(true)}
-                  className="footer-link text-text-muted hover:text-text-primary underline text-xs px-0"
+                  className="footer-link text-text-muted hover:text-text-primary underline text-xs"
                   aria-haspopup="dialog"
                 >
                   Hours
@@ -240,7 +240,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Thunder Road on Google"
-                    className="text-text-muted hover:text-text-primary transition"
+                    className="footer-social-link text-text-muted hover:text-text-primary transition"
                   >
                     <GoogleIcon width={20} height={20} className="inline-block" aria-hidden="true" />
                   </a>
@@ -250,7 +250,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Google"
-                    className="text-text-muted hover:text-text-primary transition"
+                    className="footer-social-link text-text-muted hover:text-text-primary transition"
                   >
                     <GoogleIcon width={20} height={20} className="inline-block" aria-hidden="true" />
                   </a>
