@@ -26,14 +26,15 @@ require_command php
 log_info "Starting PHP backend on $BACKEND_HOST:$BACKEND_PORT"
 : > "$BACKEND_LOG_FILE"
 # Use permissive dev-only PHP ini caps so uploads align with UploadLimits helper.
+DEFAULT_PHP_INI_FLAGS=(-d upload_max_filesize=20M -d post_max_size=25M -d memory_limit=256M -d max_execution_time=120)
+PHP_INI_FLAGS=("${DEFAULT_PHP_INI_FLAGS[@]}")
+if [[ -n "${DEV_BACKEND_PHP_FLAGS:-}" ]]; then
+  # shellcheck disable=SC2206
+  PHP_INI_FLAGS=(${DEV_BACKEND_PHP_FLAGS})
+fi
 (
   cd "$BACKEND_DIR"
-  php \
-    -d upload_max_filesize=20M \
-    -d post_max_size=25M \
-    -d memory_limit=256M \
-    -d max_execution_time=120 \
-    -S "$BACKEND_HOST:$BACKEND_PORT" router.php >"$BACKEND_LOG_FILE" 2>&1 &
+  php "${PHP_INI_FLAGS[@]}" -S "$BACKEND_HOST:$BACKEND_PORT" router.php >"$BACKEND_LOG_FILE" 2>&1 &
   echo $! > "$BACKEND_PID_FILE"
 )
 
