@@ -25,7 +25,7 @@ import { sanitizeRichText } from '../../utils/richText';
 import { normalizeMenuCategory } from '../../utils/menuDisplay';
 import MenuDisplay from '../public/MenuDisplay';
 import RichTextField from './RichTextField';
-import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
+import { buildImageVariant, hasRenderableImageVariant, applyCacheBusterToEntry, appendCacheBuster } from '../../utils/imageVariants';
 // ensure imports are recognized by some linters when used only in JSX
 const __usedSpinner = Spinner;
 void __usedSpinner;
@@ -128,34 +128,38 @@ function MenuModule() {
     return `${apiOrigin}/${u}`;
   };
 
+  const getCacheBusterFromMedia = (media) => media?.cache_buster || media?.updated_at || media?.uploaded_at || null;
+
   const mediaToResponsiveEntry = (media, fallbackInput = '') => {
     if (!media) return null;
     const fallback = fallbackInput || media.fallback_original || media.file_url || '';
-    return {
+    const entry = {
       image_variants: media.image_variants || media.responsive_variants || media.variants || {},
       responsive_variants: media.responsive_variants || media.image_variants || media.variants || {},
       fallback_original: fallback,
       file_url: fallback,
       alt_text: media.alt_text || media.title || ''
     };
+    const cacheBuster = getCacheBusterFromMedia(media);
+    return cacheBuster ? applyCacheBusterToEntry(entry, cacheBuster) : entry;
   };
 
   const ensureCategoryResponsiveEntry = useCallback((category) => {
     if (!category) return null;
+    const cacheBuster = category?.gallery_image_cache_buster || null;
+    let entry = null;
     if (category.gallery_image_responsive) {
-      return category.gallery_image_responsive;
-    }
-    if (category.gallery_image_variants) {
-      return {
+      entry = category.gallery_image_responsive;
+    } else if (category.gallery_image_variants) {
+      entry = {
         image_variants: category.gallery_image_variants,
         responsive_variants: category.gallery_image_variants,
         fallback_original: category.gallery_image_url || '',
         file_url: category.gallery_image_url || '',
         alt_text: category.name || ''
       };
-    }
-    if (category.gallery_image_url) {
-      return {
+    } else if (category.gallery_image_url) {
+      entry = {
         image_variants: {},
         responsive_variants: {},
         fallback_original: category.gallery_image_url,
@@ -163,14 +167,18 @@ function MenuModule() {
         alt_text: category.name || ''
       };
     }
-    return null;
+    if (!entry) return null;
+    return cacheBuster ? applyCacheBusterToEntry(entry, cacheBuster) : entry;
   }, []);
 
-  const ResponsiveImagePreview = ({ entry, fallbackUrl, alt = '', className = '', sizes = '320px' }) => {
-    const variant = entry && hasRenderableImageVariant(entry)
-      ? buildImageVariant(entry, { sizes })
+  const ResponsiveImagePreview = ({ entry, fallbackUrl, alt = '', className = '', sizes = '320px', cacheBuster = null }) => {
+    const hydratedEntry = cacheBuster ? applyCacheBusterToEntry(entry, cacheBuster) : entry;
+    const variant = hydratedEntry && hasRenderableImageVariant(hydratedEntry)
+      ? buildImageVariant(hydratedEntry, { sizes })
       : null;
-    const fallback = variant?.fallback || (fallbackUrl ? normalizeUrl(fallbackUrl) : '');
+    const fallbackSource = fallbackUrl ? normalizeUrl(fallbackUrl) : '';
+    const fallback = variant?.fallback
+      || (fallbackSource ? appendCacheBuster(fallbackSource, cacheBuster || hydratedEntry?.cache_buster || null) : '');
 
     if (variant) {
       return (
@@ -237,7 +245,7 @@ function MenuModule() {
     })();
   }, [fetchCategories]);
 
-  const saveCategory = () => {
+  const saveCategory = async () => {
     // client-side validation: name required
     if (!editingCategory.name || !editingCategory.name.trim()) {
     setUploadError(null);
@@ -265,20 +273,24 @@ function MenuModule() {
 
     logDebug('[menu:saveCategory]', payload);
 
-    authenticatedFetch(url, {
-      method,
-      body: JSON.stringify(payload)
-    }).then((response) => {
-      fetchCategories();
+    try {
+      const response = await authenticatedFetch(url, {
+        method,
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save category');
+      }
+      await fetchCategories();
       try { window.dispatchEvent(new window.CustomEvent('menuUpdated')); } catch (e) {}
       setEditingCategory(null);
       setToast({ type: 'success', message: 'Category saved' });
       setTimeout(() => setToast(null), 3000);
-    }).catch((error) => {
+    } catch (error) {
       console.error('Save error:', error);
       setToast({ type: 'error', message: 'Failed to save category' });
       setTimeout(() => setToast(null), 3000);
-    });
+    }
   };
 
   // Upload helper: XMLHttpRequest-based so we can track progress and cancel
@@ -358,37 +370,51 @@ function MenuModule() {
     setUploadError('Upload cancelled');
   };
 
-  const deleteCategory = (id) => {
-    if (window.confirm('Delete this category and all its items?')) {
-      authenticatedFetch(withDebugParam(`/menu/categories/${id}`), { method: 'DELETE' })
-        .then(() => {
-          fetchCategories();
-          try { window.dispatchEvent(new window.CustomEvent('menuUpdated')); } catch (e) {}
-        });
+  const deleteCategory = async (id) => {
+    if (!window.confirm('Delete this category and all its items?')) {
+      return;
+    }
+    try {
+      const response = await authenticatedFetch(withDebugParam(`/menu/categories/${id}`), { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error('Failed to delete category');
+      }
+      await fetchCategories();
+      try { window.dispatchEvent(new window.CustomEvent('menuUpdated')); } catch (e) {}
+    } catch (error) {
+      console.error('Delete category failed', error);
+      setToast({ type: 'error', message: 'Failed to delete category' });
+      setTimeout(() => setToast(null), 3000);
     }
   };
 
   // When saving an item, if any price equals 0.00 we require an explicit
   // confirmation from the admin because public menus hide $0.00 prices.
-  const doSaveItem = (payload) => {
+  const doSaveItem = async (payload) => {
     const method = payload.id ? 'PUT' : 'POST';
     const url = withDebugParam(payload.id ? `/menu/items/${payload.id}` : '/menu/items');
 
-    authenticatedFetch(url, {
-      method,
-      body: JSON.stringify(payload)
-    }).then(() => {
-      fetchCategories();
+    try {
+      const response = await authenticatedFetch(url, {
+        method,
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save menu item');
+      }
+      await fetchCategories();
       setEditingItem(null);
       setPendingSavePayload(null);
       setShowZeroPriceConfirm(false);
-    }).catch(() => {
-      // still refetch to keep UI consistent
-      fetchCategories();
+    } catch (error) {
+      console.error('Save item failed', error);
+      await fetchCategories();
       setEditingItem(null);
       setPendingSavePayload(null);
       setShowZeroPriceConfirm(false);
-    });
+      setToast({ type: 'error', message: 'Failed to save menu item' });
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   const attemptSaveItem = () => {
@@ -409,10 +435,20 @@ function MenuModule() {
     doSaveItem(payload);
   };
 
-  const deleteItem = (id) => {
-    if (window.confirm('Delete this menu item?')) {
-      authenticatedFetch(withDebugParam(`/menu/items/${id}`), { method: 'DELETE' })
-        .then(() => fetchCategories());
+  const deleteItem = async (id) => {
+    if (!window.confirm('Delete this menu item?')) {
+      return;
+    }
+    try {
+      const response = await authenticatedFetch(withDebugParam(`/menu/items/${id}`), { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error('Failed to delete menu item');
+      }
+      await fetchCategories();
+    } catch (error) {
+      console.error('Delete item failed', error);
+      setToast({ type: 'error', message: 'Failed to delete menu item' });
+      setTimeout(() => setToast(null), 3000);
     }
   };
 
@@ -459,14 +495,14 @@ function MenuModule() {
       });
       await Promise.all(promises);
       // refresh to ensure server-side canonical ordering
-      fetchCategories();
+      await fetchCategories();
       setToast({ type: 'success', message: 'Order saved' });
       setTimeout(() => setToast(null), 2500);
     } catch (e) {
       setToast({ type: 'error', message: 'Failed to save order' });
       setTimeout(() => setToast(null), 2500);
       // fallback: refetch original
-      fetchCategories();
+      await fetchCategories();
     }
   };
 
@@ -573,9 +609,9 @@ function MenuModule() {
 
       setToast({ type: 'success', message: 'Category order updated' });
       setTimeout(() => setToast(null), 3000);
-      fetchCategories(); // Refresh to ensure consistency
+      await fetchCategories(); // Refresh to ensure consistency
     } catch (err) {
-      fetchCategories(); // Revert on error
+      await fetchCategories(); // Revert on error
       setToast({ type: 'error', message: 'Failed to update category order' });
       setTimeout(() => setToast(null), 3000);
     }
@@ -601,7 +637,8 @@ function MenuModule() {
               is_active: 1,
               gallery_image_id: null,
               gallery_image_url: '',
-              gallery_image_responsive: null
+              gallery_image_responsive: null,
+              gallery_image_cache_buster: null
             })}
             className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
             aria-label="Add menu category"
@@ -725,7 +762,8 @@ function MenuModule() {
                               ...prev,
                               gallery_image_id: media.id,
                               gallery_image_url: fallback,
-                              gallery_image_responsive: mediaToResponsiveEntry(media, fallback)
+                              gallery_image_responsive: mediaToResponsiveEntry(media, fallback),
+                              gallery_image_cache_buster: getCacheBusterFromMedia(media)
                             }));
                             setSelectedMediaId(String(media.id));
                             try {
@@ -744,7 +782,13 @@ function MenuModule() {
                   {editingCategory.gallery_image_id && (
                     <button
                       type="button"
-                      onClick={() => setEditingCategory((c) => ({ ...c, gallery_image_url: '', gallery_image_id: null }))}
+                      onClick={() => setEditingCategory((c) => ({
+                        ...c,
+                        gallery_image_url: '',
+                        gallery_image_id: null,
+                        gallery_image_responsive: null,
+                        gallery_image_cache_buster: null
+                      }))}
                       className={`px-3 py-2 rounded text-sm bg-surface ${uploading ? 'opacity-60 pointer-events-none' : ''}`}
                       disabled={uploading}
                     >
@@ -767,6 +811,7 @@ function MenuModule() {
                     <ResponsiveImagePreview
                       entry={editingCategory.gallery_image_responsive}
                       fallbackUrl={editingCategory.gallery_image_url}
+                      cacheBuster={editingCategory.gallery_image_cache_buster}
                       alt="Menu preview"
                       className="h-24 w-full rounded object-cover"
                       sizes="(max-width: 768px) 80vw, 320px"
@@ -813,7 +858,8 @@ function MenuModule() {
                         ...c,
                         gallery_image_url: media.fallback_original || media.file_url || '',
                         gallery_image_id: media.id,
-                        gallery_image_responsive: mediaToResponsiveEntry(media, media.fallback_original || media.file_url || '')
+                        gallery_image_responsive: mediaToResponsiveEntry(media, media.fallback_original || media.file_url || ''),
+                        gallery_image_cache_buster: getCacheBusterFromMedia(media)
                       }));
                     }
                     setShowMediaPicker(false);
@@ -1014,6 +1060,7 @@ function MenuModule() {
                   <ResponsiveImagePreview
                     entry={category.gallery_image_responsive}
                     fallbackUrl={category.gallery_image_url}
+                    cacheBuster={category.gallery_image_cache_buster}
                     alt={`${category.name} preview`}
                     className="w-12 h-8 object-cover rounded"
                     sizes="80px"

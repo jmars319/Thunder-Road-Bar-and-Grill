@@ -66,3 +66,62 @@ export function buildImageVariant(entry, options = {}) {
 export function prefixUploadUrl(url) {
   return absolutize(url);
 }
+
+export function appendCacheBuster(url, version) {
+  if (!url || version === null || typeof version === 'undefined') {
+    return url;
+  }
+  const value = String(version);
+  if (value === '') {
+    return url;
+  }
+  const isAbsolute = /^https?:\/\//i.test(url);
+  try {
+    const parsed = isAbsolute ? new URL(url) : new URL(url, 'http://cache-buster.local');
+    parsed.searchParams.set('v', value);
+    if (isAbsolute) {
+      return parsed.toString();
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch (error) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${encodeURIComponent(value)}`;
+  }
+}
+
+export function applyCacheBusterToEntry(entry, version) {
+  if (!entry || version === null || typeof version === 'undefined' || version === '') {
+    return entry;
+  }
+  const updateUrl = (url) => appendCacheBuster(url, version);
+  const mutateVariantList = (list) => {
+    if (!Array.isArray(list)) return list;
+    return list.map((variant) => {
+      if (!variant) return variant;
+      const next = { ...variant };
+      if (next.url) {
+        next.url = updateUrl(next.url);
+      }
+      if (next.path) {
+        next.path = updateUrl(next.path);
+      }
+      return next;
+    });
+  };
+  const mutateVariants = (variants) => {
+    if (!variants) return variants;
+    return {
+      ...variants,
+      optimized: mutateVariantList(variants.optimized || []),
+      webp: mutateVariantList(variants.webp || [])
+    };
+  };
+  return {
+    ...entry,
+    cache_buster: version,
+    fallback_original: entry.fallback_original ? updateUrl(entry.fallback_original) : entry.fallback_original,
+    file_url: entry.file_url ? updateUrl(entry.file_url) : entry.file_url,
+    image_variants: mutateVariants(entry.image_variants),
+    responsive_variants: mutateVariants(entry.responsive_variants)
+  };
+}

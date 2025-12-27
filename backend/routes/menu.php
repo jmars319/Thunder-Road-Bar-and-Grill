@@ -29,6 +29,7 @@ require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
 require_once __DIR__ . '/../utils/HtmlSanitizer.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
+require_once __DIR__ . '/../utils/AuditLog.php';
 
 class MenuRoutes {
     private $db;
@@ -58,6 +59,31 @@ class MenuRoutes {
         Logger::info('[menu-debug] ' . $label, $data);
     }
 
+    private function buildMediaCacheBuster($media) {
+        if (!$media) {
+            return null;
+        }
+        if (!empty($media['updated_at'])) {
+            $ts = strtotime($media['updated_at']);
+            if ($ts) {
+                return $ts;
+            }
+        }
+        if (!empty($media['uploaded_at'])) {
+            $ts = strtotime($media['uploaded_at']);
+            if ($ts) {
+                return $ts;
+            }
+        }
+        if (!empty($media['checksum'])) {
+            return substr($media['checksum'], 0, 16);
+        }
+        if (!empty($media['id'])) {
+            return (int) $media['id'];
+        }
+        return null;
+    }
+
     private function simplifyMedia($media) {
         if (!$media) {
             return null;
@@ -74,7 +100,8 @@ class MenuRoutes {
             'optimized_srcset' => $media['optimized_srcset'] ?? '',
             'webp_srcset' => $media['webp_srcset'] ?? '',
             'alt_text' => $media['alt_text'] ?? null,
-            'title' => $media['title'] ?? null
+            'title' => $media['title'] ?? null,
+            'cache_buster' => $this->buildMediaCacheBuster($media)
         ];
     }
 
@@ -154,6 +181,7 @@ class MenuRoutes {
                     'name' => $row['category_name'],
                     'description' => HtmlSanitizer::sanitizeRichText($row['category_description'] ?? ''),
                     'image_url' => $row['category_image'],
+                    'gallery_image_cache_buster' => null,
                     'display_order' => (int) $row['category_order'],
                     'display_columns' => isset($row['category_display_columns']) ? (int) $row['category_display_columns'] : 1,
                     'hide_descriptions' => isset($row['category_hide_descriptions']) ? (bool) $row['category_hide_descriptions'] : false,
@@ -165,6 +193,7 @@ class MenuRoutes {
                     if ($media) {
                         $categories[$catId]['gallery_image_url'] = $media['fallback_original'];
                         $categories[$catId]['gallery_image_responsive'] = $media;
+                        $categories[$catId]['gallery_image_cache_buster'] = $media['cache_buster'] ?? null;
                     }
                 }
             }
@@ -250,6 +279,7 @@ class MenuRoutes {
                     'image_url' => $row['category_image'],
                     'gallery_image_id' => $row['category_gallery_image_id'] !== null ? (int)$row['category_gallery_image_id'] : null,
                     'gallery_image_url' => $row['category_gallery_image'],
+                    'gallery_image_cache_buster' => null,
                     'display_order' => (int)$row['category_order'],
                     'display_columns' => isset($row['category_display_columns']) ? (int)$row['category_display_columns'] : 1,
                     'hide_descriptions' => isset($row['category_hide_descriptions']) ? (bool)$row['category_hide_descriptions'] : false,
@@ -263,6 +293,7 @@ class MenuRoutes {
                         $categories[$catId]['gallery_image_responsive'] = $media;
                         $categories[$catId]['gallery_image_variants'] = $media['responsive_variants'];
                         $categories[$catId]['gallery_image_url'] = $media['fallback_original'] ?? $media['file_url'] ?? $categories[$catId]['gallery_image_url'];
+                        $categories[$catId]['gallery_image_cache_buster'] = $media['cache_buster'] ?? null;
                     }
                 }
             }
@@ -349,6 +380,19 @@ class MenuRoutes {
             [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $hideDescriptions, $isActive]
         );
 
+        if ($galleryImageId || $imageUrl) {
+            AuditLog::record('menu_category_image_assigned', [
+                'actor_type' => 'admin',
+                'actor_id' => $user['id'] ?? null,
+                'entity_type' => 'menu_category',
+                'entity_id' => $id,
+                'meta' => [
+                    'gallery_image_id' => $galleryImageId,
+                    'image_url' => $imageUrl
+                ]
+            ]);
+        }
+
         if ($this->isDebugRequest()) {
             $this->debugLog('category.create.input', [
                 'name' => $name,
@@ -412,6 +456,24 @@ class MenuRoutes {
             [$name, $description, $imageUrl, $galleryImageId, $displayOrder, $displayColumns, $hideDescriptions, $isActive, $id]
         );
 
+        $previousGalleryImageId = $existing['gallery_image_id'] ?? null;
+        $previousImageUrl = $existing['image_url'] ?? null;
+        if ($previousGalleryImageId !== $galleryImageId || $previousImageUrl !== $imageUrl) {
+            $action = $galleryImageId ? ($previousGalleryImageId ? 'menu_category_image_replaced' : 'menu_category_image_assigned') : 'menu_category_image_removed';
+            AuditLog::record($action, [
+                'actor_type' => 'admin',
+                'actor_id' => $user['id'] ?? null,
+                'entity_type' => 'menu_category',
+                'entity_id' => $id,
+                'meta' => [
+                    'previous_gallery_image_id' => $previousGalleryImageId,
+                    'new_gallery_image_id' => $galleryImageId,
+                    'previous_image_url' => $previousImageUrl,
+                    'new_image_url' => $imageUrl
+                ]
+            ]);
+        }
+
         if ($this->isDebugRequest()) {
             $saved = $this->db->fetchOne('SELECT description, gallery_image_id FROM menu_categories WHERE id = ?', [$id]);
             $this->debugLog('category.update.persisted', [
@@ -429,7 +491,7 @@ class MenuRoutes {
      * DELETE /api/menu/categories/:id - Delete category
      */
     public function deleteCategory($id) {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $this->db->delete('DELETE FROM menu_categories WHERE id = ?', [$id]);
 
@@ -441,7 +503,7 @@ class MenuRoutes {
      * PUT /api/menu/categories/reorder - Batch update category display orders
      */
     public function reorderCategories() {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $input = json_decode(file_get_contents('php://input'), true);
         $categories = $input['categories'] ?? [];
@@ -479,7 +541,7 @@ class MenuRoutes {
      * POST /api/menu/items - Create menu item
      */
     public function createItem() {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $input = json_decode(file_get_contents('php://input'), true);
         $categoryId = $input['category_id'] ?? 0;
@@ -513,6 +575,19 @@ class MenuRoutes {
              $primaryQuantity, $secondaryQuantity, $secondaryPrice, $isAvailable]
         );
 
+        if ($imageUrl) {
+            AuditLog::record('menu_item_image_assigned', [
+                'actor_type' => 'admin',
+                'actor_id' => $user['id'] ?? null,
+                'entity_type' => 'menu_item',
+                'entity_id' => $id,
+                'meta' => [
+                    'category_id' => $categoryId,
+                    'image_url' => $imageUrl
+                ]
+            ]);
+        }
+
         self::invalidateCache();
         echo json_encode(['id' => $id, 'message' => 'Item created']);
     }
@@ -521,7 +596,7 @@ class MenuRoutes {
      * PUT /api/menu/items/:id - Update menu item
      */
     public function updateItem($id) {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
 
         $input = json_decode(file_get_contents('php://input'), true);
         $name = $input['name'] ?? '';
@@ -542,6 +617,8 @@ class MenuRoutes {
             ErrorHandler::validation($validator->getErrors());
         }
 
+        $existing = $this->db->fetchOne('SELECT category_id, image_url FROM menu_items WHERE id = ?', [$id]);
+
         $this->db->update(
             'UPDATE menu_items 
              SET name = ?, description = ?, price = ?, image_url = ?, display_order = ?, 
@@ -551,6 +628,21 @@ class MenuRoutes {
              $primaryQuantity, $secondaryQuantity, $secondaryPrice, $id]
         );
 
+        if ($existing && ($existing['image_url'] ?? null) !== $imageUrl) {
+            $action = $imageUrl ? ($existing['image_url'] ? 'menu_item_image_replaced' : 'menu_item_image_assigned') : 'menu_item_image_removed';
+            AuditLog::record($action, [
+                'actor_type' => 'admin',
+                'actor_id' => $user['id'] ?? null,
+                'entity_type' => 'menu_item',
+                'entity_id' => $id,
+                'meta' => [
+                    'category_id' => $existing['category_id'] ?? null,
+                    'previous_image_url' => $existing['image_url'] ?? null,
+                    'new_image_url' => $imageUrl
+                ]
+            ]);
+        }
+
         self::invalidateCache();
         echo json_encode(['message' => 'Item updated']);
     }
@@ -559,9 +651,24 @@ class MenuRoutes {
      * DELETE /api/menu/items/:id - Delete menu item
      */
     public function deleteItem($id) {
-        AdminAuthMiddleware::require();
+        $user = AdminAuthMiddleware::require();
+
+        $existing = $this->db->fetchOne('SELECT category_id, image_url FROM menu_items WHERE id = ?', [$id]);
 
         $this->db->delete('DELETE FROM menu_items WHERE id = ?', [$id]);
+
+        if ($existing && !empty($existing['image_url'])) {
+            AuditLog::record('menu_item_image_removed', [
+                'actor_type' => 'admin',
+                'actor_id' => $user['id'] ?? null,
+                'entity_type' => 'menu_item',
+                'entity_id' => $id,
+                'meta' => [
+                    'category_id' => $existing['category_id'] ?? null,
+                    'previous_image_url' => $existing['image_url']
+                ]
+            ]);
+        }
 
         self::invalidateCache();
         echo json_encode(['message' => 'Item deleted']);
