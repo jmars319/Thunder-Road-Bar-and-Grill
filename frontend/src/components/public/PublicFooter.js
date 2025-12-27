@@ -70,13 +70,12 @@ export default function PublicFooter({ onGoToAdmin }) {
 
   return (
     <footer className="bg-surface-dark text-text-inverse py-6" role="contentinfo" aria-label="Site footer">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-        {/* Left group: API columns + compact contact */}
-  <div className="flex flex-col md:flex-row md:items-start md:gap-6 w-full md:w-auto md:-ml-6 lg:-ml-12 xl:-ml-16">
-          <div className="flex gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-8 md:grid-cols-4 w-full">
+          <div className="grid gap-6 sm:grid-cols-2 md:col-span-2">
             {columns
               .filter(col => !/(quick links|legal)/i.test(String(col.column_title || '')))
-              .slice(0, 2)
+              .slice(0, 4)
               .map(col => (
                 <div key={col.id}>
                   <h4 className="text-sm font-heading font-semibold mb-2 text-text-primary">{col.column_title}</h4>
@@ -87,7 +86,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                           <button
                             type="button"
                             onClick={() => setShowPrivacy(true)}
-                            className="text-text-muted hover:text-text-primary tracking-tight"
+                            className="footer-link text-text-muted hover:text-text-primary tracking-tight px-0 text-xs"
                           >
                             {link.label}
                           </button>
@@ -95,12 +94,12 @@ export default function PublicFooter({ onGoToAdmin }) {
                           <button
                             type="button"
                             onClick={() => setShowTerms(true)}
-                            className="text-text-muted hover:text-text-primary tracking-tight"
+                            className="footer-link text-text-muted hover:text-text-primary tracking-tight px-0 text-xs"
                           >
                             {link.label}
                           </button>
                         ) : (
-                          <a href={link.url} className="text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight">{link.label}</a>
+                          <a href={link.url} className="footer-link text-text-muted hover:text-text-primary transition text-xs leading-tight tracking-tight px-0">{link.label}</a>
                         )}
                       </li>
                     ))}
@@ -109,8 +108,26 @@ export default function PublicFooter({ onGoToAdmin }) {
             ))}
           </div>
 
-          {/* compact center contact - stays to left group so right group stays flush right */}
-            <div className="flex flex-col items-start md:items-start ml-3">
+          <div className="space-y-2">
+            <h4 className="text-sm font-heading font-semibold text-text-primary">Quick Links</h4>
+            <ul className="space-y-0 text-xs leading-tight tracking-tight">
+              <li><a href="#menu" className="footer-link text-text-muted hover:text-text-primary">Menu</a></li>
+              <li><a href="#about" className="footer-link text-text-muted hover:text-text-primary">About</a></li>
+              <li><a href="#reservations" className="footer-link text-text-muted hover:text-text-primary">Reservations</a></li>
+              <li><a href="#jobs" className="footer-link text-text-muted hover:text-text-primary">Careers</a></li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setShowOrder(true)}
+                  className="footer-link text-text-muted hover:text-text-primary"
+                >
+                  Order Online
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col items-start gap-2">
             <div className="mb-1 text-xs text-text-secondary">
               © {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'} · Powered by{' '}
               <a
@@ -240,63 +257,37 @@ export default function PublicFooter({ onGoToAdmin }) {
                 )}
               </div>
             </div>
-          </div>
-        </div>
+            <div className="border-t border-divider pt-3 w-full">
+              <h4 className="text-sm font-heading font-semibold mb-2 text-text-primary">Legal</h4>
+              <ul className="space-y-0.5 text-[11px] leading-tight">
+                <li>
+                  <a href="/privacy" className="footer-link text-text-muted hover:text-text-primary transition tracking-tight">Privacy Policy</a>
+                </li>
+                <li>
+                  <a href="/terms" className="footer-link text-text-muted hover:text-text-primary transition tracking-tight">Terms &amp; Conditions</a>
+                </li>
+              </ul>
 
-        {/* Right group: Quick Links + Legal/Admin as two columns on md+ */}
-  <div className="flex flex-col md:flex-row md:items-start md:justify-end gap-4 md:gap-8">
-          {/* Quick Links column */}
-          <div className="md:text-left">
-            <h4 className="text-sm font-heading font-semibold mb-1 text-text-primary">Quick Links</h4>
-            <ul className="space-y-0 text-[11px] leading-tight">
-              <li><a href="#menu" className="text-text-muted hover:text-text-primary tracking-tight">Menu</a></li>
-              <li><a href="#about" className="text-text-muted hover:text-text-primary tracking-tight">About</a></li>
-              <li><a href="#reservations" className="text-text-muted hover:text-text-primary tracking-tight">Reservations</a></li>
-              <li><a href="#jobs" className="text-text-muted hover:text-text-primary tracking-tight">Careers</a></li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setShowOrder(true)}
-                  className="text-text-muted hover:text-text-primary tracking-tight"
-                >
-                  Order Online
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal + Admin column */}
-          <div className="md:text-right">
-            <h4 className="text-sm font-heading font-semibold mb-1 text-text-primary">Legal</h4>
-            {/* match quick-links sizing to keep the footer visually consistent */}
-            <ul className="space-y-0.5 text-[11px] leading-tight">
-              <li>
-                <a href="/privacy" className="footer-link text-text-muted hover:text-text-primary transition tracking-tight">Privacy Policy</a>
-              </li>
-              <li>
-                <a href="/terms" className="footer-link text-text-muted hover:text-text-primary transition tracking-tight">Terms &amp; Conditions</a>
-              </li>
-            </ul>
-
-            <div className="border-t border-divider mt-3 pt-2">
-              <a
-                href="/admin"
-                onClick={(e) => {
-                  try {
-                    e.preventDefault();
-                    if (typeof onGoToAdmin === 'function') {
-                      onGoToAdmin();
-                    } else {
+              <div className="border-t border-divider mt-3 pt-2">
+                <a
+                  href="/admin"
+                  onClick={(e) => {
+                    try {
+                      e.preventDefault();
+                      if (typeof onGoToAdmin === 'function') {
+                        onGoToAdmin();
+                      } else {
+                        window.location.href = '/admin';
+                      }
+                    } catch (err) {
                       window.location.href = '/admin';
                     }
-                  } catch (err) {
-                    window.location.href = '/admin';
-                  }
-                }}
-                className="footer-link text-text-muted hover:text-text-primary tracking-tight text-[11px] leading-tight"
-              >
-                Admin
-              </a>
+                  }}
+                  className="footer-link text-text-muted hover:text-text-primary tracking-tight text-[11px] leading-tight"
+                >
+                  Admin
+                </a>
+              </div>
             </div>
           </div>
         </div>
