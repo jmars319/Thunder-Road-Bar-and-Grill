@@ -989,7 +989,10 @@ h1, h2, h3, h4, h5, h6 {
 /* Dark Mode Specific Adjustments */
 @media (prefers-color-scheme: dark) {
   .hero-gradient {
-    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+    background-color: var(--hero-gradient-base);
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(21, 28, 48, 0.85), rgba(5, 9, 20, 0.95)),
+      linear-gradient(140deg, var(--hero-gradient-base), var(--hero-gradient-accent));
   }
   
   .header-scrolled {
