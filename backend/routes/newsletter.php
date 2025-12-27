@@ -8,8 +8,11 @@
  * Endpoints:
  * - GET /api/subscribers - Get all subscribers (admin)
  * - POST /api/newsletter/subscribe - Subscribe to newsletter
+ *
+ * Note: This route is disabled by default. Set NEWSLETTER_ENABLED=true to enable.
  */
 
+require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../utils/Database.php';
 require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/../utils/Logger.php';
@@ -18,15 +21,31 @@ require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 
 class NewsletterRoutes {
     private $db;
+    private $enabled;
 
     public function __construct() {
         $this->db = Database::getInstance();
+        $this->enabled = Config::getBool('NEWSLETTER_ENABLED', false);
+    }
+
+    private function guardEnabled() {
+        if (!$this->enabled) {
+            header('HTTP/1.1 404 Not Found');
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'not_enabled']);
+            return false;
+        }
+        return true;
     }
 
     /**
      * GET /api/subscribers - Get all newsletter subscribers (admin)
      */
     public function getAllSubscribers() {
+        if (!$this->guardEnabled()) {
+            return;
+        }
+
         AdminAuthMiddleware::require();
 
         $subscribers = $this->db->fetchAll(
@@ -40,6 +59,10 @@ class NewsletterRoutes {
      * POST /api/newsletter/subscribe - Subscribe to newsletter
      */
     public function subscribe() {
+        if (!$this->guardEnabled()) {
+            return;
+        }
+
         $input = json_decode(file_get_contents('php://input'), true);
         
         $email = $input['email'] ?? '';
