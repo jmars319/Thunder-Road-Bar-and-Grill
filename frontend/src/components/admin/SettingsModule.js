@@ -19,6 +19,7 @@ import Spinner from '../ui/Spinner';
 import makeAbsolute from '../../lib/makeAbsolute';
 import { buildImageVariant, hasRenderableImageVariant } from '../../utils/imageVariants';
 import { sanitizeRichText } from '../../utils/richText';
+import Toast from '../ui/Toast';
 
 const normalizeHeroImages = (rawValue) => {
   const asArray = (() => {
@@ -91,28 +92,36 @@ function SettingsModule() {
     businessHours: true
   });
   const originalSettingsRef = useRef({});
+  const [originalSettingsSnapshot, setOriginalSettingsSnapshot] = useState({});
+  const [toast, setToast] = useState(null);
   const toggleSection = useCallback((key) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
   const refetchSiteSettings = useCallback(async () => {
-    try {
-      const siteRes = await authenticatedFetch('/settings');
-      if (!siteRes.ok) throw new Error('Failed to load settings');
-      const siteData = await siteRes.json();
-      const settingsPayload = siteData?.settings || {};
-      settingsPayload.hero_images = normalizeHeroImages(settingsPayload.hero_images);
-      const parsedSpeed = parseInt(settingsPayload.hero_slideshow_speed, 10);
-      settingsPayload.hero_slideshow_speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000;
-      const normalizedSettings = JSON.parse(JSON.stringify(settingsPayload));
-      setSiteSettings(normalizedSettings);
-      originalSettingsRef.current = normalizedSettings;
-      return normalizedSettings;
-    } catch {
-      setSiteSettings({});
-      return null;
-    }
+    const siteRes = await authenticatedFetch('/settings');
+    if (!siteRes.ok) throw new Error('Failed to load settings');
+    const siteData = await siteRes.json();
+    const settingsPayload = siteData?.settings || {};
+    settingsPayload.hero_images = normalizeHeroImages(settingsPayload.hero_images);
+    const parsedSpeed = parseInt(settingsPayload.hero_slideshow_speed, 10);
+    settingsPayload.hero_slideshow_speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000;
+    const normalizedSettings = JSON.parse(JSON.stringify(settingsPayload));
+    setSiteSettings(normalizedSettings);
+    originalSettingsRef.current = normalizedSettings;
+    setOriginalSettingsSnapshot(normalizedSettings);
+    return normalizedSettings;
   }, []);
+
+  const showToast = useCallback((message, type = 'error') => {
+    setToast({ type, message });
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     // Load all settings in a single async function with error handling
@@ -136,6 +145,7 @@ function SettingsModule() {
       } catch {
         // Intentionally quiet: admin UI will render empty/default values on error
         setSiteSettings({});
+        setOriginalSettingsSnapshot({});
         setAboutContent({});
         setBusinessHours([]);
       }
@@ -223,6 +233,17 @@ function SettingsModule() {
     };
   });
 
+  const heroSectionDirty = useMemo(() => {
+    const currentHeroes = Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : [];
+    const originalHeroes = Array.isArray(originalSettingsSnapshot.hero_images)
+      ? originalSettingsSnapshot.hero_images
+      : [];
+    const heroesChanged = JSON.stringify(currentHeroes) !== JSON.stringify(originalHeroes);
+    const currentSpeed = Number(siteSettings.hero_slideshow_speed || 6000);
+    const originalSpeed = Number(originalSettingsSnapshot.hero_slideshow_speed || 6000);
+    return heroesChanged || currentSpeed !== originalSpeed;
+  }, [siteSettings.hero_images, siteSettings.hero_slideshow_speed, originalSettingsSnapshot]);
+
   const heroPreviewUrl = (media) => {
     if (!media) return '';
     if (hasRenderableImageVariant(media)) {
@@ -284,13 +305,22 @@ function SettingsModule() {
 
       if (Array.isArray(fieldSubset) && fieldSubset.length > 0) {
         fieldSubset.forEach((key) => {
+          let nextValue;
           if (key === 'hero_images') {
-            payload[key] = Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : [];
+            nextValue = Array.isArray(siteSettings.hero_images) ? siteSettings.hero_images : [];
+          } else if (typeof siteSettings[key] !== 'undefined') {
+            nextValue = siteSettings[key];
+          } else {
             return;
           }
-          if (typeof siteSettings[key] !== 'undefined') {
-            payload[key] = siteSettings[key];
+          const originalValue = orig[key];
+          const isSame = (Array.isArray(nextValue) || Array.isArray(originalValue))
+            ? JSON.stringify(nextValue || []) === JSON.stringify(originalValue || [])
+            : nextValue === originalValue;
+          if (isSame) {
+            return;
           }
+          payload[key] = nextValue;
         });
       } else {
         // Send only fields that changed to avoid overwriting unrelated values
@@ -335,35 +365,49 @@ function SettingsModule() {
         method: 'PUT',
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        // Clear cached entries that depend on site-settings and menu so public UI updates immediately
-        clearCacheFor(`${API_BASE}/settings`);
-        clearCacheFor(`${API_BASE}/menu`);
-        // Emit window events so other tabs/components can respond
-        try {
-          const Ev = (typeof window !== 'undefined' && window.CustomEvent) ? window.CustomEvent : (typeof window !== 'undefined' ? window.Event : null);
-          if (Ev) {
-            window.dispatchEvent(new Ev('siteSettingsUpdated'));
-            window.dispatchEvent(new Ev('menuUpdated'));
-          }
-        } catch (e) {}
-
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-        // update original copy to reflect saved state
-        try { originalSettingsRef.current = { ...(originalSettingsRef.current || {}), ...payload }; } catch (e) {}
-        // show a small toast if the menu description was part of the save
-        if (!fieldSubset && siteSettings.menu_intro && siteSettings.menu_intro.length > 0) {
-          setMenuSaved(true);
-          setTimeout(() => setMenuSaved(false), 2500);
-        }
-        return true;
+      let responseBody = null;
+      try {
+        responseBody = await res.json();
+      } catch (err) {
+        // ignore JSON parsing failures
       }
-    } catch {
-      // swallow for now; could show toast on failure
+      if (!res.ok) {
+        const message = responseBody?.message || 'Failed to save settings. Please try again.';
+        showToast(message, 'error');
+        return false;
+      }
+
+      // Clear cached entries that depend on site-settings and menu so public UI updates immediately
+      clearCacheFor(`${API_BASE}/settings`);
+      clearCacheFor(`${API_BASE}/menu`);
+      // Emit window events so other tabs/components can respond
+      try {
+        const Ev = (typeof window !== 'undefined' && window.CustomEvent) ? window.CustomEvent : (typeof window !== 'undefined' ? window.Event : null);
+        if (Ev) {
+          window.dispatchEvent(new Ev('siteSettingsUpdated'));
+          window.dispatchEvent(new Ev('menuUpdated'));
+        }
+      } catch (e) {}
+
+      try {
+        await refetchSiteSettings();
+      } catch (error) {
+        showToast('Settings saved, but failed to reload the latest values.', 'error');
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      // show a small toast if the menu description was part of the save
+      if (!fieldSubset && siteSettings.menu_intro && siteSettings.menu_intro.length > 0) {
+        setMenuSaved(true);
+        setTimeout(() => setMenuSaved(false), 2500);
+      }
+      return true;
+    } catch (error) {
+      showToast('Failed to save settings. Please try again.');
+      return false;
     }
-    return false;
-  }, [siteSettings]);
+  }, [siteSettings, showToast, refetchSiteSettings]);
 
   const saveAboutContent = async () => {
     try {
@@ -406,9 +450,6 @@ function SettingsModule() {
     if (!Array.isArray(fields) || fields.length === 0) return;
     setSectionSaveState((prev) => ({ ...prev, [sectionKey]: 'saving' }));
     const ok = await saveSiteSettings(fields);
-    if (ok && sectionKey === 'heroImages') {
-      await refetchSiteSettings();
-    }
     setSectionSaveState((prev) => ({ ...prev, [sectionKey]: ok ? 'saved' : 'error' }));
     setTimeout(() => {
       setSectionSaveState((prev) => {
@@ -417,10 +458,14 @@ function SettingsModule() {
         return next;
       });
     }, 2500);
-  }, [saveSiteSettings, refetchSiteSettings]);
+  }, [saveSiteSettings]);
 
-  const SectionSaveButton = ({ sectionKey, fields, label }) => {
+  const SectionSaveButton = ({ sectionKey, fields, label, disabled = false }) => {
     const state = sectionSaveState[sectionKey];
+    const handleClick = () => {
+      if (disabled || state === 'saving') return;
+      handleSectionSave(sectionKey, fields);
+    };
     return (
       <div className="flex items-center justify-end gap-3 mt-4">
         {state === 'saving' && <span className="text-xs text-text-secondary">Saving…</span>}
@@ -428,8 +473,8 @@ function SettingsModule() {
         {state === 'error' && <span className="text-xs text-error">Save failed</span>}
         <button
           type="button"
-          onClick={() => handleSectionSave(sectionKey, fields)}
-          disabled={state === 'saving'}
+          onClick={handleClick}
+          disabled={state === 'saving' || disabled}
           className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2 disabled:opacity-60"
         >
           <icons.Save size={16} />
@@ -728,6 +773,7 @@ function SettingsModule() {
             sectionKey="heroImages"
             fields={['hero_images', 'hero_slideshow_speed']}
             label="Save Hero Images"
+            disabled={!heroSectionDirty}
           />
         </div>
       </CollapsibleCard>
@@ -892,6 +938,13 @@ function SettingsModule() {
             <icons.CheckCircle size={16} />
             <span className="text-sm">Menu intro saved</span>
           </div>
+        </div>
+      )}
+      {toast && (
+        <div className="fixed right-6 top-20 z-50">
+          <Toast type={toast.type} onClose={() => setToast(null)}>
+            {toast.message}
+          </Toast>
         </div>
       )}
 

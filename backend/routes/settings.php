@@ -69,7 +69,7 @@ class SettingsRoutes {
                 continue;
             }
             $id = isset($entry['id']) ? (int) $entry['id'] : null;
-            if (!$id || isset($seen[$id])) {
+            if (!$id || isset($seen[$id]) || !empty($entry['is_fallback'])) {
                 continue;
             }
             $seen[$id] = true;
@@ -340,6 +340,7 @@ class SettingsRoutes {
             !empty($existing['hero_images']) ? (json_decode($existing['hero_images'], true) ?: []) : []
         );
         $heroImagesAfter = null;
+        $writtenFields = [];
 
         // Build dynamic UPDATE query
         $fields = [];
@@ -397,6 +398,7 @@ class SettingsRoutes {
                 
                 $fields[] = "$field = ?";
                 $params[] = $value;
+                $writtenFields[] = $field;
             }
         }
 
@@ -407,7 +409,34 @@ class SettingsRoutes {
         $sql = 'UPDATE site_settings SET ' . implode(', ', $fields) . ' WHERE id = 1';
         
         try {
-            $this->db->update($sql, $params);
+            $affected = $this->db->update($sql, $params);
+            if ($affected === 0) {
+                $context = [
+                    'fields' => $writtenFields,
+                    'hero_images_count' => is_array($heroImagesAfter) ? count($heroImagesAfter) : null
+                ];
+                Logger::warning('Site settings update touched 0 rows', $context);
+                http_response_code(409);
+                $errorResponse = [
+                    'success' => false,
+                    'message' => 'No settings were updated. Please make changes before saving.'
+                ];
+                if (!Config::isProduction()) {
+                    $errorResponse['debug'] = $context;
+                }
+                echo json_encode($errorResponse);
+                return;
+            }
+
+            $freshRow = $this->db->fetchOne('SELECT hero_images, hero_slideshow_speed FROM site_settings WHERE id = 1') ?: [];
+            $storedHeroImages = [];
+            if (!empty($freshRow['hero_images'])) {
+                $decoded = json_decode($freshRow['hero_images'], true);
+                if (is_array($decoded)) {
+                    $storedHeroImages = $decoded;
+                }
+            }
+
             if ($heroImagesAfter !== null) {
                 $beforeIds = array_map(function ($entry) {
                     return isset($entry['id']) ? (int) $entry['id'] : null;
@@ -468,7 +497,35 @@ class SettingsRoutes {
                     ]);
                 }
             }
-            echo json_encode(['message' => 'Settings updated']);
+
+            if (!Config::isProduction()) {
+                Logger::info('site_settings.hero_update', [
+                    'fields' => $writtenFields,
+                    'rows_affected' => $affected,
+                    'stored_hero_images' => $storedHeroImages
+                ]);
+            }
+
+            $response = [
+                'success' => true,
+                'message' => 'Settings updated',
+                'settings' => [
+                    'hero_images' => $storedHeroImages,
+                    'hero_slideshow_speed' => isset($freshRow['hero_slideshow_speed'])
+                        ? (int) $freshRow['hero_slideshow_speed']
+                        : (int) ($existing['hero_slideshow_speed'] ?? 6000)
+                ]
+            ];
+
+            if (!Config::isProduction()) {
+                $response['debug'] = [
+                    'rows_affected' => $affected,
+                    'fields' => $writtenFields,
+                    'hero_images_json' => $freshRow['hero_images'] ?? null
+                ];
+            }
+
+            echo json_encode($response);
         } catch (PDOException $e) {
             Logger::error('Failed to update site_settings', ['error' => $e->getMessage()]);
             throw $e;
