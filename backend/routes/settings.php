@@ -58,6 +58,12 @@ class SettingsRoutes {
         ];
     }
 
+    private function sendNoCacheHeaders() {
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+    }
+
     private function sanitizeHeroImages($entries) {
         if (!is_array($entries)) {
             return [];
@@ -120,13 +126,13 @@ class SettingsRoutes {
                 $row['hero_images'] = [];
             }
 
-            header('Cache-Control: public, max-age=300');
+            $this->sendNoCacheHeaders();
             echo json_encode($row);
         } catch (PDOException $e) {
             // Return empty settings if table doesn't exist
             if (strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing site_settings table', ['error' => $e->getMessage()]);
-                header('Cache-Control: public, max-age=300');
+                $this->sendNoCacheHeaders();
                 echo json_encode([]);
             } else {
                 throw $e;
@@ -205,10 +211,11 @@ class SettingsRoutes {
 
             $settings['hero_images'] = $heroSelectionForResponse;
             $settings['hero_images_variants'] = $heroVariants;
-            header('Cache-Control: public, max-age=60');
+            $this->sendNoCacheHeaders();
             echo json_encode(['success' => true, 'settings' => $settings]);
         } catch (PDOException $e) {
             Logger::error('GET /api/settings failed', ['error' => $e->getMessage()]);
+            $this->sendNoCacheHeaders();
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Failed to load settings']);
         }
@@ -441,6 +448,7 @@ class SettingsRoutes {
                 ];
                 Logger::warning('Site settings update touched 0 rows', $context);
                 http_response_code(409);
+                $this->sendNoCacheHeaders();
                 $errorResponse = [
                     'success' => false,
                     'message' => 'No settings were updated. Please make changes before saving.'
@@ -530,6 +538,7 @@ class SettingsRoutes {
                 ]);
             }
 
+            $this->sendNoCacheHeaders();
             $response = [
                 'success' => true,
                 'message' => 'Settings updated',
@@ -552,6 +561,7 @@ class SettingsRoutes {
             echo json_encode($response);
         } catch (PDOException $e) {
             Logger::error('Failed to update site_settings', ['error' => $e->getMessage()]);
+            $this->sendNoCacheHeaders();
             throw $e;
         }
     }

@@ -112,14 +112,18 @@ function SettingsModule() {
     businessHours: true
   });
   const originalSettingsRef = useRef({});
+  const settingsRequestSeq = useRef(0);
   const [originalSettingsSnapshot, setOriginalSettingsSnapshot] = useState({});
   const [toast, setToast] = useState(null);
   const toggleSection = useCallback((key) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  const refetchSiteSettings = useCallback(async () => {
-    const siteRes = await authenticatedFetch('/settings');
+  const refetchSiteSettings = useCallback(async (options = {}) => {
+    const { force = false } = options;
+    const requestId = ++settingsRequestSeq.current;
+    const cacheBuster = force ? `?_=${Date.now()}` : '';
+    const siteRes = await authenticatedFetch(`/settings${cacheBuster}`, force ? { cache: 'no-store' } : {});
     if (!siteRes.ok) throw new Error('Failed to load settings');
     const siteData = await siteRes.json();
     const settingsPayload = siteData?.settings || {};
@@ -127,6 +131,9 @@ function SettingsModule() {
     const parsedSpeed = parseInt(settingsPayload.hero_slideshow_speed, 10);
     settingsPayload.hero_slideshow_speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000;
     const normalizedSettings = JSON.parse(JSON.stringify(settingsPayload));
+    if (requestId !== settingsRequestSeq.current) {
+      return null;
+    }
     setSiteSettings(normalizedSettings);
     originalSettingsRef.current = normalizedSettings;
     setOriginalSettingsSnapshot(normalizedSettings);
@@ -410,7 +417,7 @@ function SettingsModule() {
       } catch (e) {}
 
       try {
-        await refetchSiteSettings();
+        await refetchSiteSettings({ force: true });
       } catch (error) {
         showToast('Settings saved, but failed to reload the latest values.', 'error');
       }
