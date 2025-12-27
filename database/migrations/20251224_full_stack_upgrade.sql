@@ -208,16 +208,13 @@ SET hero_slideshow_speed = COALESCE(hero_slideshow_speed, 6000)
 WHERE id = 1;
 
 /* ------------------------------------------------------------
-   3c) Normalize hero_images defaults
+   3c) Normalize hero_images defaults (needed for hero picker)
 ------------------------------------------------------------- */
 UPDATE site_settings
 SET hero_images = '[]'
-WHERE id = 1
-  AND (
-    hero_images IS NULL
-    OR TRIM(hero_images) = ''
-    OR LOWER(TRIM(hero_images)) = 'null'
-  );
+WHERE hero_images IS NULL
+   OR TRIM(hero_images) = ''
+   OR LOWER(TRIM(hero_images)) = 'null';
 
 /* ------------------------------------------------------------
    3d) Ensure job_positions/application_fields tables exist
