@@ -28,6 +28,7 @@ export default function MenuSection() {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [lockedHeight, setLockedHeight] = useState(0);
   const panelsRef = useRef({});
+  const [measureVersion, setMeasureVersion] = useState(0);
 
   const measurePanel = (id) => {
     const el = panelsRef.current[id];
@@ -73,6 +74,19 @@ export default function MenuSection() {
       return prev;
     });
   }, []);
+
+  // Trigger a re-measure after web fonts settle so the locked height can
+  // increase to the final rendered size. document.fonts.ready resolves once
+  // all font faces used on the page are ready.
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.fonts?.ready) return undefined;
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (cancelled) return;
+      setMeasureVersion(prev => prev + 1);
+    });
+    return () => { cancelled = true; };
+  }, [menuLoaded, settingsLoaded]);
 
   // fetch latest menu/settings directly from API
   useEffect(() => {
@@ -186,6 +200,7 @@ export default function MenuSection() {
         lockedHeight={lockedHeight}
         onSkeletonHeight={handleSkeletonHeight}
         onContentHeight={handleContentHeight}
+        remeasureKey={measureVersion}
       />
     </div>
   );

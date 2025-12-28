@@ -14,37 +14,84 @@ export default function MenuDisplay({
   isLoaded = false,
   lockedHeight = null,
   onSkeletonHeight = null,
-  onContentHeight = null
+  onContentHeight = null,
+  remeasureKey = 0
 }) {
   const safeMenuIntro = sanitizeRichText(menuIntro || '');
   const hasCategories = Array.isArray(categories) && categories.length > 0;
   const placeholderCount = 3;
   const skeletonRef = React.useRef(null);
   const contentRef = React.useRef(null);
-  const contentMeasureRef = React.useRef(null);
+  const measurementRaf = React.useRef({ read: null, write: null });
+  const resizeObserverRef = React.useRef(null);
+
+  const cancelMeasurementRafs = React.useCallback(() => {
+    if (measurementRaf.current.read) {
+      cancelAnimationFrame(measurementRaf.current.read);
+      measurementRaf.current.read = null;
+    }
+    if (measurementRaf.current.write) {
+      cancelAnimationFrame(measurementRaf.current.write);
+      measurementRaf.current.write = null;
+    }
+  }, []);
+
+  const commitMeasuredHeight = React.useCallback((height) => {
+    if (!height || typeof onContentHeight !== 'function') return;
+    measurementRaf.current.write = requestAnimationFrame(() => {
+      onContentHeight(Math.ceil(height));
+    });
+  }, [onContentHeight]);
+
+  const measureContentHeight = React.useCallback(() => {
+    if (!contentRef.current) return;
+    cancelMeasurementRafs();
+    measurementRaf.current.read = requestAnimationFrame(() => {
+      const measured = contentRef.current?.offsetHeight
+        || contentRef.current?.getBoundingClientRect?.().height
+        || 0;
+      if (measured) {
+        commitMeasuredHeight(measured);
+      }
+    });
+  }, [cancelMeasurementRafs, commitMeasuredHeight]);
 
   React.useEffect(() => {
-    if (isLoaded || !skeletonRef.current || typeof onSkeletonHeight !== 'function') return;
-    const measured = skeletonRef.current.offsetHeight || skeletonRef.current.getBoundingClientRect?.().height;
-    if (measured) {
-      onSkeletonHeight(measured);
-    }
+    if (isLoaded || !skeletonRef.current || typeof onSkeletonHeight !== 'function') return undefined;
+    const rafId = requestAnimationFrame(() => {
+      const measured = skeletonRef.current?.offsetHeight || skeletonRef.current?.getBoundingClientRect?.().height;
+      if (measured) {
+        onSkeletonHeight(Math.ceil(measured));
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [isLoaded, onSkeletonHeight]);
 
   React.useEffect(() => {
     if (!isLoaded || typeof onContentHeight !== 'function' || !contentRef.current) return undefined;
-    contentMeasureRef.current = requestAnimationFrame(() => {
-      const measured = contentRef.current.offsetHeight || contentRef.current.getBoundingClientRect?.().height;
+    measureContentHeight();
+    return () => {
+      cancelMeasurementRafs();
+    };
+  }, [isLoaded, categories, expandedCategory, remeasureKey, onContentHeight, measureContentHeight, cancelMeasurementRafs]);
+
+  React.useEffect(() => {
+    if (!isLoaded || typeof ResizeObserver === 'undefined' || !contentRef.current) return undefined;
+    resizeObserverRef.current = new ResizeObserver((entries) => {
+      const entry = entries?.[0];
+      const measured = entry?.contentRect?.height;
       if (measured) {
-        onContentHeight(measured);
+        commitMeasuredHeight(measured);
       }
     });
+    resizeObserverRef.current.observe(contentRef.current);
     return () => {
-      if (contentMeasureRef.current) {
-        cancelAnimationFrame(contentMeasureRef.current);
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
       }
     };
-  }, [isLoaded, categories, expandedCategory, onContentHeight]);
+  }, [isLoaded, commitMeasuredHeight]);
 
   const containerStyle = lockedHeight ? { minHeight: lockedHeight } : undefined;
 

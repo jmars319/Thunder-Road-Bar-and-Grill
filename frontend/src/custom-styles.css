@@ -107,6 +107,31 @@
   color: var(--text-primary);
 }
 
+.navbar-heading {
+  display: block;
+  min-height: 1.65rem;
+  line-height: 1.2;
+}
+
+@media screen and (min-width: 768px) {
+  .navbar-heading {
+    min-height: 2rem;
+  }
+}
+
+.navbar-tagline {
+  display: block;
+  min-height: 1.15rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+@media screen and (min-width: 768px) {
+  .navbar-tagline {
+    min-height: 1.25rem;
+  }
+}
+
 .footer-link {
   display: inline-flex;
   align-items: center;

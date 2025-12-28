@@ -136,7 +136,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
   return (
     <nav className="bg-surface shadow-md header-sticky top-0 z-50 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <div className="flex justify-between items-center h-16 md:h-20">
+  <div className="flex justify-between items-center h-16 md:h-20 min-h-[4rem] md:min-h-[5rem]">
           <div className="flex items-center gap-3">
             <a
               href="#top"
@@ -154,14 +154,14 @@ export default function PublicNavbar({ onGoToAdmin }) {
               className="logo-badge inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               aria-label="Back to top"
             >
-              <BrandLogo className="h-full w-auto object-contain" />
+              <BrandLogo className="h-full w-auto object-contain" width={160} height={80} sizes="(max-width: 767px) 96px, 140px" />
             </a>
-            <div>
-              <div className="text-lg font-bold text-text-primary font-heading">
+            <div className="leading-none">
+              <div className="navbar-heading text-lg font-bold text-text-primary font-heading">
                 {siteSettings?.business_name || 'Thunder Road Bar and Grill'}
               </div>
               {siteSettings?.tagline && (
-                <div className="text-xs text-text-secondary">{siteSettings.tagline}</div>
+                <div className="navbar-tagline text-xs text-text-secondary leading-snug">{siteSettings.tagline}</div>
               )}
             </div>
           </div>
