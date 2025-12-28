@@ -13,12 +13,15 @@ export default function MenuDisplay({
   measurePanel,
   isLoaded = false,
   lockedHeight = null,
-  onSkeletonHeight = null
+  onSkeletonHeight = null,
+  onContentHeight = null
 }) {
   const safeMenuIntro = sanitizeRichText(menuIntro || '');
   const hasCategories = Array.isArray(categories) && categories.length > 0;
   const placeholderCount = 3;
   const skeletonRef = React.useRef(null);
+  const contentRef = React.useRef(null);
+  const contentMeasureRef = React.useRef(null);
 
   React.useEffect(() => {
     if (isLoaded || !skeletonRef.current || typeof onSkeletonHeight !== 'function') return;
@@ -28,7 +31,22 @@ export default function MenuDisplay({
     }
   }, [isLoaded, onSkeletonHeight]);
 
-  const containerStyle = lockedHeight !== null ? { minHeight: lockedHeight } : undefined;
+  React.useEffect(() => {
+    if (!isLoaded || typeof onContentHeight !== 'function' || !contentRef.current) return undefined;
+    contentMeasureRef.current = requestAnimationFrame(() => {
+      const measured = contentRef.current.offsetHeight || contentRef.current.getBoundingClientRect?.().height;
+      if (measured) {
+        onContentHeight(measured);
+      }
+    });
+    return () => {
+      if (contentMeasureRef.current) {
+        cancelAnimationFrame(contentMeasureRef.current);
+      }
+    };
+  }, [isLoaded, categories, expandedCategory, onContentHeight]);
+
+  const containerStyle = lockedHeight ? { minHeight: lockedHeight } : undefined;
 
   return (
     <div className="py-12 bg-surface-warm">
@@ -41,7 +59,12 @@ export default function MenuDisplay({
           />
         )}
 
-        <div className="space-y-4" aria-busy={!isLoaded} style={containerStyle}>
+        <div
+          className="space-y-4"
+          aria-busy={!isLoaded}
+          style={containerStyle}
+          ref={isLoaded ? contentRef : null}
+        >
           {!isLoaded ? (
             <div className="grid gap-4" aria-hidden="true" ref={skeletonRef}>
               {Array.from({ length: placeholderCount }).map((_, idx) => (

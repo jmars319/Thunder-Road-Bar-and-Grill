@@ -26,9 +26,8 @@ export default function MenuSection() {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [menuLoaded, setMenuLoaded] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [lockedHeight, setLockedHeight] = useState(null);
+  const [lockedHeight, setLockedHeight] = useState(0);
   const panelsRef = useRef({});
-  const releaseLockRef = useRef(null);
 
   const measurePanel = (id) => {
     const el = panelsRef.current[id];
@@ -55,13 +54,24 @@ export default function MenuSection() {
 
   const handleSkeletonHeight = useCallback((height) => {
     if (!height) return;
-    setLockedHeight(prev => (prev === null ? Math.ceil(height) : prev));
+    setLockedHeight(prev => {
+      const next = Math.ceil(height);
+      if (!prev || next > prev) {
+        return next;
+      }
+      return prev;
+    });
   }, []);
 
-  useEffect(() => () => {
-    if (releaseLockRef.current) {
-      cancelAnimationFrame(releaseLockRef.current);
-    }
+  const handleContentHeight = useCallback((height) => {
+    if (!height) return;
+    setLockedHeight(prev => {
+      const measured = Math.ceil(height);
+      if (!prev || measured > prev) {
+        return measured;
+      }
+      return prev;
+    });
   }, []);
 
   // fetch latest menu/settings directly from API
@@ -121,18 +131,6 @@ export default function MenuSection() {
     };
   }, [buildApiUrl]);
 
-  useEffect(() => {
-    if (!menuLoaded || !settingsLoaded || lockedHeight === null) return undefined;
-    releaseLockRef.current = requestAnimationFrame(() => {
-      setLockedHeight(null);
-    });
-    return () => {
-      if (releaseLockRef.current) {
-        cancelAnimationFrame(releaseLockRef.current);
-      }
-    };
-  }, [menuLoaded, settingsLoaded, lockedHeight]);
-
   // Animate panels to exact height using JS measurement
   useEffect(() => {
     Object.keys(panelsRef.current).forEach(key => {
@@ -174,7 +172,7 @@ export default function MenuSection() {
   <div
     id="menu"
     className="py-12 bg-surface-warm"
-    style={lockedHeight !== null ? { minHeight: lockedHeight } : undefined}
+    style={lockedHeight ? { minHeight: lockedHeight } : undefined}
   >
       <MenuDisplay
         categories={categories}
@@ -187,6 +185,7 @@ export default function MenuSection() {
         isLoaded={menuLoaded && settingsLoaded}
         lockedHeight={lockedHeight}
         onSkeletonHeight={handleSkeletonHeight}
+        onContentHeight={handleContentHeight}
       />
     </div>
   );
