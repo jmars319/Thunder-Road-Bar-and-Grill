@@ -23,6 +23,13 @@ import cachedFetch from '../../lib/cachedFetch';
 // events from the click handler that sets `orderOpen`.
 const OrderModal = React.lazy(() => import('./OrderModal'));
 
+const DEFAULT_NAV_LINKS = [
+  { id: 'nav-menu-default', label: 'Menu', url: '#menu' },
+  { id: 'nav-reservations-default', label: 'Reservations', url: '#reservations' },
+  { id: 'nav-about-default', label: 'About', url: '#about' },
+  { id: 'nav-careers-default', label: 'Careers', url: '#jobs' }
+];
+
 /*
   PublicNavbar
 
@@ -46,7 +53,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
   // kept for backwards compatibility with parent callers; no-op in navbar now
   void onGoToAdmin;
   const [siteSettings, setSiteSettings] = useState(null);
-  const [navLinks, setNavLinks] = useState([]);
+  const [navLinks, setNavLinks] = useState(DEFAULT_NAV_LINKS);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   // Tracks whether the Order Online modal is visible. Use this flag to
@@ -64,17 +71,14 @@ export default function PublicNavbar({ onGoToAdmin }) {
     fetch(getApiUrl('/navigation'))
       .then(res => res.json())
       .then(data => {
-        // Ensure we always set an array, even if data is null/undefined/not-an-array
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length) {
           setNavLinks(data);
-        } else {
+        } else if (!Array.isArray(data)) {
           console.warn('Navigation data is not an array:', data);
-          setNavLinks([]);
         }
       })
       .catch(err => {
         console.error('Failed to fetch navigation:', err);
-        setNavLinks([]);
       });
   }, []);
 

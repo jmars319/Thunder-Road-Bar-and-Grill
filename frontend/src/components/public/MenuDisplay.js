@@ -185,12 +185,15 @@ export default function MenuDisplay({
                         sizes="(max-width: 639px) 100vw, (max-width: 1279px) calc(100vw - 64px), 960px"
                       />
                     ) : (
-                      <img
-                        src={fallbackBackground}
-                        alt=""
-                        loading="lazy"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
+                    <img
+                      src={fallbackBackground}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      width="960"
+                      height="540"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
                     )}
                     <div className="absolute inset-0 bg-black/35" />
                   </div>

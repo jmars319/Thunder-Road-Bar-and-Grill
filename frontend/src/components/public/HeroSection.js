@@ -19,7 +19,7 @@ import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
 
-const HERO_SIZES = '(max-width: 767px) 100vw, (max-width: 1279px) calc(100vw - 32px), calc(100vw - 48px)';
+const HERO_SIZES = '(max-width: 767px) 100vw, (max-width: 1279px) calc(100vw - 32px), min(1280px, calc(100vw - 48px))';
 const HERO_FRAME_CLASS = 'absolute inset-0 md:inset-x-4 lg:inset-x-6 rounded-none md:rounded-[32px] overflow-hidden';
 const HERO_OVERLAY_CLASS = 'absolute inset-0 md:inset-x-4 lg:inset-x-6 rounded-none md:rounded-[32px] z-10 overlay-gradient pointer-events-none';
 
@@ -197,14 +197,18 @@ export default function HeroSection() {
               const variant = i === 0 ? img.variant : limitHeroVariantToSingle(img.variant);
               const isVisible = i === index;
               const transitionClass = slideshowActive ? 'transition-opacity duration-1000' : '';
-              const imgProps =
-                i === 0
-                  ? {
-                      fetchpriority: 'high',
-                      decoding: 'async',
-                      onLoad: handleFirstImageLoad
-                    }
-                  : {};
+              const baseImgProps = {
+                width: variant?.width || undefined,
+                height: variant?.height || undefined
+              };
+              const eagerProps = i === 0
+                ? {
+                    fetchpriority: 'high',
+                    decoding: 'async',
+                    onLoad: handleFirstImageLoad
+                  }
+                : {};
+              const imgProps = { ...baseImgProps, ...eagerProps };
               return (
               <div
                 key={img.id || i}

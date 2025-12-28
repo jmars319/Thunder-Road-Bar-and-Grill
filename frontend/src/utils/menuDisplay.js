@@ -21,7 +21,7 @@ export function normalizeMenuCategory(cat = {}) {
         }
       : null);
   const responsiveEntry = cacheBuster ? applyCacheBusterToEntry(responsiveEntryRaw, cacheBuster) : responsiveEntryRaw;
-  const displaySizes = '(max-width: 639px) 100vw, (max-width: 1279px) calc(100vw - 64px), 960px';
+  const displaySizes = '(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 96px), (max-width: 1535px) 720px, 960px';
   let heroVariant = responsiveEntry && hasRenderableImageVariant(responsiveEntry)
     ? buildImageVariant(responsiveEntry, { sizes: displaySizes, maxVariants: 2 })
     : null;
