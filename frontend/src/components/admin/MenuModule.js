@@ -1046,10 +1046,17 @@ function MenuModule() {
               >
                 <icons.Menu size={20} />
               </button>
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setExpandedCategory(expandedCategory === category.id ? null : category.id)}
-                className="flex-1 flex items-center gap-3 text-left"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setExpandedCategory(expandedCategory === category.id ? null : category.id);
+                  }
+                }}
+                className="flex-1 flex items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-md"
                 aria-expanded={expandedCategory === category.id}
                 aria-controls={`category-items-${category.id}`}
               >
@@ -1096,7 +1103,7 @@ function MenuModule() {
                     })() : null}
                   </div>
                 </div>
-              </button>
+              </div>
                 <div className="flex gap-2">
                 <button
                   type="button"

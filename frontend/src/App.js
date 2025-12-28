@@ -40,9 +40,34 @@ export default function App() {
   const _lazyComponents = { AdminPanel, Suspense };
   void _routes;
   void _lazyComponents;
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [showAdmin, setShowAdmin] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const pathAdmin = window.location.pathname.startsWith('/admin');
+    let stored = false;
+    try {
+      stored = window.localStorage.getItem(ADMIN_MODE_KEY) === '1';
+    } catch (error) {
+      stored = false;
+    }
+    return pathAdmin || stored;
+  });
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return Boolean(window.localStorage.getItem('authToken'));
+    } catch (error) {
+      return false;
+    }
+  });
+  const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = window.localStorage.getItem(AUTH_USER_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      return null;
+    }
+  });
   const ADMIN_MODE_KEY = 'adminMode';
   const AUTH_USER_KEY = 'authUser';
 
@@ -122,13 +147,6 @@ export default function App() {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.location.pathname.startsWith('/admin')) {
-      setShowAdmin(true);
-    }
   }, []);
 
   useEffect(() => {
