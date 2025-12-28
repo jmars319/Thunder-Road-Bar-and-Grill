@@ -3,8 +3,6 @@ import { icons } from '../../icons';
 import { sanitizeRichText } from '../../utils/richText';
 import ResponsiveImage from '../common/ResponsiveImage';
 
-const DEFAULT_CONTAINER_MIN_HEIGHT = 1080;
-
 export default function MenuDisplay({
   categories = [],
   menuHeading = '',
@@ -14,10 +12,10 @@ export default function MenuDisplay({
   panelsRef,
   measurePanel,
   isLoaded = false,
-  lockedHeight = null,
   onSkeletonHeight = null,
   onContentHeight = null,
-  remeasureKey = 0
+  remeasureKey = 0,
+  className = ''
 }) {
   const safeMenuIntro = sanitizeRichText(menuIntro || '');
   const hasCategories = Array.isArray(categories) && categories.length > 0;
@@ -128,12 +126,8 @@ export default function MenuDisplay({
     };
   }, [isLoaded, remeasureKey, reportHeight]);
 
-  const containerStyle = lockedHeight
-    ? { minHeight: lockedHeight }
-    : { minHeight: DEFAULT_CONTAINER_MIN_HEIGHT };
-
   return (
-    <div className="py-12 bg-surface-warm">
+    <div className={className}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {menuHeading && <h2 className="text-2xl sm:text-3xl font-heading font-bold text-center mb-4">{menuHeading}</h2>}
         {safeMenuIntro && (
@@ -146,7 +140,6 @@ export default function MenuDisplay({
         <div
           className="space-y-4"
           aria-busy={!isLoaded}
-          style={containerStyle}
           ref={isLoaded ? contentRef : null}
         >
           {!isLoaded ? (

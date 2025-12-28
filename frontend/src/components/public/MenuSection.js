@@ -21,8 +21,6 @@ import { getApiUrl } from '../../config/api';
 
 const DEFAULT_MENU_HEADING = 'Our Menu';
 const DEFAULT_MENU_INTRO = 'Our kitchen serves scratch-made favorites with seasonal ingredients. Browse by category for details and prices.';
-const DEFAULT_MENU_MIN_HEIGHT = 2200;
-
 export default function MenuSection() {
   const [categories, setCategories] = useState([]);
   const [siteMenuDescription, setSiteMenuDescription] = useState(DEFAULT_MENU_INTRO);
@@ -30,10 +28,12 @@ export default function MenuSection() {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [menuLoaded, setMenuLoaded] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [lockedHeight, setLockedHeight] = useState(DEFAULT_MENU_MIN_HEIGHT);
+  const [lockedHeight, setLockedHeight] = useState(null);
+  const [releaseLock, setReleaseLock] = useState(false);
   const panelsRef = useRef({});
   const [measureVersion, setMeasureVersion] = useState(0);
   const fontsRemeasuredRef = useRef(false);
+  const releaseScheduledRef = useRef(false);
 
   const measurePanel = (id) => {
     const el = panelsRef.current[id];
@@ -58,27 +58,22 @@ export default function MenuSection() {
     return base.includes('?') ? `${base}&debug=1` : `${base}?debug=1`;
   }, [debugEnabled]);
 
-  const handleSkeletonHeight = useCallback((height) => {
+  const lockToHeight = useCallback((height) => {
     if (!height) return;
+    const next = Math.ceil(height);
     setLockedHeight(prev => {
-      const next = Math.ceil(height);
-      if (!prev || next > prev) {
-        return next;
-      }
+      if (!prev || next > prev) return next;
       return prev;
     });
   }, []);
 
+  const handleSkeletonHeight = useCallback((height) => {
+    lockToHeight(height);
+  }, [lockToHeight]);
+
   const handleContentHeight = useCallback((height) => {
-    if (!height) return;
-    setLockedHeight(prev => {
-      const measured = Math.ceil(height);
-      if (!prev || measured > prev) {
-        return measured;
-      }
-      return prev;
-    });
-  }, []);
+    lockToHeight(height);
+  }, [lockToHeight]);
 
   // Trigger a re-measure after web fonts settle so the locked height can
   // increase to the final rendered size. document.fonts.ready resolves once
@@ -98,6 +93,23 @@ export default function MenuSection() {
     });
     return () => { cancelled = true; };
   }, [menuLoaded, settingsLoaded]);
+
+  useEffect(() => {
+    if (releaseLock || !menuLoaded || !settingsLoaded) return undefined;
+    const scheduleRelease = () => {
+      if (releaseScheduledRef.current) return;
+      releaseScheduledRef.current = true;
+      requestAnimationFrame(() => setReleaseLock(true));
+    };
+    if (fontsRemeasuredRef.current) {
+      scheduleRelease();
+    } else if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(scheduleRelease).catch(() => scheduleRelease());
+    } else {
+      scheduleRelease();
+    }
+    return undefined;
+  }, [menuLoaded, settingsLoaded, releaseLock]);
 
   // fetch latest menu/settings directly from API
   useEffect(() => {
@@ -193,13 +205,13 @@ export default function MenuSection() {
     return () => window.removeEventListener('resize', onResize);
   }, [expandedCategory]);
 
-  const effectiveMinHeight = lockedHeight || DEFAULT_MENU_MIN_HEIGHT;
+  const containerStyle = (!releaseLock && lockedHeight) ? { minHeight: lockedHeight } : undefined;
 
   return (
   <div
     id="menu"
-    className="menu-section-shell py-12 bg-surface-warm"
-    style={{ minHeight: effectiveMinHeight }}
+    className="py-12 bg-surface-warm"
+    style={containerStyle}
   >
       <MenuDisplay
         categories={categories}
@@ -210,7 +222,6 @@ export default function MenuSection() {
         panelsRef={panelsRef}
         measurePanel={measurePanel}
         isLoaded={menuLoaded && settingsLoaded}
-        lockedHeight={lockedHeight}
         onSkeletonHeight={handleSkeletonHeight}
         onContentHeight={handleContentHeight}
         remeasureKey={measureVersion}

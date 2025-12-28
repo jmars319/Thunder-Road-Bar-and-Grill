@@ -1,14 +1,32 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { icons } from '../../icons';
 import { authenticatedFetch } from '../../utils/api';
+
+const STATUS_OPTIONS = ['new', 'reviewing', 'interviewed', 'hired', 'rejected', 'archived'];
+const STATUS_ALIASES = {
+  new: ['new', 'pending', 'submitted', 'received', 'unread', 'inbox', '0'],
+  reviewing: ['reviewing', 'review', 'in_review'],
+  interviewed: ['interviewed', 'interview', 'phone'],
+  hired: ['hired', 'accepted'],
+  rejected: ['rejected', 'declined', 'denied'],
+  archived: ['archived', 'closed', 'withdrawn']
+};
+
+export function normalizeJobStatus(input) {
+  if (input === undefined || input === null) return 'new';
+  const normalized = String(input).trim().toLowerCase();
+  if (!normalized) return 'new';
+  if (STATUS_OPTIONS.includes(normalized)) return normalized;
+  const match = Object.entries(STATUS_ALIASES).find(([, values]) => values.includes(normalized));
+  return match ? match[0] : 'new';
+}
 
 function JobsModule() {
   const [applications, setApplications] = useState([]);
   const [selectedApp, setSelectedApp] = useState(null);
   const [positions, setPositions] = useState([]);
   const [page, setPage] = useState(1);
-  const [perPage] = useState(25);
-  const [total, setTotal] = useState(0);
+  const perPage = 25;
   const [statusFilter, setStatusFilter] = useState('new');
   const [sortBy, setSortBy] = useState('submitted_at');
   const [sortDir, setSortDir] = useState('DESC');
@@ -21,33 +39,43 @@ function JobsModule() {
   const fetchApplications = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(perPage),
-      status: statusFilter,
-      sort_by: sortBy,
-      sort_dir: sortDir
+      per_page: '500',
+      status: 'all'
     });
     try {
       const res = await authenticatedFetch(`/jobs?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setApplications(Array.isArray(data.data) ? data.data : []);
-        setTotal(typeof data.total === 'number' ? data.total : 0);
+        const normalized = (Array.isArray(data.data) ? data.data : []).map(app => ({
+          ...app,
+          normalizedStatus: normalizeJobStatus(app.status)
+        }));
+        setApplications(normalized);
       } else {
         setApplications([]);
-        setTotal(0);
       }
     } catch {
       setApplications([]);
-      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, sortBy, sortDir, statusFilter]);
+  }, []);
 
   useEffect(() => {
     fetchApplications();
   }, [fetchApplications]);
+
+useEffect(() => {
+  setPage(1);
+}, [statusFilter]);
+
+useEffect(() => {
+  if (!selectedApp) return;
+  const latest = applications.find(app => app.id === selectedApp.id);
+  if (latest && latest !== selectedApp) {
+    setSelectedApp(latest);
+  }
+}, [applications, selectedApp]);
 
   const fetchPositions = async () => {
     try {
@@ -77,19 +105,26 @@ function JobsModule() {
     fetchPositions();
   };
 
+  const applyStatusLocally = (id, status) => {
+    const normalized = normalizeJobStatus(status);
+    setApplications(prev => prev.map(app => (app.id === id ? { ...app, status, normalizedStatus: normalized } : app)));
+    setSelectedApp(prev => (prev && prev.id === id ? { ...prev, status, normalizedStatus: normalized } : prev));
+  };
+
   const updateStatus = async (id, status) => {
+    const canonical = normalizeJobStatus(status);
     await authenticatedFetch(`/jobs/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status: canonical })
     });
-    fetchApplications();
+    applyStatusLocally(id, canonical);
   };
 
   const deleteApplication = async (id) => {
     if (!window.confirm('Delete this application?')) return;
     await authenticatedFetch(`/jobs/${id}`, { method: 'DELETE' });
+    setApplications(prev => prev.filter(app => app.id !== id));
     setSelectedApp(current => (current?.id === id ? null : current));
-    fetchApplications();
   };
 
   const changeSort = (column) => {
@@ -101,8 +136,37 @@ function JobsModule() {
     }
   };
 
-  const statusOptions = ['new', 'reviewing', 'interviewed', 'hired', 'rejected', 'archived'];
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const sortApplications = useCallback((list) => {
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      const dir = sortDir === 'ASC' ? 1 : -1;
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name) * dir;
+      }
+      if (sortBy === 'position') {
+        return (a.position || '').localeCompare(b.position || '') * dir;
+      }
+      if (sortBy === 'status') {
+        return a.normalizedStatus.localeCompare(b.normalizedStatus) * dir;
+      }
+      const aDate = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+      const bDate = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+      return (aDate - bDate) * dir;
+    });
+    return sorted;
+  }, [sortBy, sortDir]);
+
+  const filteredApplications = useMemo(() => {
+    if (statusFilter === 'all') return applications;
+    return applications.filter(app => app.normalizedStatus === statusFilter);
+  }, [applications, statusFilter]);
+
+  const sortedApplications = useMemo(() => sortApplications(filteredApplications), [filteredApplications, sortApplications]);
+  const totalFiltered = sortedApplications.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / perPage));
+  const pagedApplications = sortedApplications.slice((page - 1) * perPage, page * perPage);
+
+  const selectedAppStatus = selectedApp ? (selectedApp.normalizedStatus || normalizeJobStatus(selectedApp.status)) : 'new';
 
   return (
     <div className="space-y-6">
@@ -135,7 +199,7 @@ function JobsModule() {
       <div className="bg-surface rounded-lg shadow overflow-hidden">
         <div className="flex flex-wrap items-center justify-between p-4 border-b border-divider gap-2 text-xs">
           <div className="flex gap-2 flex-wrap">
-            {statusOptions.concat('all').map(status => (
+            {[...STATUS_OPTIONS, 'all'].map(status => (
               <button
                 key={status}
                 onClick={() => { setStatusFilter(status); setPage(1); }}
@@ -145,7 +209,7 @@ function JobsModule() {
               </button>
             ))}
           </div>
-          <span className="text-text-secondary">Total {total}</span>
+          <span className="text-text-secondary">Total {totalFiltered}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -163,12 +227,12 @@ function JobsModule() {
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-center text-text-secondary">Loading applications…</td>
                 </tr>
-              ) : applications.length === 0 ? (
+              ) : pagedApplications.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-center text-text-secondary">No applications.</td>
                 </tr>
               ) : (
-                applications.map(app => (
+                pagedApplications.map(app => (
                   <tr key={app.id} className="hover:bg-surface-warm/60">
                     <td className="px-4 py-3">
                       <button type="button" className="text-left font-medium text-text-primary" onClick={() => setSelectedApp(app)}>{app.name}</button>
@@ -176,7 +240,7 @@ function JobsModule() {
                     </td>
                     <td className="px-4 py-3">{app.position}</td>
                     <td className="px-4 py-3">{app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : ''}</td>
-                    <td className="px-4 py-3">{app.status}</td>
+                    <td className="px-4 py-3 capitalize">{app.normalizedStatus}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -188,10 +252,10 @@ function JobsModule() {
                         </button>
                         <select
                           className="form-input text-xs"
-                          value={app.status}
+                          value={app.normalizedStatus}
                           onChange={(e) => updateStatus(app.id, e.target.value)}
                         >
-                          {statusOptions.map(option => (
+                          {STATUS_OPTIONS.map(option => (
                             <option key={option} value={option}>{option}</option>
                           ))}
                         </select>
@@ -234,7 +298,7 @@ function JobsModule() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-text-primary mb-4">
-              <DetailBlock title="Status" value={selectedApp.status} />
+              <DetailBlock title="Status" value={selectedAppStatus} />
               <DetailBlock title="Submitted" value={selectedApp.submitted_at ? new Date(selectedApp.submitted_at).toLocaleDateString() : '—'} />
               <DetailBlock title="Availability" value={selectedApp.availability} />
               <DetailBlock title="Experience" value={selectedApp.experience} />
@@ -251,14 +315,14 @@ function JobsModule() {
             <div className="flex flex-wrap gap-2 mt-4">
               <select
                 className="form-input text-xs"
-                value={selectedApp.status}
+                value={selectedAppStatus}
                 onChange={(e) => {
                   const next = e.target.value;
                   updateStatus(selectedApp.id, next);
-                  setSelectedApp(prev => prev ? { ...prev, status: next } : prev);
+                  setSelectedApp(prev => (prev ? { ...prev, status: next, normalizedStatus: normalizeJobStatus(next) } : prev));
                 }}
               >
-                {statusOptions.map(option => (
+                {STATUS_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>

@@ -83,6 +83,7 @@ function MenuModule() {
   const [previewExpanded, setPreviewExpanded] = useState(null);
   const previewCategories = useMemo(() => categories.map(normalizeMenuCategory), [categories]);
   const [siteSettings, setSiteSettings] = useState({});
+  const [previewLoaded, setPreviewLoaded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState({});
 
   const measurePreviewPanel = (id) => {
@@ -221,13 +222,15 @@ function MenuModule() {
 
   const fetchCategories = useCallback(async () => {
     try {
-    const res = await authenticatedFetch(withDebugParam('/menu/admin'));
+      const res = await authenticatedFetch(withDebugParam('/menu/admin'));
       if (!res.ok) { setCategories([]); return; }
       const data = await res.json();
       // server returns categories already ordered by display_order and items ordered by display_order
       setCategories(Array.isArray(data) ? data : []);
     } catch (e) {
       setCategories([]);
+    } finally {
+      setPreviewLoaded(true);
     }
   }, [withDebugParam]);
 
@@ -665,6 +668,8 @@ function MenuModule() {
             onToggleCategory={(id) => setPreviewExpanded(prev => (prev === id ? null : id))}
             panelsRef={previewPanelsRef}
             measurePanel={measurePreviewPanel}
+            isLoaded={previewLoaded}
+            className="p-4"
           />
         </div>
       </div>

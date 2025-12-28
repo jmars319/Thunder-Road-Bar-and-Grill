@@ -882,13 +882,15 @@ function SettingsModule() {
                   placeholder="Google Maps embed URL"
                 />
               </div>
-              <button
-                onClick={saveAboutContent}
-                className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
-              >
-                <icons.Save size={18} />
-                Save About Page Content
-              </button>
+              <div className="card-action-row">
+                <button
+                  onClick={saveAboutContent}
+                  className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
+                >
+                  <icons.Save size={18} />
+                  Save About Page Content
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1068,7 +1070,7 @@ function SettingsModule() {
           );
         })()}
 
-        <div className="mt-4">
+        <div className="card-action-row mt-4">
           <button
             onClick={saveAllBusinessHours}
             className="bg-primary text-text-inverse px-4 py-2 rounded-lg hover:bg-primary-dark flex items-center gap-2"
