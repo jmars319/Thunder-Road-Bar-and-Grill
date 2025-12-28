@@ -11,11 +11,24 @@ export default function MenuDisplay({
   onToggleCategory,
   panelsRef,
   measurePanel,
-  isLoaded = false
+  isLoaded = false,
+  lockedHeight = null,
+  onSkeletonHeight = null
 }) {
   const safeMenuIntro = sanitizeRichText(menuIntro || '');
   const hasCategories = Array.isArray(categories) && categories.length > 0;
   const placeholderCount = 3;
+  const skeletonRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (isLoaded || !skeletonRef.current || typeof onSkeletonHeight !== 'function') return;
+    const measured = skeletonRef.current.offsetHeight || skeletonRef.current.getBoundingClientRect?.().height;
+    if (measured) {
+      onSkeletonHeight(measured);
+    }
+  }, [isLoaded, onSkeletonHeight]);
+
+  const containerStyle = lockedHeight !== null ? { minHeight: lockedHeight } : undefined;
 
   return (
     <div className="py-12 bg-surface-warm">
@@ -28,9 +41,9 @@ export default function MenuDisplay({
           />
         )}
 
-        <div className="space-y-4 min-h-[720px] md:min-h-[900px]" aria-busy={!isLoaded}>
+        <div className="space-y-4" aria-busy={!isLoaded} style={containerStyle}>
           {!isLoaded ? (
-            <div className="grid gap-4" aria-hidden="true">
+            <div className="grid gap-4" aria-hidden="true" ref={skeletonRef}>
               {Array.from({ length: placeholderCount }).map((_, idx) => (
                 <div
                   key={`menu-skeleton-${idx}`}

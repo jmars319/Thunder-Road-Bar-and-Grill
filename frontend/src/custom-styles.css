@@ -115,6 +115,10 @@
   line-height: 1.3;
 }
 
+.font-heading {
+  font-size-adjust: 0.52;
+}
+
 .footer-social-link {
   display: inline-flex;
   align-items: center;

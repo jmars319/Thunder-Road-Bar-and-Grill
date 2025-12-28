@@ -26,7 +26,9 @@ export default function MenuSection() {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [menuLoaded, setMenuLoaded] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [lockedHeight, setLockedHeight] = useState(null);
   const panelsRef = useRef({});
+  const releaseLockRef = useRef(null);
 
   const measurePanel = (id) => {
     const el = panelsRef.current[id];
@@ -50,6 +52,17 @@ export default function MenuSection() {
     if (!debugEnabled) return base;
     return base.includes('?') ? `${base}&debug=1` : `${base}?debug=1`;
   }, [debugEnabled]);
+
+  const handleSkeletonHeight = useCallback((height) => {
+    if (!height) return;
+    setLockedHeight(prev => (prev === null ? Math.ceil(height) : prev));
+  }, []);
+
+  useEffect(() => () => {
+    if (releaseLockRef.current) {
+      cancelAnimationFrame(releaseLockRef.current);
+    }
+  }, []);
 
   // fetch latest menu/settings directly from API
   useEffect(() => {
@@ -108,6 +121,18 @@ export default function MenuSection() {
     };
   }, [buildApiUrl]);
 
+  useEffect(() => {
+    if (!menuLoaded || !settingsLoaded || lockedHeight === null) return undefined;
+    releaseLockRef.current = requestAnimationFrame(() => {
+      setLockedHeight(null);
+    });
+    return () => {
+      if (releaseLockRef.current) {
+        cancelAnimationFrame(releaseLockRef.current);
+      }
+    };
+  }, [menuLoaded, settingsLoaded, lockedHeight]);
+
   // Animate panels to exact height using JS measurement
   useEffect(() => {
     Object.keys(panelsRef.current).forEach(key => {
@@ -146,7 +171,11 @@ export default function MenuSection() {
   }, [expandedCategory]);
 
   return (
-  <div id="menu" className="py-12 bg-surface-warm min-h-[960px] md:min-h-[1200px]">
+  <div
+    id="menu"
+    className="py-12 bg-surface-warm"
+    style={lockedHeight !== null ? { minHeight: lockedHeight } : undefined}
+  >
       <MenuDisplay
         categories={categories}
         menuHeading={siteMenuHeading}
@@ -156,6 +185,8 @@ export default function MenuSection() {
         panelsRef={panelsRef}
         measurePanel={measurePanel}
         isLoaded={menuLoaded && settingsLoaded}
+        lockedHeight={lockedHeight}
+        onSkeletonHeight={handleSkeletonHeight}
       />
     </div>
   );
