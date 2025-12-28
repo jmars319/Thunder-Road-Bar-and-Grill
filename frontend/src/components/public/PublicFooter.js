@@ -175,9 +175,9 @@ export default function PublicFooter({ onGoToAdmin }) {
             )}
           </div>
 
-          <div className="space-y-2 md:col-span-4 md:col-start-9">
-            <h4 className="text-sm font-heading font-semibold mb-2 text-text-primary">Legal</h4>
-            <ul className="space-y-0.5 text-[11px] leading-tight">
+          <div className="space-y-2 md:col-span-4 md:col-start-9 md:flex md:flex-col md:items-end text-left md:text-right">
+            <h4 className="text-sm font-heading font-semibold mb-2 text-text-primary w-full md:w-auto">Legal</h4>
+            <ul className="space-y-0.5 text-[11px] leading-tight w-full md:w-auto">
               <li>
                 <a href="/privacy" className="footer-link text-text-muted hover:text-text-primary transition tracking-tight">Privacy Policy</a>
               </li>
@@ -186,7 +186,7 @@ export default function PublicFooter({ onGoToAdmin }) {
               </li>
             </ul>
 
-            <div className="border-t border-divider pt-2">
+            <div className="border-t border-divider pt-2 w-full md:w-auto md:self-end">
               <a
                 href="/admin"
                 onClick={(e) => {
@@ -201,7 +201,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                     window.location.href = '/admin';
                   }
                 }}
-                className="footer-link text-text-muted hover:text-text-primary tracking-tight text-[11px] leading-tight"
+                className="footer-link text-text-muted hover:text-text-primary tracking-tight text-[11px] leading-tight w-full md:w-auto"
               >
                 Admin
               </a>
