@@ -3,6 +3,8 @@ import { icons } from '../../icons';
 import { sanitizeRichText } from '../../utils/richText';
 import ResponsiveImage from '../common/ResponsiveImage';
 
+const DEFAULT_CONTAINER_MIN_HEIGHT = 1080;
+
 export default function MenuDisplay({
   categories = [],
   menuHeading = '',
@@ -126,7 +128,9 @@ export default function MenuDisplay({
     };
   }, [isLoaded, remeasureKey, reportHeight]);
 
-  const containerStyle = lockedHeight ? { minHeight: lockedHeight } : undefined;
+  const containerStyle = lockedHeight
+    ? { minHeight: lockedHeight }
+    : { minHeight: DEFAULT_CONTAINER_MIN_HEIGHT };
 
   return (
     <div className="py-12 bg-surface-warm">
@@ -182,7 +186,6 @@ export default function MenuDisplay({
                         loading="lazy"
                         pictureClassName="absolute inset-0 block w-full h-full"
                         className="absolute inset-0 w-full h-full object-cover"
-                        sizes="(max-width: 639px) 100vw, (max-width: 1279px) calc(100vw - 64px), 960px"
                       />
                     ) : (
                     <img

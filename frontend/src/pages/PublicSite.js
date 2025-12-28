@@ -64,7 +64,7 @@ export default function PublicSite({ onGoToAdmin }) {
         keywords="Thunder Road, bar, grill, Midway NC, restaurant, burgers, wings, live music, reservations, Winston-Salem"
         url="https://trbgmidway.com/"
       />
-      <div className="min-h-screen bg-background">
+      <div className="page-shell min-h-screen bg-background">
         <div id="top" />
         {/* Skip link for keyboard users */}
         <a href="#site-main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:bg-surface focus:text-text-primary focus:px-2 focus:py-1 rounded">Skip to main content</a>

@@ -116,7 +116,7 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
           </div>
         </header>
 
-  <section className="flex-1 overflow-auto p-8 admin-main__content">
+  <section className="flex-1 overflow-auto p-8 admin-main__content scrollbar-stable">
           {CurrentModule ? <CurrentModule user={user} token={token} /> : <div className="text-center py-12">Module not found</div>}
   </section>
 

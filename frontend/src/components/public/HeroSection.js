@@ -20,14 +20,36 @@ import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
 
 const HERO_SIZES = '(max-width: 767px) 100vw, (max-width: 1279px) calc(100vw - 32px), min(1280px, calc(100vw - 48px))';
-const HERO_FRAME_CLASS = 'absolute inset-0 md:inset-x-4 lg:inset-x-6 rounded-none md:rounded-[32px] overflow-hidden';
-const HERO_OVERLAY_CLASS = 'absolute inset-0 md:inset-x-4 lg:inset-x-6 rounded-none md:rounded-[32px] z-10 overlay-gradient pointer-events-none';
+const HERO_FRAME_CLASS = 'absolute inset-0 rounded-none md:rounded-[32px] overflow-hidden';
+const HERO_OVERLAY_CLASS = 'absolute inset-0 rounded-none md:rounded-[32px] z-10 overlay-gradient pointer-events-none';
+const HERO_STAGE_CLASS = 'relative w-full max-w-6xl mx-auto hero-stage';
+const HERO_STAGE_STYLE = {
+  aspectRatio: '3 / 2',
+  minHeight: '360px',
+  width: '100%'
+};
+const DEFAULT_HERO_COPY = {
+  title: 'Welcome to Thunder Road Bar and Grill',
+  subtitle: 'Great Food. Cold Drinks. Good Times.',
+  ctas: [
+    { label: 'View Menu', href: '#menu' },
+    { label: 'Make a Reservation', href: '#reservations' }
+  ]
+};
+const STATIC_HERO_META = {
+  webpSrcset: '/static/hero/hero-default-1x.webp 1x, /static/hero/hero-default-2x.webp 2x',
+  jpgSrcset: '/static/hero/hero-default-1x.jpg 1x, /static/hero/hero-default-2x.jpg 2x',
+  fallbackSrc: '/static/hero/hero-default-1x.jpg',
+  width: 2880,
+  height: 1920,
+  alt: 'Thunder Road Bar and Grill interior'
+};
 
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
   // images: array of { src, alt }
   const [images, setImages] = useState([]);
-  const [heroCopy, setHeroCopy] = useState({ title: '', subtitle: '', ctas: [] });
+  const [heroCopy, setHeroCopy] = useState(DEFAULT_HERO_COPY);
   const [slideshowSpeed, setSlideshowSpeed] = useState(6000);
   const idxRef = useRef(0);
   const [index, setIndex] = useState(0);
@@ -66,14 +88,22 @@ export default function HeroSection() {
           acc[String(entry.id)] = entry;
           return acc;
         }, {});
-        setHeroCopy({
-          title: settings.hero_title || '',
-          subtitle: settings.hero_subtitle || '',
+        const nextCopy = {
+          title: settings.hero_title || DEFAULT_HERO_COPY.title,
+          subtitle: settings.hero_subtitle || DEFAULT_HERO_COPY.subtitle,
           ctas: [
-            settings.hero_cta_primary_label ? { label: settings.hero_cta_primary_label, href: settings.hero_cta_primary_href || '#menu' } : null,
-            settings.hero_cta_secondary_label ? { label: settings.hero_cta_secondary_label, href: settings.hero_cta_secondary_href || '#reservations' } : null
+            settings.hero_cta_primary_label
+              ? { label: settings.hero_cta_primary_label, href: settings.hero_cta_primary_href || '#menu' }
+              : null,
+            settings.hero_cta_secondary_label
+              ? { label: settings.hero_cta_secondary_label, href: settings.hero_cta_secondary_href || '#reservations' }
+              : null
           ].filter(Boolean)
-        });
+        };
+        if (!nextCopy.ctas.length) {
+          nextCopy.ctas = DEFAULT_HERO_COPY.ctas;
+        }
+        setHeroCopy(nextCopy);
         const parsedSpeed = parseInt(settings.hero_slideshow_speed, 10);
         setSlideshowSpeed(Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 6000);
         const orderedSlides = [];
@@ -188,9 +218,32 @@ export default function HeroSection() {
   };
 
   return (
-    <div className={`hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden px-0 md:px-4 lg:px-6`}>
-      {/* image slideshow: using <img> so it's discoverable and preloadable */}
-      <div className={`${HERO_FRAME_CLASS} z-0`} aria-hidden={images.length === 0}>
+    <div className={`hero-shell hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden px-0 md:px-4 lg:px-6`}>
+      <div className={HERO_STAGE_CLASS} style={HERO_STAGE_STYLE}>
+        {/* image slideshow: using <img> so it's discoverable and preloadable */}
+        <div className={`${HERO_FRAME_CLASS} z-0`} aria-hidden="true">
+        <picture className="absolute inset-0 block w-full h-full">
+          <source
+            type="image/webp"
+            srcSet={STATIC_HERO_META.webpSrcset}
+            sizes="100vw"
+          />
+          <source
+            type="image/jpeg"
+            srcSet={STATIC_HERO_META.jpgSrcset}
+            sizes="100vw"
+          />
+          <img
+            src={STATIC_HERO_META.fallbackSrc}
+            alt={STATIC_HERO_META.alt}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            width={STATIC_HERO_META.width}
+            height={STATIC_HERO_META.height}
+          />
+        </picture>
         {images.length > 0 && (
           <>
             {images.map((img, i) => {
@@ -203,7 +256,6 @@ export default function HeroSection() {
               };
               const eagerProps = i === 0
                 ? {
-                    fetchpriority: 'high',
                     decoding: 'async',
                     onLoad: handleFirstImageLoad
                   }
@@ -217,7 +269,7 @@ export default function HeroSection() {
                 <ResponsiveImage
                   variant={variant}
                   alt={img.alt || ''}
-                  loading={i === 0 ? 'eager' : 'lazy'}
+                  loading="lazy"
                   pictureClassName="absolute inset-0 block w-full h-full"
                   className="absolute inset-0 w-full h-full object-cover"
                   sizes={HERO_SIZES}
@@ -228,41 +280,42 @@ export default function HeroSection() {
             })}
           </>
         )}
-      </div>
-
-  {/* overlay gradient must sit above images but below content */}
-  <div className={HERO_OVERLAY_CLASS} aria-hidden="true" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20">
-        {/* Accessibility: provide current slide text for screen readers without triggering extra image downloads */}
-        {images[index]?.alt && (
-          <span className="sr-only" aria-live="polite">
-            {images[index].alt}
-          </span>
-        )}
-        <div className="hero-copy-shell inline-flex flex-col gap-4 px-6 py-5 rounded-2xl bg-black/45 backdrop-blur-md shadow-xl max-w-3xl mx-auto">
-          {heroCopy.title && (
-            <h1 className="text-4xl md:text-5xl font-heading font-extrabold tracking-tight text-brand-cream drop-shadow-sm">
-              {heroCopy.title}
-            </h1>
-          )}
-          {heroCopy.subtitle && (
-            <p className="text-lg md:text-xl text-brand-cream/90">
-              {heroCopy.subtitle}
-            </p>
-          )}
         </div>
-        <div className="hero-cta-row flex gap-4 justify-center flex-wrap mt-8">
-          {heroCopy.ctas.map((cta, idx) => (
-            <a
-              key={`${cta.label}-${idx}`}
-              href={cta.href || '#'}
-              role="button"
-              className={`cta-glass ${idx === 0 ? 'cta-glass--primary' : 'cta-glass--secondary'}`}
-            >
-              {cta.label}
-            </a>
-          ))}
+
+        {/* overlay gradient must sit above images but below content */}
+        <div className={HERO_OVERLAY_CLASS} aria-hidden="true" />
+
+        <div className="hero-content relative z-20 flex flex-col items-center justify-center h-full text-center px-4 sm:px-6 lg:px-8">
+          {/* Accessibility: provide current slide text for screen readers without triggering extra image downloads */}
+          {images[index]?.alt && (
+            <span className="sr-only" aria-live="polite">
+              {images[index].alt}
+            </span>
+          )}
+          <div className="hero-copy-shell inline-flex flex-col gap-4 px-6 py-5 rounded-2xl bg-black/45 backdrop-blur-md shadow-xl max-w-3xl mx-auto">
+            {heroCopy.title && (
+              <h1 className="text-4xl md:text-5xl font-heading font-extrabold tracking-tight text-brand-cream drop-shadow-sm">
+                {heroCopy.title}
+              </h1>
+            )}
+            {heroCopy.subtitle && (
+              <p className="text-lg md:text-xl text-brand-cream/90">
+                {heroCopy.subtitle}
+              </p>
+            )}
+          </div>
+          <div className="hero-cta-row flex gap-4 justify-center flex-wrap mt-8">
+            {heroCopy.ctas.map((cta, idx) => (
+              <a
+                key={`${cta.label}-${idx}`}
+                href={cta.href || '#'}
+                role="button"
+                className={`cta-glass ${idx === 0 ? 'cta-glass--primary' : 'cta-glass--secondary'}`}
+              >
+                {cta.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </div>

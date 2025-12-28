@@ -22,6 +22,10 @@ import cachedFetch from '../../lib/cachedFetch';
 // demand. If you add analytics for interest in ordering, dispatch analytics
 // events from the click handler that sets `orderOpen`.
 const OrderModal = React.lazy(() => import('./OrderModal'));
+const DEFAULT_SITE_SETTINGS = {
+  business_name: 'Thunder Road Bar and Grill',
+  tagline: 'Great Food. Cold Drinks. Good Times.'
+};
 
 const DEFAULT_NAV_LINKS = [
   { id: 'nav-menu-default', label: 'Menu', url: '#menu' },
@@ -29,6 +33,41 @@ const DEFAULT_NAV_LINKS = [
   { id: 'nav-about-default', label: 'About', url: '#about' },
   { id: 'nav-careers-default', label: 'Careers', url: '#jobs' }
 ];
+
+function sanitizeNavLinks(rawLinks) {
+  if (!Array.isArray(rawLinks)) return [];
+  return rawLinks
+    .filter((link) => {
+      const label = String(link?.label || '').trim().toLowerCase();
+      const url = String(link?.url || '').trim().toLowerCase();
+      if (label === 'home') return false;
+      if (url === '/' || url === '/home' || url === '#home') return false;
+      return true;
+    })
+    .map((link, idx) => {
+      const lowLabel = String(link.label || '').toLowerCase();
+      const url = String(link.url || '').trim();
+      const isContactLink = (url && url.toLowerCase() === '#contact') || lowLabel.includes('contact');
+      const isAboutLink = lowLabel.includes('about') || (url && url.toLowerCase().includes('#about'));
+      const renderLabel = isContactLink ? 'Careers' : link.label;
+      const renderUrl = isContactLink ? '#jobs' : isAboutLink ? '#about' : url;
+      return {
+        id: link.id || `nav-link-${idx}`,
+        label: renderLabel,
+        url: renderUrl
+      };
+    });
+}
+
+function areNavListsEqual(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i].label !== b[i].label || a[i].url !== b[i].url) {
+      return false;
+    }
+  }
+  return true;
+}
 
 /*
   PublicNavbar
@@ -52,7 +91,7 @@ const DEFAULT_NAV_LINKS = [
 export default function PublicNavbar({ onGoToAdmin }) {
   // kept for backwards compatibility with parent callers; no-op in navbar now
   void onGoToAdmin;
-  const [siteSettings, setSiteSettings] = useState(null);
+  const [siteSettings, setSiteSettings] = useState(DEFAULT_SITE_SETTINGS);
   const [navLinks, setNavLinks] = useState(DEFAULT_NAV_LINKS);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -64,18 +103,24 @@ export default function PublicNavbar({ onGoToAdmin }) {
   useEffect(() => {
     // Load site-level settings (logo, name, tagline). Keep errors silent for now.
     cachedFetch(getApiUrl('/settings'))
-      .then(payload => setSiteSettings(payload?.settings || {}))
-      .catch(() => {});
+      .then(payload => {
+        const settings = payload?.settings || {};
+        setSiteSettings({
+          business_name: settings.business_name || DEFAULT_SITE_SETTINGS.business_name,
+          tagline: settings.tagline || DEFAULT_SITE_SETTINGS.tagline
+        });
+      })
+      .catch(() => {
+        setSiteSettings(DEFAULT_SITE_SETTINGS);
+      });
 
     // Load the navigation payload (array of { id, label, url }).
     fetch(getApiUrl('/navigation'))
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length) {
-          setNavLinks(data);
-        } else if (!Array.isArray(data)) {
-          console.warn('Navigation data is not an array:', data);
-        }
+        const sanitized = sanitizeNavLinks(data);
+        if (!sanitized.length) return;
+        setNavLinks(prev => (areNavListsEqual(prev, sanitized) ? prev : sanitized));
       })
       .catch(err => {
         console.error('Failed to fetch navigation:', err);
@@ -128,7 +173,10 @@ export default function PublicNavbar({ onGoToAdmin }) {
     const handler = (e) => {
       try {
         const payload = e?.detail || {};
-        setSiteSettings(payload);
+        setSiteSettings({
+          business_name: payload?.business_name || DEFAULT_SITE_SETTINGS.business_name,
+          tagline: payload?.tagline || DEFAULT_SITE_SETTINGS.tagline
+        });
       } catch (err) {
         // ignore
       }
@@ -138,10 +186,10 @@ export default function PublicNavbar({ onGoToAdmin }) {
   }, []);
 
   return (
-    <nav className="bg-surface shadow-md header-sticky top-0 z-50 backdrop-blur-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <div className="flex justify-between items-center h-16 md:h-20 min-h-[4rem] md:min-h-[5rem]">
-          <div className="flex items-center gap-3">
+    <nav className="public-navbar bg-surface shadow-md header-sticky top-0 z-50 backdrop-blur-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 navbar-layout">
+  <div className="flex justify-between items-center h-16 md:h-20 min-h-[4rem] md:min-h-[5rem] w-full">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <a
               href="#top"
               onClick={(e) => {
@@ -160,7 +208,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
             >
               <BrandLogo className="h-full w-auto object-contain" width={160} height={80} sizes="(max-width: 767px) 96px, 140px" />
             </a>
-            <div className="leading-none">
+            <div className="leading-none navbar-brand-block flex flex-col justify-center flex-shrink-0">
               <div className="navbar-heading text-lg font-bold text-text-primary font-heading">
                 {siteSettings?.business_name || 'Thunder Road Bar and Grill'}
               </div>
@@ -171,37 +219,22 @@ export default function PublicNavbar({ onGoToAdmin }) {
           </div>
 
           {/* Desktop navigation */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 whitespace-nowrap">
             {/**
              * Small mapping: treat an incoming 'Contact' navigation item as the
              * public-facing careers link and map 'About' to the About section.
              * Also, filter out any 'Home' link so we don't render a duplicate.
              */}
-            {navLinks
-              .filter((link) => {
-                const label = String(link.label || '').trim().toLowerCase();
-                const url = String(link.url || '').trim();
-                if (label === 'home') return false;
-                if (url === '/' || url === '/home' || url === '#home') return false;
-                return true;
-              })
-              .map((link) => {
-                const lowLabel = String(link.label || '').toLowerCase();
-                const isContactLink = (link.url && String(link.url).toLowerCase() === '#contact') || lowLabel.includes('contact');
-                const isAboutLink = lowLabel.includes('about') || (link.url && String(link.url).toLowerCase().includes('#about'));
-                const renderLabel = isContactLink ? 'Careers' : link.label;
-                const renderUrl = isContactLink ? '#jobs' : isAboutLink ? '#about' : link.url;
-                return (
-                  <a
-                    key={link.id}
-                    href={renderUrl}
-                    onClick={(e) => handleNavClick(e, renderUrl)}
-                    className="navbar-link font-medium"
-                  >
-                    {renderLabel}
-                  </a>
-                );
-              })}
+            {navLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.url}
+                onClick={(e) => handleNavClick(e, link.url)}
+                className="navbar-link font-medium"
+              >
+                {link.label}
+              </a>
+            ))}
             {/* DEV: Admin button and nav links use semantic design tokens (bg-primary, text-text-inverse,
                 hover:bg-primary-dark, text-text-primary, etc.). Adjust tokens in
                 `frontend/src/custom-styles.css` rather than changing utility classes here. */}
@@ -232,31 +265,16 @@ export default function PublicNavbar({ onGoToAdmin }) {
         {mobileMenuOpen && (
           <div id="mobile-menu" className="md:hidden pb-3 border-t">
             <div className="flex flex-col gap-3 pt-3">
-              {navLinks
-                .filter((link) => {
-                  const label = String(link.label || '').trim().toLowerCase();
-                  const url = String(link.url || '').trim();
-                  if (label === 'home') return false;
-                  if (url === '/' || url === '/home' || url === '#home') return false;
-                  return true;
-                })
-                .map((link) => {
-                  const lowLabel = String(link.label || '').toLowerCase();
-                  const isContactLink = (link.url && String(link.url).toLowerCase() === '#contact') || lowLabel.includes('contact');
-                  const isAboutLink = lowLabel.includes('about') || (link.url && String(link.url).toLowerCase().includes('#about'));
-                  const renderLabel = isContactLink ? 'Careers' : link.label;
-                  const renderUrl = isContactLink ? '#jobs' : isAboutLink ? '#about' : link.url;
-                  return (
-                    <a
-                      key={link.id}
-                      href={renderUrl}
-                      className="text-text-primary hover:text-primary font-medium transition-colors px-4 py-3 hover:bg-surface-warm rounded-lg min-h-[44px]"
-                      onClick={(e) => handleNavClick(e, renderUrl)}
-                    >
-                      {renderLabel}
-                    </a>
-                  );
-                })}
+              {navLinks.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  className="text-text-primary hover:text-primary font-medium transition-colors px-4 py-3 hover:bg-surface-warm rounded-lg min-h-[44px]"
+                  onClick={(e) => handleNavClick(e, link.url)}
+                >
+                  {link.label}
+                </a>
+              ))}
               <button
                 onClick={() => { setMobileMenuOpen(false); setOrderOpen(true); }}
                 type="button"

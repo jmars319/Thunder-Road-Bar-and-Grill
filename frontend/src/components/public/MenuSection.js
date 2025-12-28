@@ -19,14 +19,18 @@ import { normalizeMenuCategory } from '../../utils/menuDisplay';
 import MenuDisplay from './MenuDisplay';
 import { getApiUrl } from '../../config/api';
 
+const DEFAULT_MENU_HEADING = 'Our Menu';
+const DEFAULT_MENU_INTRO = 'Our kitchen serves scratch-made favorites with seasonal ingredients. Browse by category for details and prices.';
+const DEFAULT_MENU_MIN_HEIGHT = 2200;
+
 export default function MenuSection() {
   const [categories, setCategories] = useState([]);
-  const [siteMenuDescription, setSiteMenuDescription] = useState('');
-  const [siteMenuHeading, setSiteMenuHeading] = useState('');
+  const [siteMenuDescription, setSiteMenuDescription] = useState(DEFAULT_MENU_INTRO);
+  const [siteMenuHeading, setSiteMenuHeading] = useState(DEFAULT_MENU_HEADING);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [menuLoaded, setMenuLoaded] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [lockedHeight, setLockedHeight] = useState(0);
+  const [lockedHeight, setLockedHeight] = useState(DEFAULT_MENU_MIN_HEIGHT);
   const panelsRef = useRef({});
   const [measureVersion, setMeasureVersion] = useState(0);
   const fontsRemeasuredRef = useRef(false);
@@ -131,13 +135,13 @@ export default function MenuSection() {
         const payload = await res.json();
         if (!mounted) return;
         const settings = payload?.settings || {};
-        setSiteMenuDescription(settings.menu_intro || '');
-        setSiteMenuHeading(settings.menu_heading || '');
+        setSiteMenuDescription(settings.menu_intro || DEFAULT_MENU_INTRO);
+        setSiteMenuHeading(settings.menu_heading || DEFAULT_MENU_HEADING);
         setSettingsLoaded(true);
       } catch (e) {
         if (!mounted) return;
-        setSiteMenuDescription('');
-        setSiteMenuHeading('');
+        setSiteMenuDescription(DEFAULT_MENU_INTRO);
+        setSiteMenuHeading(DEFAULT_MENU_HEADING);
         setSettingsLoaded(true);
       }
     }
@@ -189,11 +193,13 @@ export default function MenuSection() {
     return () => window.removeEventListener('resize', onResize);
   }, [expandedCategory]);
 
+  const effectiveMinHeight = lockedHeight || DEFAULT_MENU_MIN_HEIGHT;
+
   return (
   <div
     id="menu"
-    className="py-12 bg-surface-warm"
-    style={lockedHeight ? { minHeight: lockedHeight } : undefined}
+    className="menu-section-shell py-12 bg-surface-warm"
+    style={{ minHeight: effectiveMinHeight }}
   >
       <MenuDisplay
         categories={categories}

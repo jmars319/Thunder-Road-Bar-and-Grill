@@ -24,6 +24,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import ThemeProvider from './contexts/ThemeContext';
 import reportWebVitals from './reportWebVitals';
 import { API_BASE } from './config/api';
+import { initClsDebug } from './dev/clsDebug';
 
 // Ensure API requests to our backend include credentials so admin cookies are
 // sent with requests from the admin UI (dev convenience). This wraps the
@@ -64,3 +65,7 @@ root.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+if (typeof window !== 'undefined') {
+  initClsDebug();
+}
