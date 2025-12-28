@@ -29,6 +29,7 @@ export default function MenuSection() {
   const [lockedHeight, setLockedHeight] = useState(0);
   const panelsRef = useRef({});
   const [measureVersion, setMeasureVersion] = useState(0);
+  const fontsRemeasuredRef = useRef(false);
 
   const measurePanel = (id) => {
     const el = panelsRef.current[id];
@@ -79,10 +80,16 @@ export default function MenuSection() {
   // increase to the final rendered size. document.fonts.ready resolves once
   // all font faces used on the page are ready.
   useEffect(() => {
-    if (typeof document === 'undefined' || !document.fonts?.ready) return undefined;
+    if (fontsRemeasuredRef.current) return undefined;
+    if (!menuLoaded || !settingsLoaded) return undefined;
+    if (typeof document === 'undefined' || !document.fonts?.ready) {
+      fontsRemeasuredRef.current = true;
+      return undefined;
+    }
     let cancelled = false;
     document.fonts.ready.then(() => {
-      if (cancelled) return;
+      if (cancelled || fontsRemeasuredRef.current) return;
+      fontsRemeasuredRef.current = true;
       setMeasureVersion(prev => prev + 1);
     });
     return () => { cancelled = true; };
