@@ -13,8 +13,8 @@
  * - Colors are defined using CSS variables (var(--primary-color)) so the
  *   ThemeProvider can switch themes by updating :root variables or
  *   `data-theme` on <html>.
- * - darkMode is set to 'media' to follow the user's OS preference by default.
- *   The app also supports explicit theme switching via the ThemeContext.
+ * - darkMode is set to 'class' so we can lock the enforced dark theme regardless
+ *   of OS/browser preference.
  */
 
 /** @type {import('tailwindcss').Config} */
@@ -159,5 +159,5 @@ module.exports = {
     },
   },
   plugins: [],
-  darkMode: 'media', // Follows system preference like your PHP project
+  darkMode: 'class', // Lock to the enforced runtime theme via a root class
 }

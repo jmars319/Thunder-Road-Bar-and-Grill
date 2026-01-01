@@ -24,8 +24,7 @@ import { createContext, useEffect } from 'react';
 
   Notes:
   - 'system' leaves control to the user's OS/browser preference by removing the
-    `data-theme` attribute; CSS should use media queries (prefers-color-scheme)
-    or rely on the absence of data-theme to apply the system theme.
+    `data-theme` attribute; legacy CSS used this hook before the enforced theme.
   - The provider is intentionally lightweight — it only stores a string and side-effects
     by toggling a single HTML attribute. Keep logic here minimal to avoid hydration issues.
 */
@@ -39,6 +38,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', 'dark');
+    root.classList.add('dark');
     try { localStorage.setItem('site-theme', 'dark'); } catch {
       // ignore storage errors silently
     }

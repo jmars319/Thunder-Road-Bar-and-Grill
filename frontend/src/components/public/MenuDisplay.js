@@ -158,10 +158,11 @@ export default function MenuDisplay({
             const hasResponsiveHero = Boolean(heroVariant?.fallback || heroVariant?.optimizedSrcset || heroVariant?.webpSrcset);
             const hasFallbackImage = Boolean(fallbackBackground);
             const hasBackground = hasResponsiveHero || hasFallbackImage;
+            const cardSurfaceClass = hasBackground ? 'menu-card--image' : 'menu-card--plain';
             return (
             <div
               key={category.id}
-              className={`menu-card bg-surface rounded-lg shadow-lg overflow-hidden card-hover transition-all ${expandedCategory === category.id ? 'expanded' : ''}`}
+              className={`menu-card ${cardSurfaceClass} bg-surface rounded-lg shadow-lg overflow-hidden card-hover transition-all ${expandedCategory === category.id ? 'expanded' : ''}`}
             >
               <button
                 type="button"
