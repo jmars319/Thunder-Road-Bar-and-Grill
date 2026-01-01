@@ -5,10 +5,11 @@
 
 /* CSS Variables (matching PHP project) */
 :root {
+  color-scheme: dark;
   /* Colors */
-  --primary-color: #b11111; /* darker red improves contrast vs white text */
-  --primary-dark: #8b0d0d;
-  --secondary-color: #92400e;
+  --primary-color: #c81a1a;
+  --primary-dark: #a30f0f;
+  --secondary-color: #b45309;
   --accent-color: #f59e0b;
   --success-color: #059669;
   --warning-color: #f59e0b;
@@ -16,26 +17,26 @@
   --error-muted: #ef5b5b;
 
   /* Background */
-  --background-color: #fef7ed;
-  --background-light: #fffbfa;
-  --surface-color: #fff;
-  --surface-warm: #fff7f2;
-  --surface-dark: #111827;
+  --background-color: #0b1020;
+  --background-light: #0f172a;
+  --surface-color: #0f1724;
+  --surface-warm: #111827;
+  --surface-dark: #03050a;
 
   /* Text */
-  --text-primary: #1c1917;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
+  --text-primary: #e6eef8;
+  --text-secondary: #d5deed;
+  --text-muted: #a5b4cf;
   --text-inverse: #fff;
-  --text-placeholder: #5f6674;
+  --text-placeholder: #c7d1ea;
   --brand-cream: #fff5f0;
   --brand-cream: #fff5f0;
 
   /* Borders */
-  --border-color: #e2e8f0;
-  --divider-color: #f1f5f9;
-  --hero-gradient-base: #0b1020;
-  --hero-gradient-accent: #151c30;
+  --border-color: #1f2a37;
+  --divider-color: #14202b;
+  --hero-gradient-base: #050914;
+  --hero-gradient-accent: #0f1724;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 5%);
@@ -48,9 +49,9 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Logo badge tokens (light neutral background that adapts to dark mode) */
-  --logo-badge-bg: #fff7f2; /* branded off-white */
-  --logo-badge-border: rgb(16 24 40 / 6%);
-  --logo-badge-shadow: 0 6px 20px rgb(16 24 40 / 8%);
+  --logo-badge-bg: rgb(255 255 255 / 30%);
+  --logo-badge-border: rgb(255 255 255 / 16%);
+  --logo-badge-shadow: 0 4px 12px rgb(255 255 255 / 4%);
 
   /* Panel animation variables (override to tweak animation) */
   --panel-transition-duration: 360ms;
@@ -184,6 +185,10 @@
 .hero-copy-shell h1 {
   line-height: 1.08;
   font-size-adjust: 0.58;
+  letter-spacing: 0.02em;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.4px rgb(0 0 0 / 40%);
+  text-shadow: 0 0.5px 0 rgb(0 0 0 / 55%);
 }
 
 .hero-copy-shell p {
@@ -198,92 +203,6 @@
 
 /* Responsive sizing of the badge is handled by the .logo-badge width/height
    rules further down so the graphic scales to fill that area. */
-
-/* Dark Mode Variables */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark mode variable overrides */
-    --background-color: #0b1020; /* deep navy */
-    --background-light: #0f172a;
-    --surface-color: #0f1724; /* page surface */
-    --surface-warm: #111827;  /* warm admin cards slightly lighter */
-    --surface-dark: #03050a;  /* deepest surface for nav/admin chrome */
-
-    /* Keep brand colors but slightly tone down accents for dark */
-    --primary-color: #c81a1a;
-    --primary-dark: #a30f0f;
-    --secondary-color: #b45309;
-    --accent-color: #f59e0b;
-    --hero-gradient-base: #050914;
-    --hero-gradient-accent: #0f1724;
-  --text-primary: #e6eef8; /* near white */
-  --text-secondary: #d5deed;
-  --text-muted: #a5b4cf;
-  --text-inverse: #fff;
-  --text-placeholder: #c7d1ea;
-    --border-color: #1f2a37;
-    --divider-color: #14202b;
-
-    /* Subtle dark-mode adaptation: translucent branded off-white and
-       lighter border; reduce shadow for a cleaner look on dark surfaces */
-
-    /* brighten the dark-mode badge slightly (~15%) */
-
-    /* Increase visibility in dark mode: brighter but still translucent */
-
-    /* Make dark-mode badge more visible: brighter but still translucent */
-    --logo-badge-bg: rgb(255 255 255 / 30%);
-    --logo-badge-border: rgb(255 255 255 / 16%);
-    --logo-badge-shadow: 0 4px 12px rgb(255 255 255 / 4%);
-  }
-}
-
-/* Manual theme override via <html data-theme="dark"> or data-theme="light" */
-:root[data-theme='dark'] {
-  --background-color: #0b1020;
-  --background-light: #0f172a;
-  --surface-color: #0f1724;
-  --surface-warm: #111827;
-  --surface-dark: #03050a;
-  --primary-color: #c81a1a;
-  --primary-dark: #a30f0f;
-  --secondary-color: #b45309;
-  --accent-color: #f59e0b;
-  --text-primary: #e6eef8;
-  --text-secondary: #d5deed;
-  --text-muted: #a5b4cf;
-  --text-inverse: #fff;
-  --text-placeholder: #c7d1ea;
-  --border-color: #1f2a37;
-  --divider-color: #14202b;
-  --hero-gradient-base: #050914;
-  --hero-gradient-accent: #0f1724;
-  --logo-badge-bg: rgb(255 255 255 / 30%);
-  --logo-badge-border: rgb(255 255 255 / 16%);
-  --logo-badge-shadow: 0 4px 12px rgb(255 255 255 / 4%);
-}
-
-:root[data-theme='light'] {
-  /* Reinforce light theme variables */
-  --background-color: #fef7ed;
-  --background-light: #fffbfa;
-  --surface-color: #fff;
-  --surface-warm: #fff7f2;
-  --surface-dark: #111827;
-  --primary-color: #b11111;
-  --primary-dark: #8b0d0d;
-  --secondary-color: #92400e;
-  --accent-color: #f59e0b;
-  --text-primary: #1c1917;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
-  --text-inverse: #fff;
-  --text-placeholder: #5f6674;
-  --border-color: #e2e8f0;
-  --divider-color: #f1f5f9;
-  --hero-gradient-base: #0b1020;
-  --hero-gradient-accent: #151c30;
-}
 
 /* Global Styles */
 body {
@@ -582,6 +501,7 @@ h1, h2, h3, h4, h5, h6 {
 .menu-card {
   transition: transform 0.35s ease, box-shadow 0.35s ease;
   will-change: transform;
+  background-color: var(--surface-color);
 }
 
 .menu-card.expanded {
@@ -593,23 +513,13 @@ h1, h2, h3, h4, h5, h6 {
    This improves text contrast while preserving some image visibility. The
    color adapts for light/dark modes for consistent readability. */
 .expanded-panel--image {
-  background: rgb(255 255 255 / 92%);
-  backdrop-filter: blur(6px);
-  box-shadow: var(--shadow-lg);
+  background: rgb(8 12 20 / 90%);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 70%);
+  border: 1px solid rgb(255 255 255 / 4%);
   border-bottom-left-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .expanded-panel--image {
-    /* darker, higher-contrast panel on dark mode */
-
-    /* Use a richer, more opaque surface so text stands out over the image */
-    background: rgb(8 12 20 / 90%);
-  backdrop-filter: blur(8px);
-    box-shadow: 0 12px 32px rgb(0 0 0 / 70%);
-    border: 1px solid rgb(255 255 255 / 4%);
-  }
+  color: var(--text-inverse);
 }
 
 /* Chevron rotation for category toggles */
@@ -642,6 +552,33 @@ h1, h2, h3, h4, h5, h6 {
   max-height: 0;
   opacity: 0;
   transform: translateY(-6px);
+}
+
+#menu {
+  background-color: var(--surface-warm);
+  color: var(--text-primary);
+}
+
+.menu-card--plain {
+  color: var(--text-primary);
+}
+
+.menu-card--plain .menu-description,
+.menu-card--plain .menu-item-description {
+  color: var(--text-secondary);
+}
+
+.menu-card--image {
+  color: var(--text-inverse);
+}
+
+.menu-card h3 {
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  font-weight: 800;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.25px rgb(0 0 0 / 45%);
+  text-shadow: 0 0.5px 0 rgb(0 0 0 / 35%);
 }
 
 /* Button Ripple Effect */
@@ -684,6 +621,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Admin Card with Accent Stripe */
+.admin-card {
+  background: #0f1724;
+  color: var(--text-primary);
+}
+
 .admin-card::before {
   content: '';
   position: absolute;
@@ -766,14 +708,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .admin-main__content::-webkit-scrollbar-thumb {
-  background: rgb(0 0 0 / 12%);
+  background: rgb(255 255 255 / 6%);
   border-radius: 9999px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .admin-main__content::-webkit-scrollbar-thumb {
-    background: rgb(255 255 255 / 6%);
-  }
 }
 
 .scrollbar-stable {
@@ -841,37 +777,15 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary);
 }
 
-/* Fix autofill styling to ensure good contrast in light mode */
+/* Fix autofill styling to ensure good contrast on enforced dark theme */
 .form-input:-webkit-autofill,
 .form-input:-webkit-autofill:hover,
 .form-input:-webkit-autofill:focus,
 .form-input:-webkit-autofill:active {
   /* stylelint-disable-next-line property-no-vendor-prefix */
-  -webkit-text-fill-color: #292524 !important;
-  box-shadow: 0 0 0 1000px #fff inset !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Dark mode autofill - light text on dark background */
-@media (prefers-color-scheme: dark) {
-  .form-input:-webkit-autofill,
-  .form-input:-webkit-autofill:hover,
-  .form-input:-webkit-autofill:focus,
-  .form-input:-webkit-autofill:active {
-    /* stylelint-disable-next-line property-no-vendor-prefix */
-    -webkit-text-fill-color: #e6eef8 !important;
-    box-shadow: 0 0 0 1000px #0f1724 inset !important;
-  }
-}
-
-/* Manual dark theme override */
-:root[data-theme='dark'] .form-input:-webkit-autofill,
-:root[data-theme='dark'] .form-input:-webkit-autofill:hover,
-:root[data-theme='dark'] .form-input:-webkit-autofill:focus,
-:root[data-theme='dark'] .form-input:-webkit-autofill:active {
-  /* stylelint-disable-next-line property-no-vendor-prefix */
   -webkit-text-fill-color: #e6eef8 !important;
   box-shadow: 0 0 0 1000px #0f1724 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Price Badge */
@@ -879,29 +793,13 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgb(28 25 23 / 12%);
-  color: var(--text-primary);
+  background: rgb(248 250 252 / 12%);
+  color: #f8fafc;
   padding: 0.2rem 0.7rem;
   border-radius: 9999px;
   font-size: 1rem;
-  border: 1px solid rgb(28 25 23 / 16%);
+  border: 1px solid rgb(248 250 252 / 22%);
   text-shadow: none;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 15%);
-}
-
-@media (prefers-color-scheme: dark) {
-  .price-badge {
-    background: rgb(248 250 252 / 12%);
-    color: #f8fafc;
-    border-color: rgb(248 250 252 / 22%);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 55%);
-  }
-}
-
-:root[data-theme='dark'] .price-badge {
-  background: rgb(248 250 252 / 12%);
-  color: #f8fafc;
-  border-color: rgb(248 250 252 / 22%);
   box-shadow: 0 1px 3px rgb(0 0 0 / 55%);
 }
 
@@ -973,7 +871,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .header-scrolled {
-  background: rgb(248 250 252 / 95%);
+  background: rgb(30 41 59 / 95%);
   box-shadow: var(--shadow-lg);
 }
 
@@ -1080,24 +978,6 @@ h1, h2, h3, h4, h5, h6 {
   overflow: hidden;
   clip: rect(1px, 1px, 1px, 1px);
   white-space: nowrap;
-}
-
-/* Dark Mode Specific Adjustments */
-@media (prefers-color-scheme: dark) {
-  .hero-gradient {
-    background-color: var(--hero-gradient-base);
-    background-image:
-      radial-gradient(circle at 50% 35%, rgba(22, 30, 52, 0.55), rgba(5, 9, 20, 0.95)),
-      linear-gradient(180deg, var(--hero-gradient-base), var(--hero-gradient-accent));
-  }
-  
-  .header-scrolled {
-    background: rgb(30 41 59 / 95%);
-  }
-  
-  .admin-card {
-    background: #0f1724;
-  }
 }
 
 /* Verification comment: includes hero-gradient and price-badge classes */
