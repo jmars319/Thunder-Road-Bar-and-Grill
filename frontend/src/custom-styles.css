@@ -115,7 +115,7 @@
   min-height: 1.65rem;
   line-height: 1.1;
   font-size-adjust: 0.6;
-  letter-spacing: 0.005em;
+  letter-spacing: 0.02em;
 }
 
 @media screen and (min-width: 768px) {
@@ -160,6 +160,7 @@
 }
 
 .font-heading {
+  font-family: 'DM Sans', Roboto, 'Open Sans', sans-serif;
   font-size-adjust: 0.52;
 }
 
@@ -185,7 +186,7 @@
 .hero-copy-shell h1 {
   line-height: 1.08;
   font-size-adjust: 0.58;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   paint-order: stroke fill;
   -webkit-text-stroke: 0.4px rgb(0 0 0 / 40%);
   text-shadow: 0 0.5px 0 rgb(0 0 0 / 55%);
@@ -245,9 +246,22 @@ html {
   scroll-padding-top: 80px;
 }
 
-/* Headings use Impact/Anton font */
+/* Headings use DM Sans for reliable hero weight */
 h1, h2, h3, h4, h5, h6 {
-  font-family: Impact, Anton, 'Arial Black', sans-serif;
+  font-family: 'DM Sans', Roboto, 'Open Sans', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+}
+
+h1 {
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+h2,
+h3 {
+  letter-spacing: 0.02em;
   font-weight: 700;
 }
 
