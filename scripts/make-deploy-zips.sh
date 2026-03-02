@@ -24,10 +24,8 @@ require_cmd npm
 log "Removing old deploy zips"
 rm -f "$BACKEND_ZIP" "$FRONTEND_ZIP"
 
-if [[ ! -d "$FRONTEND_DIR/build" || ! -f "$FRONTEND_DIR/build/index.html" ]]; then
-  log "frontend/build missing; running npm run build"
-  (cd "$FRONTEND_DIR" && npm run build)
-fi
+log "Running fresh frontend build (npm run build)"
+(cd "$FRONTEND_DIR" && npm run build)
 
 log "Creating backend zip"
 (
