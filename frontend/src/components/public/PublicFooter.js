@@ -19,9 +19,9 @@ const HoursModal = React.lazy(() => import('./HoursModal'));
 const PrivacyModal = React.lazy(() => import('./PrivacyModal'));
 const TermsModal = React.lazy(() => import('./TermsModal'));
 const ContactModal = React.lazy(() => import('./ContactModal'));
-const OrderModal = React.lazy(() => import('./OrderModal'));
+const ORDER_ONLINE_URL = 'https://direct.chownow.com/order/42923/locations/64729';
 // ensure lazy imports and SVG components are recognized by some static analyzers as used
-void HoursModal; void PrivacyModal; void TermsModal; void ContactModal; void OrderModal;
+void HoursModal; void PrivacyModal; void TermsModal; void ContactModal;
 // mark the inline Google SVG component as intentionally used
 void GoogleIcon;
 
@@ -35,7 +35,6 @@ export default function PublicFooter({ onGoToAdmin }) {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showContact, setShowContact] = useState(false);
-  const [showOrder, setShowOrder] = useState(false);
 
   useEffect(() => {
     const footerColumnsUrl = getApiUrl('/footer-columns');
@@ -129,13 +128,14 @@ export default function PublicFooter({ onGoToAdmin }) {
               <ul className="space-y-0 text-xs leading-tight tracking-tight">
                 <li><a href="#jobs" className="footer-link text-text-muted hover:text-text-primary">Careers</a></li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => setShowOrder(true)}
+                  <a
+                    href={ORDER_ONLINE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="footer-link text-text-muted hover:text-text-primary"
                   >
                     Order Online
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -340,11 +340,6 @@ export default function PublicFooter({ onGoToAdmin }) {
         </React.Suspense>
       )}
 
-      {showOrder && (
-        <React.Suspense fallback={<div aria-hidden className="fixed inset-0 z-40 flex items-center justify-center"><div className="bg-black/40" /></div>}>
-          <OrderModal onClose={() => setShowOrder(false)} />
-        </React.Suspense>
-      )}
     </footer>
   );
 }

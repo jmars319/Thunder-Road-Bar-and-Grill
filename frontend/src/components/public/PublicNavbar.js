@@ -1,8 +1,10 @@
 /*
   PublicNavbar
 
-  - Top navigation for the public site. Loads site settings and navigation
-    and provides responsive navigation, theme toggle and the Order Online modal trigger.
+  - Top navigation for the public site with responsive desktop/mobile layouts.
+  - Loads dynamic navigation and site settings from backend endpoints.
+  - Includes an external "Order Online" link to ChowNow direct ordering.
+  - Shows a floating back-to-top button after users scroll down.
 
   Contract:
   - Props: { onGoToAdmin?: function }
@@ -17,15 +19,11 @@ import { icons } from '../../icons';
 import BrandLogo from '../shared/BrandLogo';
 import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
-// Lazy-load the OrderModal so it's only fetched when a user opens the modal.
-// This keeps the initial JS bundle smaller and loads the placeholder only on
-// demand. If you add analytics for interest in ordering, dispatch analytics
-// events from the click handler that sets `orderOpen`.
-const OrderModal = React.lazy(() => import('./OrderModal'));
 const DEFAULT_SITE_SETTINGS = {
   business_name: 'Thunder Road Bar and Grill',
   tagline: 'Great Food. Cold Drinks. Good Times.'
 };
+const ORDER_ONLINE_URL = 'https://direct.chownow.com/order/42923/locations/64729';
 
 const DEFAULT_NAV_LINKS = [
   { id: 'nav-menu-default', label: 'Menu', url: '#menu' },
@@ -69,25 +67,6 @@ function areNavListsEqual(a = [], b = []) {
   return true;
 }
 
-/*
-  PublicNavbar
-
-
-  Purpose:
-  - Site navigation used by the public website. Loads `settings` and
-    `navigation` from the backend and renders responsive navigation.
-
-  Contract:
-  - Props: { onGoToAdmin?: function }
-  - Data: expects GET /api/settings and GET /api/navigation endpoints.
-
-  Accessibility & logo notes:
-  - The logo is a static asset rendered via <BrandLogo />. It no longer depends
-    on uploaded media, so the navbar remains stable even if the API is offline.
-  - Styling: uses design token classes (e.g., bg-primary, bg-surface, text-text-*)
-    and runtime theme variables. Prefer editing tokens in `custom-styles.css`.
-*/
-
 export default function PublicNavbar({ onGoToAdmin }) {
   // kept for backwards compatibility with parent callers; no-op in navbar now
   void onGoToAdmin;
@@ -95,10 +74,6 @@ export default function PublicNavbar({ onGoToAdmin }) {
   const [navLinks, setNavLinks] = useState(DEFAULT_NAV_LINKS);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  // Tracks whether the Order Online modal is visible. Use this flag to
-  // lazy-load and render the lightweight OrderModal. Prefer `React.Suspense`
-  // around the modal so a small loading fallback can be displayed.
-  const [orderOpen, setOrderOpen] = useState(false);
 
   useEffect(() => {
     // Load site-level settings (logo, name, tagline). Keep errors silent for now.
@@ -188,7 +163,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
   return (
     <nav className="public-navbar bg-surface shadow-md header-sticky top-0 z-50 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 navbar-layout">
-  <div className="flex justify-between items-center h-16 md:h-20 min-h-[4rem] md:min-h-[5rem] w-full">
+        <div className="flex justify-between items-center h-16 md:h-20 min-h-[4rem] md:min-h-[5rem] w-full">
           <div className="flex items-center gap-3 flex-shrink-0">
             <a
               href="#top"
@@ -238,14 +213,14 @@ export default function PublicNavbar({ onGoToAdmin }) {
             {/* DEV: Admin button and nav links use semantic design tokens (bg-primary, text-text-inverse,
                 hover:bg-primary-dark, text-text-primary, etc.). Adjust tokens in
                 `frontend/src/custom-styles.css` rather than changing utility classes here. */}
-            <button
-              type="button"
-              onClick={() => setOrderOpen(true)}
-              title="Order Online - coming soon"
+            <a
+              href={ORDER_ONLINE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-primary text-text-inverse px-5 py-2.5 rounded-xl hover:bg-primary-dark transition text-sm font-semibold min-h-[44px]"
             >
               Order Online
-            </button>
+            </a>
           </div>
 
           {/* Mobile menu toggle */}
@@ -275,14 +250,15 @@ export default function PublicNavbar({ onGoToAdmin }) {
                   {link.label}
                 </a>
               ))}
-              <button
-                onClick={() => { setMobileMenuOpen(false); setOrderOpen(true); }}
-                type="button"
-                title="Order Online - coming soon"
+              <a
+                href={ORDER_ONLINE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
                 className="bg-primary text-text-inverse px-4 py-3 rounded-xl hover:bg-primary-dark transition text-sm font-semibold mx-2 min-h-[48px]"
               >
                 Order Online
-              </button>
+              </a>
             </div>
           </div>
         )}
@@ -303,16 +279,7 @@ export default function PublicNavbar({ onGoToAdmin }) {
           </button>,
           document.body
         )}
-        {orderOpen && (
-          <React.Suspense fallback={null}>
-            <OrderModal onClose={() => setOrderOpen(false)} />
-          </React.Suspense>
-        )}
       </div>
     </nav>
   );
 }
-
-// Some editor/lint setups don't detect JSX uses of member-expressions like
-// `<icons.X />`. Provide a small used-symbol object so those tools don't
-// incorrectly report `icons` as unused.
