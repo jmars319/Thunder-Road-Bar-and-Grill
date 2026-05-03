@@ -295,14 +295,14 @@ export default function PublicFooter({ onGoToAdmin }) {
             )}
           </div>
           <div className="text-xs text-text-secondary text-center">
-            © {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'} · Powered by{' '}
+            © {new Date().getFullYear()} {siteSettings?.business_name || 'Thunder Road Bar and Grill'} · Website by{' '}
             <a
               href="https://jamarq.digital"
               target="_blank"
               rel="noopener noreferrer"
               className="footer-link text-text-muted hover:text-text-primary underline"
             >
-              JAMARQ
+              JAMARQ Digital
             </a>
           </div>
         </div>

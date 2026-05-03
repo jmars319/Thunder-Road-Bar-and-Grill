@@ -46,16 +46,16 @@ const ThrowError = ({ shouldThrow }) => {
   return <div>No error</div>;
 };
 
+beforeEach(() => {
+  // React intentionally logs caught render errors while testing boundaries.
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  console.error.mockRestore();
+});
+
 describe('ErrorBoundary', () => {
-  beforeEach(() => {
-    // Suppress console.error for cleaner test output
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    console.error.mockRestore();
-  });
-
   test('renders children when there is no error', () => {
     render(
       <TestErrorBoundary>
