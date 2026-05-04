@@ -25,6 +25,7 @@ import ThemeProvider from './contexts/ThemeContext';
 import reportWebVitals from './reportWebVitals';
 import { API_BASE } from './config/api';
 import { initClsDebug } from './dev/clsDebug';
+import { initAnalytics, reportWebVital } from './utils/analytics';
 
 // Ensure API requests to our backend include credentials so admin cookies are
 // sent with requests from the admin UI (dev convenience). This wraps the
@@ -50,6 +51,8 @@ if (typeof window !== 'undefined' && window.fetch) {
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+initAnalytics();
+
 // React and providers are used directly in the render call above.
 root.render(
   React.createElement(React.StrictMode, null,
@@ -64,7 +67,7 @@ root.render(
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+reportWebVitals(reportWebVital);
 
 if (typeof window !== 'undefined') {
   initClsDebug();
