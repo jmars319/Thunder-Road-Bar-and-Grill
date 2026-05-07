@@ -1,11 +1,5 @@
 # Thunder Road Bar & Grill
 
-## Repository About
-
-- **Description:** Restaurant and bar website with an admin management system for Thunder Road Bar & Grill in Midway, NC, covering public menu/reservation/job/contact flows, editable site content, media uploads, SendGrid notifications, branded error handling, and a PHP/MySQL backend built for GoDaddy shared hosting.
-- **Live URL:** https://trbgmidway.com/
-- **Suggested GitHub topics:** `restaurant`, `bar-and-grill`, `menu-management`, `reservations`, `job-applications`, `react`, `create-react-app`, `php`, `mysql`, `admin-dashboard`, `sendgrid`, `local-business`, `seo`
-
 Production restaurant website and management system with a public site, admin panel, PHP API, and MySQL persistence.
 
 **Stack:** React 18 + PHP REST API + MySQL | **Hosting:** GoDaddy Deluxe (Apache + PHP)
