@@ -6,6 +6,7 @@
 /* CSS Variables (matching PHP project) */
 :root {
   color-scheme: dark;
+
   /* Colors */
   --primary-color: #c81a1a;
   --primary-dark: #a30f0f;
@@ -29,7 +30,6 @@
   --text-muted: #a5b4cf;
   --text-inverse: #fff;
   --text-placeholder: #c7d1ea;
-  --brand-cream: #fff5f0;
   --brand-cream: #fff5f0;
 
   /* Borders */
@@ -118,7 +118,7 @@
   letter-spacing: 0.02em;
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (width >= 768px) {
   .navbar-heading {
     min-height: 2.2rem;
   }
@@ -132,7 +132,7 @@
   font-size-adjust: 0.55;
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (width >= 768px) {
   .navbar-tagline {
     min-height: 1.35rem;
   }
@@ -177,7 +177,7 @@
   min-height: 240px;
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (width >= 768px) {
   .hero-copy-shell {
     min-height: 320px;
   }
@@ -212,6 +212,7 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
 /** Avoid global optimizeLegibility to prevent browser kerning surprises; apply only where dense menu text needs it. */
 }
 
@@ -251,7 +252,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'DM Sans', Roboto, 'Open Sans', sans-serif;
   font-weight: 600;
   letter-spacing: 0.01em;
-  text-rendering: optimizeLegibility;
+  text-rendering: optimizelegibility;
 }
 
 h1 {
@@ -276,7 +277,7 @@ h3 {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.015em;
-  text-rendering: optimizeLegibility;
+  text-rendering: optimizelegibility;
 }
 
 .rich-text-field [contenteditable='true'] ul {
@@ -319,7 +320,7 @@ h3 {
   column-count: 3;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .rt-cols-2 > ul,
   .rt-cols-2 > ol,
   .rt-cols-3 > ul,
@@ -417,19 +418,19 @@ h3 {
 .hero-gradient {
   background-color: var(--hero-gradient-base);
   background-image:
-    radial-gradient(circle at 50% 35%, rgba(22, 30, 52, 0.55), rgba(5, 9, 20, 0.95)),
+    radial-gradient(circle at 50% 35%, rgb(22 30 52 / 55%), rgb(5 9 20 / 95%)),
     linear-gradient(180deg, var(--hero-gradient-base), var(--hero-gradient-accent));
   position: relative;
   overflow: hidden;
 }
 
 .hero-gradient.hero-gradient--empty .overlay-gradient {
-  background: linear-gradient(180deg, rgba(4, 8, 17, 0.82), rgba(6, 10, 20, 0.55));
+  background: linear-gradient(180deg, rgb(4 8 17 / 82%), rgb(6 10 20 / 55%));
 }
 
 .hero-gradient.hero-gradient--empty .hero-copy-shell {
-  background: rgba(5, 9, 18, 0.78) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(5 9 18 / 78%) !important;
+  border: 1px solid rgb(255 255 255 / 8%);
 }
 
 .hero-gradient.hero-gradient--empty .hero-cta-row .cta-glass {
@@ -448,7 +449,7 @@ h3 {
 }
 
 .hero-subtitle {
-  color: rgb(255 255 255 / 0.9);
+  color: rgb(255 255 255 / 90%);
   text-shadow: 0 4px 12px rgb(0 0 0 / 35%);
 }
 
@@ -472,21 +473,21 @@ h3 {
 }
 
 .cta-glass--primary {
-  background: rgba(220, 38, 38, 0.92);
+  background: rgb(220 38 38 / 92%);
   color: #fff;
 }
 
 .cta-glass--primary:hover {
-  background: rgba(220, 38, 38, 1);
+  background: rgb(220 38 38 / 100%);
 }
 
 .cta-glass--secondary {
-  background: rgba(15, 23, 36, 0.82);
+  background: rgb(15 23 36 / 82%);
   color: #f8fafc;
 }
 
 .cta-glass--secondary:hover {
-  background: rgba(15, 23, 36, 0.92);
+  background: rgb(15 23 36 / 92%);
 }
 
 /* Reserve space for hero text + CTAs to avoid CLS when copy loads asynchronously */
@@ -1029,7 +1030,7 @@ h3 {
   padding: 0.65rem 1.25rem;
   border: none;
   border-radius: 0.65rem;
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.15);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 15%);
   transition: var(--transition-fast);
   display: inline-flex;
   align-items: center;
@@ -1041,7 +1042,7 @@ h3 {
 .media-upload-button:focus-visible:not(:disabled) {
   background-color: #ffb347;
   color: var(--surface-dark);
-  box-shadow: 0 8px 20px rgb(0 0 0 / 0.18);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 18%);
 }
 
 .media-upload-button:disabled {
