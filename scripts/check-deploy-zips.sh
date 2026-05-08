@@ -2,13 +2,14 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKEND_ZIP="$ROOT_DIR/deploy-backend.zip"
-FRONTEND_ZIP="$ROOT_DIR/deploy-frontend.zip"
+BACKEND_ZIP="$ROOT_DIR/backend-deploy.zip"
+FRONTEND_ZIP="$ROOT_DIR/frontend-deploy.zip"
 FRONTEND_HTACCESS_SOURCE="$ROOT_DIR/frontend/public/.htaccess"
 REQUIRE_FRONTEND_HTACCESS=0
 [[ -f "$FRONTEND_HTACCESS_SOURCE" ]] && REQUIRE_FRONTEND_HTACCESS=1
 
 log() { printf '\033[1;34m[CHECK]\033[0m %s\n' "$*"; }
+ok() { printf '\033[1;32m[OK]\033[0m %s\n' "$*"; }
 err() { printf '\033[1;31m[ERROR]\033[0m %s\n' "$*" >&2; }
 
 require_cmd() {
@@ -50,7 +51,7 @@ check_backend_zip() {
     err "backend zip should not include uploads/"
     exit 1
   fi
-  log "Backend zip contents look good"
+  ok "Backend zip contents look good"
 }
 
 check_frontend_zip() {
@@ -69,9 +70,9 @@ check_frontend_zip() {
       exit 1
     fi
   fi
-  log "Frontend zip contents look good"
+  ok "Frontend zip contents look good"
 }
 
 check_backend_zip
 check_frontend_zip
-log "Deploy zip validation complete"
+ok "Deploy zip validation complete"

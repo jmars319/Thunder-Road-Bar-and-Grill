@@ -29,7 +29,7 @@ This application deploys entirely to **GoDaddy Deluxe hosting**, eliminating the
 From repo root:
 
 ```bash
-bash scripts/make-deploy-zips.sh   # build deploy-backend.zip + deploy-frontend.zip
+bash scripts/make-deploy-zips.sh   # build backend-deploy.zip + frontend-deploy.zip
 bash scripts/check-deploy-zips.sh  # confirm entrypoints + excludes before upload
 ```
 

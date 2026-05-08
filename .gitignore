@@ -26,6 +26,8 @@ frontend/.env.production
 # Deploy artifacts
 # ───────────────────────────
 deploy-*.zip
+frontend-deploy*.zip
+backend-deploy*.zip
 
 # ───────────────────────────
 # Runtime uploads / incoming

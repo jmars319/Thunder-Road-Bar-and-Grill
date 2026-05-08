@@ -1,0 +1,34 @@
+{
+  "name": "thunder-road-bar-and-grill",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend start",
+    "start": "npm --prefix frontend start",
+    "build": "npm --prefix frontend run build",
+    "lint": "npm --prefix frontend run lint",
+    "lint:css": "npm --prefix frontend run lint:css",
+    "lint:fix": "npm --prefix frontend run lint:fix",
+    "test": "npm --prefix frontend run test:ci",
+    "test:watch": "npm --prefix frontend run test",
+    "check:public-assets": "npm --prefix frontend run check:public-assets",
+    "cls:headless": "npm --prefix frontend run cls:headless",
+    "doctor": "bash ./scripts/doctor.sh",
+    "verify": "bash ./scripts/dev-verify.sh",
+    "dev:start": "bash ./scripts/dev-start.sh",
+    "dev:stop": "bash ./scripts/dev-stop.sh",
+    "dev:restart": "bash ./scripts/dev-restart.sh",
+    "dev:status": "bash ./scripts/dev-status.sh",
+    "fe:start": "bash ./scripts/dev-frontend-start.sh",
+    "fe:stop": "bash ./scripts/dev-frontend-stop.sh",
+    "fe:restart": "bash ./scripts/dev-frontend-restart.sh",
+    "be:start": "bash ./scripts/dev-backend-start.sh",
+    "be:stop": "bash ./scripts/dev-backend-stop.sh",
+    "be:restart": "bash ./scripts/dev-backend-restart.sh",
+    "deploy:make": "bash ./scripts/make-deploy-zips.sh",
+    "deploy:check": "bash ./scripts/check-deploy-zips.sh"
+  },
+  "packageManager": "npm@11.6.1",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  }
+}

@@ -14,9 +14,9 @@ This document contains **portable, reusable tooling only**. Project-specific ver
 ### scripts/make-deploy-zips.sh
 - **Purpose:** Builds production deployment archives (commonly for cPanel/manual uploads) by zipping backend and frontend outputs separately.
 - **Key actions:**
-  - Deletes prior `deploy-*.zip` files (and legacy names) to avoid stale bundles.
-  - Zips `backend/` into `deploy-backend.zip` while excluding secrets and runtime data (commonly `.env*`, `uploads/`, `.DS_Store`).
-  - Zips `frontend/build/` into `deploy-frontend.zip`, and may inject repo-root `.htaccess` at the archive root (Apache rewrite compatibility).
+  - Deletes prior frontend/backend deploy archives and legacy names to avoid stale bundles.
+  - Zips `backend/` into `backend-deploy.zip` while excluding secrets and runtime data (commonly `.env*`, `uploads/`, `.DS_Store`).
+  - Zips `frontend/build/` into `frontend-deploy.zip`, and may inject repo-root `.htaccess` at the archive root (Apache rewrite compatibility).
   - Emits size/listing summaries (`ls`, `unzip -l`) for quick inspection.
 - **Dependencies:** `zip`, `unzip`, writable repo root, finished `frontend/build/`, repo-root `.htaccess` (if applicable).
 - **Usage:** `bash scripts/make-deploy-zips.sh`
@@ -24,7 +24,7 @@ This document contains **portable, reusable tooling only**. Project-specific ver
 ### scripts/check-deploy-zips.sh
 - **Purpose:** Verifies deploy archives contain exactly what production expects.
 - **Key actions:**
-  - Confirms `deploy-backend.zip` and `deploy-frontend.zip` exist.
+  - Confirms `backend-deploy.zip` and `frontend-deploy.zip` exist.
   - Lists archive contents for manual review.
   - Runs automated checks (e.g., ensures backend zip contains required entry points and excludes `.env*` / `uploads/`).
 - **Dependencies:** `unzip`, `grep`, `bash`.

@@ -4,10 +4,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
-BACKEND_ZIP="$ROOT_DIR/deploy-backend.zip"
-FRONTEND_ZIP="$ROOT_DIR/deploy-frontend.zip"
+BACKEND_ZIP="$ROOT_DIR/backend-deploy.zip"
+FRONTEND_ZIP="$ROOT_DIR/frontend-deploy.zip"
 
-log() { printf '\033[1;32m[MAKE]\033[0m %s\n' "$*"; }
+log() { printf '\033[1;34m[MAKE]\033[0m %s\n' "$*"; }
+ok() { printf '\033[1;32m[OK]\033[0m %s\n' "$*"; }
 err() { printf '\033[1;31m[ERROR]\033[0m %s\n' "$*" >&2; }
 
 require_cmd() {
@@ -71,3 +72,5 @@ if unzip -l "$BACKEND_ZIP" | rg -q 'cache/(error-alerts|ratelimit)|cache/email-p
   err "Backend zip includes runtime cache/log artifacts (cache/, logs/, previews). Fix exclusions before deploying."
   exit 1
 fi
+
+ok "Created backend-deploy.zip and frontend-deploy.zip"
