@@ -27,4 +27,9 @@ lighthouse-report.json
 lighthouse-prod-report.json
 
 # Local generated assets (often used for design assets or temporary builds)
-/src/assets/
+/src/assets/*
+!/src/assets/google-g.svg
+!/src/assets/logo/
+!/src/assets/logo/.gitkeep
+!/src/assets/logo/*.png
+!/src/assets/logo/*.webp
