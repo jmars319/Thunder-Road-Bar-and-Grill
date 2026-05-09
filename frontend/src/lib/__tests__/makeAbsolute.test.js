@@ -12,7 +12,7 @@
 const makeAbsolute = require('../makeAbsolute');
 
 const OLD_API = process.env.REACT_APP_API_BASE;
-process.env.REACT_APP_API_BASE = 'http://localhost:5001/api';
+process.env.REACT_APP_API_BASE = 'http://localhost:3304/api';
 
 describe('makeAbsolute', () => {
   afterAll(() => {
@@ -31,10 +31,10 @@ describe('makeAbsolute', () => {
   });
 
   test('prepends base for leading-slash paths', () => {
-    expect(makeAbsolute('/uploads/img.png')).toBe('http://localhost:5001/uploads/img.png');
+    expect(makeAbsolute('/uploads/img.png')).toBe('http://localhost:3304/uploads/img.png');
   });
 
   test('prepends base for paths missing leading slash', () => {
-    expect(makeAbsolute('uploads/img.png')).toBe('http://localhost:5001/uploads/img.png');
+    expect(makeAbsolute('uploads/img.png')).toBe('http://localhost:3304/uploads/img.png');
   });
 });

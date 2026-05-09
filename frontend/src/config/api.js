@@ -14,7 +14,7 @@
  * 
  * Environment Variables:
  *   - REACT_APP_API_BASE: Full API base URL (e.g., https://api.example.com/api)
- *   - Falls back to http://localhost:5001/api for development
+ *   - Falls back to http://localhost:3304/api for development
  * 
  * Notes:
  *   - This is the single source of truth for API configuration
@@ -22,7 +22,7 @@
  *   - The /api suffix is included in the base URL
  */
 
-export const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+export const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3304/api';
 
 /**
  * Get full API URL for a given endpoint
@@ -30,8 +30,8 @@ export const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001
  * @returns {string} Full API URL
  * 
  * @example
- * getApiUrl('/menu') // => 'http://localhost:5001/api/menu'
- * getApiUrl('menu')  // => 'http://localhost:5001/api/menu'
+ * getApiUrl('/menu') // => 'http://localhost:3304/api/menu'
+ * getApiUrl('menu')  // => 'http://localhost:3304/api/menu'
  */
 export function getApiUrl(endpoint) {
   if (!endpoint) return API_BASE;
@@ -45,7 +45,7 @@ export function getApiUrl(endpoint) {
  * @returns {string} API origin
  * 
  * @example
- * getApiOrigin() // => 'http://localhost:5001'
+ * getApiOrigin() // => 'http://localhost:3304'
  */
 export function getApiOrigin() {
   return API_BASE.replace(/\/api$/, '');

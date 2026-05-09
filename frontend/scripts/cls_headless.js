@@ -2,7 +2,7 @@
 /* eslint-disable no-console */
 const { chromium } = require('playwright');
 
-const BASE_URL = process.env.CLS_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.CLS_BASE_URL || 'http://localhost:3204';
 const RAW_PATHS = process.env.CLS_PATHS || '/?debugCls=1';
 const PATHS = RAW_PATHS.split(',').map((p) => p.trim()).filter(Boolean);
 const DW_THROUGHPUT = Number(process.env.CLS_DOWNLOAD_BPS) || 50 * 1024; // bytes/sec (~400 kbps)

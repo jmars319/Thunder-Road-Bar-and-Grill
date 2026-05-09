@@ -4,7 +4,7 @@
 
 # Example overrides:
 # export BACKEND_HOST=127.0.0.1
-# export BACKEND_PORT=5001
+# export BACKEND_PORT=3304
 # export FRONTEND_HOST=127.0.0.1
-# export FRONTEND_PORT=3000
+# export FRONTEND_PORT=3204
 # export DEV_PROXY_CHECK=0   # Set to 0 to skip proxy verification

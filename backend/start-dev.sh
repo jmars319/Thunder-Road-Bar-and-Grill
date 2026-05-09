@@ -29,12 +29,12 @@ else
 fi
 
 echo ""
-echo "🌐 Starting server on http://localhost:5001"
-echo "   API Base URL: http://localhost:5001/api"
+echo "🌐 Starting server on http://localhost:3304"
+echo "   API Base URL: http://localhost:3304/api"
 echo ""
 echo "📝 Test endpoints:"
-echo "   curl http://localhost:5001/api/health"
-echo "   curl http://localhost:5001/api/menu"
+echo "   curl http://localhost:3304/api/health"
+echo "   curl http://localhost:3304/api/menu"
 echo ""
 echo "🛑 Press Ctrl+C to stop the server"
 echo ""
@@ -42,4 +42,4 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Start PHP development server with router and higher upload limits
-php -d upload_max_filesize=16M -d post_max_size=32M -S localhost:5001 router.php
+php -d upload_max_filesize=16M -d post_max_size=32M -S localhost:3304 router.php

@@ -21,7 +21,7 @@
     "stylelint-order": "^6.0.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "PORT=${PORT:-3204} react-scripts start",
     "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"src/**/*.{js,jsx}\"",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",

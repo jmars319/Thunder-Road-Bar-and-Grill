@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test script for PHP Backend API
 
-API_BASE="http://localhost:5001/api"
+API_BASE="http://localhost:3304/api"
 
 echo "🧪 Testing Thunder Road PHP Backend API"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -51,7 +51,7 @@ echo ""
 # Test 4: CORS Headers
 echo "4️⃣  Testing CORS Headers..."
 CORS=$(curl -s -I -X OPTIONS "$API_BASE/menu" \
-    -H "Origin: http://localhost:3000" \
+    -H "Origin: http://localhost:3204" \
     -H "Access-Control-Request-Method: GET")
 if echo "$CORS" | grep -q "Access-Control-Allow-Origin"; then
     echo "   ✅ CORS headers present"

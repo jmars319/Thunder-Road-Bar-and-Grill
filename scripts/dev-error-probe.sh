@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API_BASE=${API_BASE:-"http://localhost:5001/api"}
+API_BASE=${API_BASE:-"http://localhost:3304/api"}
 PYTHON_BIN=""
 if command -v python3 >/dev/null 2>&1; then
   PYTHON_BIN="python3"

@@ -9,7 +9,7 @@
   Usage:
   - import makeAbsolute from './makeAbsolute';
   - const fullUrl = makeAbsolute('/uploads/hero.jpg');
-    // => 'http://localhost:5001/uploads/hero.jpg'
+    // => 'http://localhost:3304/uploads/hero.jpg'
 
   Notes:
   - The function checks whether the path is already absolute. If yes, returns

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API_BASE=${API_BASE:-"http://localhost:5001/api"}
+API_BASE=${API_BASE:-"http://localhost:3304/api"}
 PREVIEW_LOG="backend/cache/email-previews.log"
 TMP_FILE=$(mktemp)
 trap 'rm -f "$TMP_FILE"' EXIT
