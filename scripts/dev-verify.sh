@@ -11,6 +11,7 @@ step() {
 
 step "Cleaning up any running dev processes"
 bash "$SCRIPT_DIR/dev-stop.sh" >/dev/null 2>&1 || true
+export DEV_BROWSER_OPEN="${DEV_BROWSER_OPEN:-0}"
 
 run_checks() {
   curl --silent --fail --max-time 5 "$BACKEND_HEALTH_URL" >/dev/null

@@ -8,3 +8,8 @@
 # export FRONTEND_HOST=127.0.0.1
 # export FRONTEND_PORT=3204
 # export DEV_PROXY_CHECK=0   # Set to 0 to skip proxy verification
+
+# Browser auto-open behavior:
+# export DEV_BROWSER_OPEN=1  # Set to 0 to skip opening a browser.
+# export DEV_BROWSER=safari  # macOS default: safari. Windows default: chrome.
+# export DEV_BROWSER=chrome  # Alternate examples: chrome, edge, firefox, default.

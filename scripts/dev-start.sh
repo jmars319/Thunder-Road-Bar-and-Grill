@@ -4,6 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=dev-common.sh
 source "$SCRIPT_DIR/dev-common.sh"
+# shellcheck source=dev-browser.sh
+source "$SCRIPT_DIR/dev-browser.sh"
 
 log_info "Starting dev stack"
 # Ensure backend inherits the same permissive PHP ini caps when orchestrating full stack.
@@ -14,3 +16,4 @@ bash "$SCRIPT_DIR/dev-backend-start.sh"
 bash "$SCRIPT_DIR/dev-frontend-start.sh"
 verify_proxy_chain || true
 log_info "Dev stack is running"
+open_dev_browser "$FRONTEND_BASE_URL"
