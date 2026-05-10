@@ -57,6 +57,18 @@ header_remove('X-Powered-By');
 // Handle CORS
 CorsMiddleware::handle();
 
+// Health checks should confirm the API process is reachable without requiring
+// optional local database credentials or constructing DB-backed route classes.
+$requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '';
+if ($requestPath === '/api/health') {
+    echo json_encode([
+        'status' => 'OK',
+        'message' => 'Thunder Road API is running',
+        'timestamp' => date('c')
+    ]);
+    exit;
+}
+
 // Apply global rate limiting
 $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 RateLimitMiddleware::global($ip);
