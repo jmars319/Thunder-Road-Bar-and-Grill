@@ -89,7 +89,14 @@ export default function PublicFooter({ onGoToAdmin }) {
             )}
 
             {siteSettings?.email && (
-              <a href={`mailto:${siteSettings.email}`} className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight">{siteSettings.email}</a>
+              <button
+                type="button"
+                onClick={() => setShowContact(true)}
+                className="footer-link text-text-muted hover:text-text-primary text-xs leading-tight text-left underline"
+                aria-haspopup="dialog"
+              >
+                Message us through the contact form
+              </button>
             )}
 
             {siteSettings?.address && (

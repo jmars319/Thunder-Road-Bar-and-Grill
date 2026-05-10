@@ -12,7 +12,7 @@ export default function NotFoundPage({ requestId, timestampUTC }) {
       title="We couldn’t find that page"
       description={contexts.default404}
       primaryAction={{ label: 'Go Home', href: '/' }}
-      secondaryAction={{ label: 'Contact Support', href: `mailto:${supportEmail}` }}
+      secondaryAction={{ label: 'Contact Support', href: '/#contact' }}
       statusCode={404}
       serviceName={serviceName}
       timestampUTC={timestampUTC || new Date().toISOString()}

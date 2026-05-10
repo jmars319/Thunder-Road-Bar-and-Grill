@@ -16,7 +16,7 @@ export default function TemporaryIssuePage({
       title="We’re working on this"
       description={contexts.default5xx}
       primaryAction={{ label: 'Try again later', href: '/' }}
-      secondaryAction={{ label: 'Contact Support', href: `mailto:${supportEmail}` }}
+      secondaryAction={{ label: 'Contact Support', href: '/#contact' }}
       statusCode={statusCode}
       serviceName={serviceName}
       timestampUTC={timestampUTC || new Date().toISOString()}

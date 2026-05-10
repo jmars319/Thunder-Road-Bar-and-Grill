@@ -75,9 +75,9 @@ export default function ErrorPageLayout({
 
         {supportEmail && (
           <p className="text-sm text-text-secondary">
-            Need help? Email{' '}
-            <a className="text-primary underline" href={`mailto:${supportEmail}`}>
-              {supportEmail}
+            Need help?{' '}
+            <a className="text-primary underline" href="/#contact">
+              Use the contact form on the home page
             </a>
             .
           </p>
