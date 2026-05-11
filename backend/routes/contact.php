@@ -89,6 +89,13 @@ class ContactRoutes {
      */
     public function createContact() {
         $input = json_decode(file_get_contents('php://input'), true);
+        $input = is_array($input) ? $input : [];
+        if ($this->honeypotTripped($input)) {
+            Logger::warning('Public contact honeypot triggered');
+            http_response_code(202);
+            echo json_encode(['message' => 'Message received']);
+            return;
+        }
         
         $name = $input['name'] ?? '';
         $email = $input['email'] ?? '';
@@ -195,5 +202,15 @@ class ContactRoutes {
         $this->db->delete('DELETE FROM contact_messages WHERE id = ?', [$id]);
 
         echo json_encode(['message' => 'Message deleted']);
+    }
+
+    private function honeypotTripped(array $input): bool {
+        foreach (['trbg_hp', 'website', 'companyWebsite', 'company_website'] as $field) {
+            if (trim((string)($input[$field] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

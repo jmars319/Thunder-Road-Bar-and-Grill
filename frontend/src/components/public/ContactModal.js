@@ -20,7 +20,7 @@ import { getApiUrl } from '../../config/api';
 void Spinner;
 
 export default function ContactModal({ onClose }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '', trbg_hp: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -67,6 +67,18 @@ export default function ContactModal({ onClose }) {
         <h3 className="text-lg font-bold mb-2 text-text-primary">Contact Us</h3>
         <p className="text-sm text-text-secondary mb-3">Send us a message and we'll get back to you as soon as we can.</p>
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="sr-only" aria-hidden="true">
+            <label htmlFor="contact-check">Leave this field blank</label>
+            <input
+              id="contact-check"
+              name="trbg_hp"
+              type="text"
+              autoComplete="new-password"
+              tabIndex={-1}
+              value={form.trbg_hp}
+              onChange={(e) => setForm(f => ({ ...f, trbg_hp: e.target.value }))}
+            />
+          </div>
           <div>
             <label className="block text-sm text-text-primary mb-1">Name</label>
             <input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="w-full form-input" />

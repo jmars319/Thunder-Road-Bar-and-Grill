@@ -38,7 +38,8 @@ export default function ReservationSection() {
     reservation_date: '',
     reservation_time: '',
     number_of_guests: 2,
-    special_requests: ''
+    special_requests: '',
+    trbg_hp: ''
   });
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -108,7 +109,8 @@ export default function ReservationSection() {
           reservation_date: '',
           reservation_time: '',
           number_of_guests: 2,
-          special_requests: ''
+          special_requests: '',
+          trbg_hp: ''
         });
         setErrors({});
       } else {
@@ -171,6 +173,17 @@ export default function ReservationSection() {
         </div>
 
         <div className="bg-surface-warm rounded-lg shadow-lg p-6 space-y-3 min-h-[520px]">
+          <div className="sr-only" aria-hidden="true">
+            <label htmlFor="reservation-check">Leave this field blank</label>
+            <input
+              id="reservation-check"
+              name="trbg_hp"
+              value={formData.trbg_hp}
+              onChange={(e) => setFormData({ ...formData, trbg_hp: e.target.value })}
+              tabIndex={-1}
+              autoComplete="new-password"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label htmlFor="res-name" className="block text-sm font-medium text-text-primary mb-2">Name *</label>

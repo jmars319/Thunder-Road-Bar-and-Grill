@@ -71,6 +71,13 @@ class JobsRoutes {
      */
     public function submitApplication() {
         $input = json_decode(file_get_contents('php://input'), true);
+        $input = is_array($input) ? $input : [];
+        if ($this->honeypotTripped($input)) {
+            Logger::warning('Public job application honeypot triggered');
+            http_response_code(202);
+            echo json_encode(['message' => 'Application received']);
+            return;
+        }
         
         $name = $input['name'] ?? '';
         $email = $input['email'] ?? '';
@@ -390,5 +397,15 @@ class JobsRoutes {
             Logger::error('Delete application error: ' . $e->getMessage());
             ErrorHandler::respond('Failed to delete application', 500);
         }
+    }
+
+    private function honeypotTripped(array $input): bool {
+        foreach (['trbg_hp', 'website', 'companyWebsite', 'company_website'] as $field) {
+            if (trim((string)($input[$field] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

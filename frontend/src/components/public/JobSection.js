@@ -32,7 +32,8 @@ export default function JobSection() {
     availability: '',
     experience: '',
     cover_letter: '',
-    resume_url: ''
+    resume_url: '',
+    trbg_hp: ''
   });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
@@ -116,7 +117,8 @@ export default function JobSection() {
         experience: form.experience,
         availability: form.availability,
         cover_letter: form.cover_letter,
-        resume_url: form.resume_url && form.resume_url.trim() ? form.resume_url.trim() : null
+        resume_url: form.resume_url && form.resume_url.trim() ? form.resume_url.trim() : null,
+        trbg_hp: form.trbg_hp
       };
 
   const res = await fetch(getApiUrl('/jobs'), {
@@ -149,7 +151,7 @@ export default function JobSection() {
   setMessage(copy.success || 'Application submitted — thank you!');
   // reset to a sensible default: first available position name or empty string
   const defaultPos = positions && positions.length ? (positions[0].name || positions[0] || '') : '';
-  setForm({ name: '', email: '', phone: '', position: defaultPos, availability: '', experience: '', cover_letter: '', resume_url: '' });
+  setForm({ name: '', email: '', phone: '', position: defaultPos, availability: '', experience: '', cover_letter: '', resume_url: '', trbg_hp: '' });
     } catch (err) {
       setError(copy.failure || err.message || 'Submission failed');
     } finally {
@@ -275,6 +277,17 @@ export default function JobSection() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3 bg-background p-5 rounded-lg shadow border border-divider">
+            <div className="sr-only" aria-hidden="true">
+              <label htmlFor="job-check">Leave this field blank</label>
+              <input
+                id="job-check"
+                name="trbg_hp"
+                value={form.trbg_hp}
+                onChange={handleChange}
+                tabIndex={-1}
+                autoComplete="new-password"
+              />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex flex-col">
                 <span className="text-sm mb-1">Full name *</span>
