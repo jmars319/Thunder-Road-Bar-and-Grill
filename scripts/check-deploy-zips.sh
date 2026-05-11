@@ -70,6 +70,10 @@ check_frontend_zip() {
       exit 1
     fi
   fi
+  if grep -E -q 'https?://(localhost|127\.0\.0\.1):[0-9]+' < <(unzip -p "$FRONTEND_ZIP" 2>/dev/null || true); then
+    err "frontend zip contains a localhost URL with a port"
+    exit 1
+  fi
   ok "Frontend zip contents look good"
 }
 
