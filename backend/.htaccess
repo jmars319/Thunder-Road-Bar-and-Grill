@@ -1,6 +1,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /api/
+
+    # Block server-only configuration, logs, cache, and development files.
+    RewriteRule (^|/)\.env($|\.) - [F,L]
+    RewriteRule ^(logs|cache|incoming|tests|vendor|middleware|routes|utils|scripts)(/|$) - [F,L]
+    RewriteRule (^|/)(composer\.(json|lock)|README\.md|start-dev\.sh|test-api\.sh)$ - [F,L]
     
     # Allow direct access to uploads folder
     RewriteCond %{REQUEST_URI} ^/api/uploads/
