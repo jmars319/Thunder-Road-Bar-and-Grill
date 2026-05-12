@@ -33,6 +33,14 @@ zip_contains() {
   return 1
 }
 
+zip_name_matches() {
+  local zip_path="$1" pattern="$2"
+  if (set +o pipefail >/dev/null 2>&1 || true; unzip -Z1 "$zip_path" | grep -Eq "$pattern"); then
+    return 0
+  fi
+  return 1
+}
+
 check_backend_zip() {
   log "Validating backend zip"
   if ! zip_contains "$BACKEND_ZIP" 'index.php'; then
@@ -43,12 +51,28 @@ check_backend_zip() {
     err "backend zip missing router.php"
     exit 1
   fi
-  if zip_contains "$BACKEND_ZIP" '.env'; then
+  if zip_name_matches "$BACKEND_ZIP" '(^|/)[.]env($|[.])'; then
     err "backend zip contains .env files"
     exit 1
   fi
-  if zip_contains "$BACKEND_ZIP" 'uploads/'; then
+  if zip_name_matches "$BACKEND_ZIP" '(^|/)uploads/'; then
     err "backend zip should not include uploads/"
+    exit 1
+  fi
+  if zip_name_matches "$BACKEND_ZIP" '(^|/)(tests|scripts)/'; then
+    err "backend zip should not include tests/ or scripts/"
+    exit 1
+  fi
+  if zip_name_matches "$BACKEND_ZIP" '^(README[.]md|start-dev[.]sh|test-api[.]sh)$'; then
+    err "backend zip should not include development docs or local scripts"
+    exit 1
+  fi
+  if zip_name_matches "$BACKEND_ZIP" '^composer[.](json|lock)$'; then
+    err "backend zip should not include composer manifests when vendor/ is packaged"
+    exit 1
+  fi
+  if zip_name_matches "$BACKEND_ZIP" '(^|/)[.]gitignore$|[.]map$'; then
+    err "backend zip should not include git metadata or source maps"
     exit 1
   fi
   local backend_htaccess
@@ -76,8 +100,12 @@ check_frontend_zip() {
       exit 1
     fi
   fi
-  if zip_contains "$FRONTEND_ZIP" '\.map$'; then
+  if zip_name_matches "$FRONTEND_ZIP" '[.]map$'; then
     err "frontend zip should not include source maps"
+    exit 1
+  fi
+  if zip_name_matches "$FRONTEND_ZIP" '(^|/)[.]gitignore$'; then
+    err "frontend zip should not include git metadata"
     exit 1
   fi
   if grep -E -q 'https?://(localhost|127\.0\.0\.1):[0-9]+' < <(unzip -p "$FRONTEND_ZIP" 2>/dev/null || true); then

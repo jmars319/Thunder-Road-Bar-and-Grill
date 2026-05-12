@@ -37,16 +37,28 @@ log "Creating backend zip"
        'cache/*' 'cache/**' \
        'logs/*' 'logs/**' \
        '*.log' '**/*.log' \
+       'tests/*' 'tests/**' \
+       'scripts/*' 'scripts/**' \
+       'README.md' \
+       'start-dev.sh' \
+       'test-api.sh' \
+       'composer.json' \
+       'composer.lock' \
+       'vendor/phpmailer/phpmailer/README.md' \
+       'vendor/phpmailer/phpmailer/changelog.md' \
+       'vendor/phpmailer/phpmailer/SMTPUTF8.md' \
+       'vendor/phpmailer/phpmailer/COMMITMENT' \
+       'vendor/phpmailer/phpmailer/SECURITY.md' \
+       'vendor/phpmailer/phpmailer/composer.json' \
+       'vendor/phpmailer/phpmailer/get_oauth_token.php' \
        '.env' '.env.*' \
        '.dev/*' '.dev/**' \
        '.git/*' '.git/**' \
        '.DS_Store' '**/.DS_Store' \
+       '.gitignore' '**/.gitignore' \
+       '*.map' '**/*.map' \
        '.vscode/*' '.vscode/**'
-
-  # Add back only the safety placeholders we want to ship (empty cache dir + deny listing)
-  if [[ -f 'cache/.gitignore' ]]; then
-    zip -u "$BACKEND_ZIP" 'cache/.gitignore'
-  fi
+  # Add back only the deny-listing guard for the writable cache directory.
   if [[ -f 'cache/.htaccess' ]]; then
     zip -u "$BACKEND_ZIP" 'cache/.htaccess'
   fi

@@ -35,6 +35,13 @@ bash scripts/check-deploy-zips.sh  # confirm entrypoints + excludes before uploa
 
 These archives mirror the manual steps in this guide (backend zip excludes `.env*`, `uploads/`; frontend zip contains `build/` plus `.htaccess` when present).
 
+Deploy archive policy:
+- `backend-deploy.zip` contains the PHP runtime, required `vendor/`, routes, middleware, utils, cache deny placeholders, and `.htaccess`.
+- `backend-deploy.zip` intentionally excludes `.env*`, uploads, incoming files, logs/cache runtime data, tests, local scripts, README/dev files, composer manifests, source maps, git files, and macOS metadata.
+- `frontend-deploy.zip` contains only the React build output and required public assets. It must not contain source maps, secrets, or git files.
+- Preserve `/api/.env`, `/api/uploads/`, `/api/incoming/`, `/api/logs/`, and writable cache/runtime folders on the server. Do not delete the live `/api` folder unless those server-only files are backed up and restored.
+- Run `bash scripts/check-deploy-zips.sh` before every upload.
+
 ---
 
 ## Prerequisites
