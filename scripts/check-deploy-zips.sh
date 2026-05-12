@@ -51,6 +51,12 @@ check_backend_zip() {
     err "backend zip should not include uploads/"
     exit 1
   fi
+  local backend_htaccess
+  backend_htaccess="$(unzip -p "$BACKEND_ZIP" .htaccess 2>/dev/null || true)"
+  if ! grep -Eq 'logs|cache|incoming|vendor|routes|utils|scripts' <<< "$backend_htaccess"; then
+    err "backend zip .htaccess is missing server-file blocking rules"
+    exit 1
+  fi
   ok "Backend zip contents look good"
 }
 
@@ -69,6 +75,10 @@ check_frontend_zip() {
       err "frontend zip missing .htaccess"
       exit 1
     fi
+  fi
+  if zip_contains "$FRONTEND_ZIP" '\.map$'; then
+    err "frontend zip should not include source maps"
+    exit 1
   fi
   if grep -E -q 'https?://(localhost|127\.0\.0\.1):[0-9]+' < <(unzip -p "$FRONTEND_ZIP" 2>/dev/null || true); then
     err "frontend zip contains a localhost URL with a port"

@@ -56,7 +56,8 @@ log "Creating frontend zip"
 (
   cd "$FRONTEND_DIR/build"
   zip -r "$FRONTEND_ZIP" . \
-    -x '.DS_Store' '**/.DS_Store'
+    -x '.DS_Store' '**/.DS_Store' \
+       '*.map' '**/*.map'
 )
 
 log "Zip summaries"
