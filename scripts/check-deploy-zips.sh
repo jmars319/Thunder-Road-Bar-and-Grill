@@ -55,8 +55,14 @@ check_backend_zip() {
     err "backend zip contains .env files"
     exit 1
   fi
-  if zip_name_matches "$BACKEND_ZIP" '(^|/)uploads/'; then
-    err "backend zip should not include uploads/"
+  if ! zip_name_matches "$BACKEND_ZIP" '^uploads/[.]htaccess$'; then
+    err "backend zip missing uploads/.htaccess guard"
+    exit 1
+  fi
+  local upload_entries
+  upload_entries="$(unzip -Z1 "$BACKEND_ZIP" | grep -E '^uploads/' || true)"
+  if printf '%s\n' "$upload_entries" | grep -Ev '^uploads/?$|^uploads/[.]htaccess$' >/dev/null; then
+    err "backend zip should not include uploaded media; only uploads/.htaccess is allowed"
     exit 1
   fi
   if zip_name_matches "$BACKEND_ZIP" '(^|/)(tests|scripts)/'; then

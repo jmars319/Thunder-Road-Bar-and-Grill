@@ -62,6 +62,9 @@ log "Creating backend zip"
   if [[ -f 'cache/.htaccess' ]]; then
     zip -u "$BACKEND_ZIP" 'cache/.htaccess'
   fi
+  if [[ -f 'uploads/.htaccess' ]]; then
+    zip -u "$BACKEND_ZIP" 'uploads/.htaccess'
+  fi
 )
 
 log "Creating frontend zip"
