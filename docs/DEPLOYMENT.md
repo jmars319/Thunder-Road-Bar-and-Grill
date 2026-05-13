@@ -247,78 +247,16 @@ vendor/:        755
 
 ---
 
-## Phase 4: Upload Frontend
-
-### 4.1 Build Production Frontend
+## Phase 4: Build And Upload Site Archive
 
 ```bash
-cd frontend
-
-# Create production environment
-cat > .env.production << 'EOF'
-REACT_APP_API_BASE=https://trbgmidway.com/api
-EOF
-
-# Build
-npm run build
-
-# Verify build folder
-ls -la build/
+bash scripts/make-deploy-zips.sh
+bash scripts/check-deploy-zips.sh
 ```
 
-### 4.2 Upload to GoDaddy
+The normal deploy artifact is `site-deploy.zip`. Upload it to the public web root and extract-overwrite. Do not delete the live root or `api/` folder first; preserve server-owned `api/.env`, `api/uploads/`, `api/cache/`, `api/logs/`, and runtime media between releases.
 
-**Via cPanel File Manager:**
-1. Navigate to `public_html/`
-2. **Delete old files** (if upgrading existing site)
-3. Upload **contents** of `frontend/build/`:
-   - `index.html`
-   - `static/` (entire folder)
-   - `favicon.ico`
-   - `manifest.json`
-   - `robots.txt`
-   - `asset-manifest.json`
-
-**Via FTP:**
-```bash
-cd frontend/build
-# Upload ALL files to public_html/
-```
-
-### 4.3 Create/Verify .htaccess for React Router
-
-In `public_html/.htaccess`:
-```apache
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  
-  # Don't rewrite files or directories
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  
-  # Rewrite everything else to index.html
-  RewriteRule ^ index.html [L]
-</IfModule>
-
-# Security Headers
-<IfModule mod_headers.c>
-  Header set X-Content-Type-Options "nosniff"
-  Header set X-Frame-Options "DENY"
-  Header set Referrer-Policy "no-referrer"
-  Header set X-XSS-Protection "1; mode=block"
-</IfModule>
-
-# Cache static assets
-<IfModule mod_expires.c>
-  ExpiresActive On
-  ExpiresByType image/jpg "access plus 1 year"
-  ExpiresByType image/jpeg "access plus 1 year"
-  ExpiresByType image/png "access plus 1 year"
-  ExpiresByType text/css "access plus 1 month"
-  ExpiresByType application/javascript "access plus 1 month"
-</IfModule>
-```
+The archive contains the Vite public build at `/`, the admin build under `/admin`, root `.htaccess`, and the PHP backend under `/api`.
 
 ---
 
@@ -594,11 +532,12 @@ public_html/
 #### 2. Build & Upload (10 min)
 ```bash
 # Local terminal:
-cd frontend && npm run build
+bash scripts/make-deploy-zips.sh
+bash scripts/check-deploy-zips.sh
 
 # Via cPanel File Manager:
-# 1. Upload backend/ files to public_html/api/ (exclude .env, uploads/, cache/, logs/)
-# 2. Upload frontend/build/ files to public_html/ (overwrite existing)
+# Upload site-deploy.zip to public_html/ and extract-overwrite.
+# Preserve api/.env, uploads/, cache/, logs/, and other server-owned runtime data.
 ```
 
 #### 3. Verify (5 min)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate iOS splash images referenced in frontend/public/index.html
+Generate iOS splash images referenced in frontend/index.html
 by cover-resizing the canonical hero image and saving PNGs to
 frontend/public/ with the exact filenames referenced.
 
@@ -13,7 +13,7 @@ from PIL import Image
 # Resolve repo root and paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
-INDEX_HTML = os.path.join(REPO_ROOT, 'frontend', 'public', 'index.html')
+INDEX_HTML = os.path.join(REPO_ROOT, 'frontend', 'index.html')
 OUT_DIR = os.path.join(REPO_ROOT, 'frontend', 'public', 'splash')
 HERO_SRC = os.path.join(REPO_ROOT, 'backend', 'uploads', '1760554663370.jpg')
 

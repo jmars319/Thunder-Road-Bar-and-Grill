@@ -272,8 +272,8 @@ FRONTEND_URL=https://trbgmidway.com
 **Via cPanel File Manager:**
 1. Navigate to: cPanel → File Manager
 2. Go to `public_html/`
-3. Create folder: `api/`
-4. Upload all `backend` files
+3. Use the repo-level `site-deploy.zip` workflow for normal releases.
+4. Preserve the live `api/.env`, `api/uploads/`, `api/cache/`, and `api/logs/` folders between releases.
 
 #### 4. File Permissions
 
@@ -287,19 +287,14 @@ cache/:         755 (writable)
 logs/:          755 (writable)
 ```
 
-#### 5. Frontend Deployment
+#### 5. Site Deployment
 
 ```bash
-# Build production frontend
-cd frontend
-npm run build
-
-# Update API URL in build
-# Verify frontend/.env.production has:
-REACT_APP_API_BASE=https://trbgmidway.com/api
+bash scripts/make-deploy-zips.sh
+bash scripts/check-deploy-zips.sh
 ```
 
-Upload `frontend/build/*` to `public_html/`
+Upload `site-deploy.zip` to the public web root and extract-overwrite. The archive contains the public Vite build, admin bundle, and backend files under `/api`.
 
 #### 6. Verification
 

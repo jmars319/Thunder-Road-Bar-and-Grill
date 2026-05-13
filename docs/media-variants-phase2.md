@@ -51,7 +51,7 @@ bash scripts/check-deploy-zips.sh
 ### 4. Additional Checks
 
 * Confirm no Google Fonts references remain:  
-  `rg -n "fonts.googleapis.com|fonts.gstatic.com" frontend/public/index.html`
+  `rg -n "fonts.googleapis.com|fonts.gstatic.com" frontend/index.html`
 * Confirm public assets list is up to date:  
   `bash scripts/verify-public-assets.sh`
 * Confirm error envelopes stay standard:  

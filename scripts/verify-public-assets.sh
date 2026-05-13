@@ -23,7 +23,7 @@ assert_single_file() {
 check_index_ref() {
   pattern="$1"
   label="$2"
-  grep -q "$pattern" frontend/public/index.html || fail "index.html missing $label reference"
+  grep -q "$pattern" frontend/index.html || fail "index.html missing $label reference"
 }
 
 check_manifest_ref() {
@@ -68,7 +68,7 @@ check_index_ref 'favicon-32x32.png' 'favicon 32x32'
 check_index_ref 'favicon-48x48.png' 'favicon 48x48'
 check_index_ref 'apple-touch-icon.png' 'apple-touch-icon'
 check_index_ref 'mstile-150x150.png' 'ms tile meta'
-if grep -q 'safari-pinned-tab.svg' frontend/public/index.html; then
+if grep -q 'safari-pinned-tab.svg' frontend/index.html; then
   check_index_ref 'safari-pinned-tab.svg' 'safari pinned tab icon'
 fi
 

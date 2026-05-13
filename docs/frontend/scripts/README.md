@@ -5,7 +5,7 @@ This folder contains small helper scripts used to generate and validate the publ
 
 Files
 - `generate_social_with_logo.py` — generate various Open Graph (OG) images compositing the site's hero image and logo. Requires Python 3 and Pillow.
-- `generate_ios_splash.py` — generate iOS splash images by parsing `frontend/public/index.html` for apple-touch-startup-image link tags.
+- `generate_ios_splash.py` — generate iOS splash images by parsing `frontend/index.html` for apple-touch-startup-image link tags.
 - `generate_favicon_ico.py` — build a multi-resolution `favicon.ico` from PNG sources.
 - `check_public_assets.js` — Node script used by CI to verify referenced public assets exist and validate dimensions for filename-encoded sizes.
 
@@ -35,6 +35,6 @@ CI note
 
 The repository includes a GitHub Actions workflow `.github/workflows/public-assets-check.yml` which runs `node ./scripts/check_public_assets.js` to fail the run when referenced assets are missing or have dimension mismatches.
 
-If you change the public asset layout, update `frontend/public/index.html` and `frontend/public/manifest.json` and rerun the checker locally.
+If you change the public asset layout, update `frontend/index.html` and `frontend/public/manifest.json` and rerun the checker locally.
 
 ``` 

@@ -7,7 +7,7 @@ Goal: verify that no hero/menu/gallery images are being manually preloaded in-ap
 ```bash
 rg -n 'rel="preload"'
 ```
-Output: only the self-hosted font preloads in `frontend/public/index.html` (lines 137–150).
+Output: only the self-hosted font preloads in `frontend/index.html`.
 
 ```bash
 rg -n 'fetchpriority'

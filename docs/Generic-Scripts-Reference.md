@@ -12,21 +12,21 @@ This document contains **portable, reusable tooling only**. Project-specific ver
 ## Deployment Helpers
 
 ### scripts/make-deploy-zips.sh
-- **Purpose:** Builds production deployment archives (commonly for cPanel/manual uploads) by zipping backend and frontend outputs separately.
+- **Purpose:** Builds the production cPanel deployment archive.
 - **Key actions:**
-  - Deletes prior frontend/backend deploy archives and legacy names to avoid stale bundles.
-  - Zips `backend/` into `backend-deploy.zip` while excluding secrets and runtime data (commonly `.env*`, `uploads/`, `.DS_Store`).
-  - Zips `frontend/build/` into `frontend-deploy.zip`, and may inject repo-root `.htaccess` at the archive root (Apache rewrite compatibility).
+  - Deletes prior `site-deploy.zip` plus legacy frontend/backend deploy archive names to avoid stale bundles.
+  - Builds the Vite public/admin frontend and stages it at the archive root with the admin bundle under `admin/`.
+  - Stages the PHP backend under `api/` while excluding secrets, uploads/media, logs/cache/runtime data, source maps, git files, and dev/test files.
   - Emits size/listing summaries (`ls`, `unzip -l`) for quick inspection.
-- **Dependencies:** `zip`, `unzip`, writable repo root, finished `frontend/build/`, repo-root `.htaccess` (if applicable).
+- **Dependencies:** `zip`, `unzip`, writable repo root, finished frontend build output, repo-root `.htaccess`.
 - **Usage:** `bash scripts/make-deploy-zips.sh`
 
 ### scripts/check-deploy-zips.sh
-- **Purpose:** Verifies deploy archives contain exactly what production expects.
+- **Purpose:** Verifies `site-deploy.zip` contains exactly what production expects.
 - **Key actions:**
-  - Confirms `backend-deploy.zip` and `frontend-deploy.zip` exist.
+  - Confirms `site-deploy.zip` exists.
   - Lists archive contents for manual review.
-  - Runs automated checks (e.g., ensures backend zip contains required entry points and excludes `.env*` / `uploads/`).
+  - Runs automated checks for required root, admin, and `api/` entries while rejecting `.env*`, uploads/media, logs/cache/runtime data, source maps, repo metadata, and dev/test files.
 - **Dependencies:** `unzip`, `grep`, `bash`.
 - **Usage:** `bash scripts/check-deploy-zips.sh`
 
