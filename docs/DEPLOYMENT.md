@@ -5,6 +5,8 @@
 **Total Monthly Cost:** $8/month (included in existing GoDaddy plan)  
 **Estimated Time:** 15-20 minutes (updates), 45 minutes (fresh deployment)
 
+For the short standard policy shared by the cPanel sites, see `docs/CPANEL_DEPLOYMENT_STANDARD.md`.
+
 > **📌 PENDING DEPLOYMENT:** 5 commits from November 22, 2025 await deployment.  
 > See [November 22 Updates](#november-22-2025-pending-updates) section below for quick update instructions.
 

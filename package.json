@@ -25,7 +25,8 @@
     "be:stop": "bash ./scripts/dev-backend-stop.sh",
     "be:restart": "bash ./scripts/dev-backend-restart.sh",
     "deploy:make": "bash ./scripts/make-deploy-zips.sh",
-    "deploy:check": "bash ./scripts/check-deploy-zips.sh"
+    "deploy:check": "bash ./scripts/check-deploy-zips.sh",
+    "deploy:config": "bash ./scripts/make-server-config-zip.sh"
   },
   "packageManager": "npm@11.6.1",
   "engines": {
