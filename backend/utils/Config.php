@@ -134,7 +134,7 @@ class Config {
      * @return array
      */
     public static function getAllowedOrigins() {
-        $origins = self::get('FRONTEND_URL', 'http://localhost:3000');
+        $origins = self::get('FRONTEND_URL', 'https://trbgmidway.com');
         return array_map('trim', explode(',', $origins));
     }
 }

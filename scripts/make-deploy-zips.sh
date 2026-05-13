@@ -4,8 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
-BACKEND_ZIP="$ROOT_DIR/backend-deploy.zip"
-FRONTEND_ZIP="$ROOT_DIR/frontend-deploy.zip"
+FRONTEND_BUILD_DIR="$FRONTEND_DIR/build"
+STAGE_DIR="$ROOT_DIR/.deploy-staging"
+SITE_ZIP="$ROOT_DIR/site-deploy.zip"
 
 log() { printf '\033[1;34m[MAKE]\033[0m %s\n' "$*"; }
 ok() { printf '\033[1;32m[OK]\033[0m %s\n' "$*"; }
@@ -21,72 +22,79 @@ require_cmd() {
 require_cmd zip
 require_cmd unzip
 require_cmd npm
+require_cmd rsync
 
 log "Removing old deploy zips"
-rm -f "$BACKEND_ZIP" "$FRONTEND_ZIP"
+rm -f "$SITE_ZIP" "$ROOT_DIR/backend-deploy.zip" "$ROOT_DIR/frontend-deploy.zip"
+rm -rf "$STAGE_DIR"
+mkdir -p "$STAGE_DIR/api"
 
-log "Running fresh frontend build (npm run build)"
+log "Running fresh frontend build"
 (cd "$FRONTEND_DIR" && npm run build)
 
-log "Creating backend zip"
-(
-  cd "$BACKEND_DIR"
-  zip -r "$BACKEND_ZIP" . \
-    -x 'uploads/*' 'uploads/**' \
-       'incoming/*' 'incoming/**' \
-       'cache/*' 'cache/**' \
-       'logs/*' 'logs/**' \
-       '*.log' '**/*.log' \
-       'tests/*' 'tests/**' \
-       'scripts/*' 'scripts/**' \
-       'README.md' \
-       'start-dev.sh' \
-       'test-api.sh' \
-       'composer.json' \
-       'composer.lock' \
-       'vendor/phpmailer/phpmailer/README.md' \
-       'vendor/phpmailer/phpmailer/changelog.md' \
-       'vendor/phpmailer/phpmailer/SMTPUTF8.md' \
-       'vendor/phpmailer/phpmailer/COMMITMENT' \
-       'vendor/phpmailer/phpmailer/SECURITY.md' \
-       'vendor/phpmailer/phpmailer/composer.json' \
-       'vendor/phpmailer/phpmailer/get_oauth_token.php' \
-       '.env' '.env.*' \
-       '.dev/*' '.dev/**' \
-       '.git/*' '.git/**' \
-       '.DS_Store' '**/.DS_Store' \
-       '.gitignore' '**/.gitignore' \
-       '*.map' '**/*.map' \
-       '.vscode/*' '.vscode/**'
-  # Add back only the deny-listing guard for the writable cache directory.
-  if [[ -f 'cache/.htaccess' ]]; then
-    zip -u "$BACKEND_ZIP" 'cache/.htaccess'
-  fi
-  if [[ -f 'uploads/.htaccess' ]]; then
-    zip -u "$BACKEND_ZIP" 'uploads/.htaccess'
-  fi
-)
-
-log "Creating frontend zip"
-(
-  cd "$FRONTEND_DIR/build"
-  zip -r "$FRONTEND_ZIP" . \
-    -x '.DS_Store' '**/.DS_Store' \
-       '*.map' '**/*.map'
-)
-
-log "Zip summaries"
-ls -lh "$BACKEND_ZIP" "$FRONTEND_ZIP"
-# Temporarily disable pipefail so previewing with head doesn't cause a non-zero exit
-set +o pipefail
-unzip -l "$BACKEND_ZIP" | head -n 20
-unzip -l "$FRONTEND_ZIP" | head -n 20
-set -o pipefail
-
-log "Sanity check: backend zip should not include runtime cache/log artifacts"
-if unzip -l "$BACKEND_ZIP" | rg -q 'cache/(error-alerts|ratelimit)|cache/email-previews\.log|logs/|logs/app\.log'; then
-  err "Backend zip includes runtime cache/log artifacts (cache/, logs/, previews). Fix exclusions before deploying."
-  exit 1
+if [[ -f "$FRONTEND_DIR/public/.htaccess" ]]; then
+  cp "$FRONTEND_DIR/public/.htaccess" "$FRONTEND_BUILD_DIR/.htaccess"
 fi
 
-ok "Created backend-deploy.zip and frontend-deploy.zip"
+log "Staging frontend at web root"
+rsync -a --delete \
+  --exclude='.DS_Store' \
+  --exclude='*/.DS_Store' \
+  --exclude='*.map' \
+  --exclude='*/.map' \
+  "$FRONTEND_BUILD_DIR"/ "$STAGE_DIR"/
+
+log "Staging backend under api/"
+rsync -a --delete \
+  --exclude='uploads/' \
+  --exclude='incoming/' \
+  --exclude='cache/' \
+  --exclude='logs/' \
+  --exclude='tests/' \
+  --exclude='scripts/' \
+  --exclude='README.md' \
+  --exclude='start-dev.sh' \
+  --exclude='test-api.sh' \
+  --exclude='composer.json' \
+  --exclude='composer.lock' \
+  --exclude='.env' \
+  --exclude='.env.*' \
+  --exclude='.dev/' \
+  --exclude='.git/' \
+  --exclude='.DS_Store' \
+  --exclude='*/.DS_Store' \
+  --exclude='.gitignore' \
+  --exclude='*/.gitignore' \
+  --exclude='*.map' \
+  --exclude='*/.map' \
+  --exclude='vendor/**/README*' \
+  --exclude='vendor/**/readme*' \
+  --exclude='vendor/**/CHANGELOG*' \
+  --exclude='vendor/**/changelog*' \
+  --exclude='vendor/**/composer.json' \
+  --exclude='vendor/phpmailer/phpmailer/SMTPUTF8.md' \
+  --exclude='vendor/phpmailer/phpmailer/COMMITMENT' \
+  --exclude='vendor/phpmailer/phpmailer/SECURITY.md' \
+  --exclude='vendor/phpmailer/phpmailer/get_oauth_token.php' \
+  "$BACKEND_DIR"/ "$STAGE_DIR/api"/
+
+if [[ -f "$BACKEND_DIR/cache/.htaccess" ]]; then
+  mkdir -p "$STAGE_DIR/api/cache"
+  cp "$BACKEND_DIR/cache/.htaccess" "$STAGE_DIR/api/cache/.htaccess"
+fi
+if [[ -f "$BACKEND_DIR/uploads/.htaccess" ]]; then
+  mkdir -p "$STAGE_DIR/api/uploads"
+  cp "$BACKEND_DIR/uploads/.htaccess" "$STAGE_DIR/api/uploads/.htaccess"
+fi
+
+log "Creating site zip"
+(cd "$STAGE_DIR" && zip -r "$SITE_ZIP" . -x '__MACOSX/*' -x '.DS_Store' -x '*/.DS_Store' -x '*.map' -x '*/.map')
+rm -rf "$STAGE_DIR"
+
+log "Zip summary"
+ls -lh "$SITE_ZIP"
+set +o pipefail
+unzip -l "$SITE_ZIP" | head -n 35
+set -o pipefail
+
+ok "Created site-deploy.zip"

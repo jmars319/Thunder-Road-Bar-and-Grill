@@ -11,7 +11,7 @@
 */
 
 import React, { useEffect, useState } from 'react';
-import { ReactComponent as GoogleIcon } from '../../assets/google-g.svg';
+import googleIconUrl from '../../assets/google-g.svg';
 import cachedFetch, { clearCacheFor } from '../../lib/cachedFetch';
 import { getApiUrl } from '../../config/api';
 
@@ -22,8 +22,8 @@ const ContactModal = React.lazy(() => import('./ContactModal'));
 const ORDER_ONLINE_URL = 'https://direct.chownow.com/order/42923/locations/64729';
 // ensure lazy imports and SVG components are recognized by some static analyzers as used
 void HoursModal; void PrivacyModal; void TermsModal; void ContactModal;
-// mark the inline Google SVG component as intentionally used
-void GoogleIcon;
+// mark the Google SVG URL as intentionally used
+void googleIconUrl;
 
 export default function PublicFooter({ onGoToAdmin }) {
   // NOTE: Footer uses token classes (`bg-surface`, `text-text-inverse`,
@@ -287,7 +287,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                 aria-label="Thunder Road on Google"
                 className="footer-social-link text-text-muted hover:text-text-primary transition"
               >
-                <GoogleIcon width={20} height={20} className="inline-block" aria-hidden="true" />
+                <img src={googleIconUrl} width={20} height={20} className="inline-block" alt="" aria-hidden="true" />
               </a>
             ) : (
               <a
@@ -297,7 +297,7 @@ export default function PublicFooter({ onGoToAdmin }) {
                 aria-label="Google"
                 className="footer-social-link text-text-muted hover:text-text-primary transition"
               >
-                <GoogleIcon width={20} height={20} className="inline-block" aria-hidden="true" />
+                <img src={googleIconUrl} width={20} height={20} className="inline-block" alt="" aria-hidden="true" />
               </a>
             )}
           </div>

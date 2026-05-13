@@ -4,8 +4,9 @@ Use extract-overwrite deployments. Do not delete the live site root or `api/` fo
 
 ## Normal Archives
 
-- `frontend-deploy.zip`: extract into the public web root.
-- `backend-deploy.zip`: extract into the live `api/` folder.
+- `site-deploy.zip`: extract-overwrite into the public web root.
+
+The archive contains the public frontend at the root, the admin frontend under `admin/`, and the PHP backend under `api/`.
 
 ## Server-Owned Files
 
@@ -17,7 +18,7 @@ Preserve these on the host between deploys:
 - `api/logs/`
 - `api/cache/` and other writable runtime folders
 
-Normal deploy zips intentionally exclude secrets, uploaded/incoming media, logs/cache runtime data, source maps, git metadata, tests, local scripts, and dev-only files. TRBG intentionally packages required `vendor/` runtime code for shared hosting.
+Normal deploy zips intentionally exclude secrets, uploaded/incoming media, logs/cache runtime data, source maps, git metadata, tests, local scripts, and dev-only files. TRBG intentionally packages required `api/vendor/` runtime code for shared hosting.
 
 ## Optional Config Restore
 

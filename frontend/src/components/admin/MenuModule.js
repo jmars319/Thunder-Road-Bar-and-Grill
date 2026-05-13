@@ -812,6 +812,7 @@ function MenuModule() {
                     </button>
                   </div>
                 )}
+                {(editingCategory.gallery_image_responsive || editingCategory.gallery_image_url) && (
                   <div className="mt-2">
                     <ResponsiveImagePreview
                       entry={editingCategory.gallery_image_responsive}
@@ -822,7 +823,7 @@ function MenuModule() {
                       sizes="(max-width: 768px) 80vw, 320px"
                     />
                   </div>
-                }
+                )}
               </div>
               <div className="flex gap-2">
                   <button

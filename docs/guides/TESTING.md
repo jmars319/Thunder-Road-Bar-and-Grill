@@ -1,6 +1,6 @@
 # TESTING
 
-TRBG currently ships with a React frontend (Jest via `react-scripts`) and a PHP backend without an automated PHPUnit suite. This guide explains the supported testing commands plus the manual smoke tests maintained in the repo.
+TRBG currently ships with a Vite React frontend (Vitest) and a PHP backend without an automated PHPUnit suite. This guide explains the supported testing commands plus the manual smoke tests maintained in the repo.
 
 ## Frontend (React + Jest)
 

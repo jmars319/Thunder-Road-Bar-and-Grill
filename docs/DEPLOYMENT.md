@@ -31,16 +31,15 @@ This application deploys entirely to **GoDaddy Deluxe hosting**, eliminating the
 From repo root:
 
 ```bash
-bash scripts/make-deploy-zips.sh   # build backend-deploy.zip + frontend-deploy.zip
+bash scripts/make-deploy-zips.sh   # build site-deploy.zip
 bash scripts/check-deploy-zips.sh  # confirm entrypoints + excludes before upload
 ```
 
-These archives mirror the manual steps in this guide (backend zip excludes `.env*`, `uploads/`; frontend zip contains `build/` plus `.htaccess` when present).
+This archive mirrors the manual steps in this guide: public files at the web root, admin files under `admin/`, and backend files under `api/`.
 
 Deploy archive policy:
-- `backend-deploy.zip` contains the PHP runtime, required `vendor/`, routes, middleware, utils, cache/upload deny placeholders, and `.htaccess`.
-- `backend-deploy.zip` intentionally excludes `.env*`, uploaded media, incoming files, logs/cache runtime data, tests, local scripts, README/dev files, composer manifests, source maps, git files, and macOS metadata. It includes `uploads/.htaccess` as the upload-directory guard only.
-- `frontend-deploy.zip` contains only the React build output and required public assets. It must not contain source maps, secrets, or git files.
+- `site-deploy.zip` contains the Vite public build, Vite admin build, PHP runtime, required `api/vendor/`, routes, middleware, utils, cache/upload deny placeholders, and `.htaccess`.
+- `site-deploy.zip` intentionally excludes `.env*`, uploaded media, incoming files, logs/cache runtime data, tests, local scripts, README/dev files, composer manifests, source maps, git files, and macOS metadata. It includes `api/uploads/.htaccess` as the upload-directory guard only.
 - Preserve `/api/.env`, `/api/uploads/`, `/api/incoming/`, `/api/logs/`, and writable cache/runtime folders on the server. Do not delete the live `/api` folder unless those server-only files are backed up and restored.
 - Run `bash scripts/check-deploy-zips.sh` before every upload.
 

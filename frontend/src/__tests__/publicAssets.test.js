@@ -9,11 +9,15 @@
   - Keeps the runtime public folder consistent for builds and deployment.
 */
 /* eslint-env jest, node */
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
-const INDEX_HTML = path.join(PUBLIC_DIR, 'index.html');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const FRONTEND_DIR = path.join(__dirname, '..', '..');
+const PUBLIC_DIR = path.join(FRONTEND_DIR, 'public');
+const INDEX_HTML = path.join(FRONTEND_DIR, 'index.html');
 const MANIFEST = path.join(PUBLIC_DIR, 'manifest.json');
 
 function read(file) {
@@ -30,7 +34,10 @@ function findMatches(content, regex) {
 function checkExistence(paths) {
   const missing = [];
   for (const p of paths) {
-    const clean = p.replace(/^%PUBLIC_URL%\//, '');
+    let clean = p.replace(/^%PUBLIC_URL%\//, '').replace(/^\//, '');
+    if (clean.startsWith('apple-splash')) {
+      clean = `splash/${clean}`;
+    }
     const fp = path.join(PUBLIC_DIR, clean);
     if (!fs.existsSync(fp)) missing.push(clean);
   }
@@ -46,7 +53,7 @@ describe('public assets', () => {
   it('referenced OG images exist under public/og', () => {
     const html = read(INDEX_HTML);
     const manifest = read(MANIFEST);
-    const ogRegex = /%PUBLIC_URL%\/([\w/-]+og[\w-]*\.png)/g;
+    const ogRegex = /(?:%PUBLIC_URL%\/|\/)([\w/-]+og[\w-]*\.png)/g;
     const matches = findMatches(html + '\n' + manifest, ogRegex);
     const missing = checkExistence(matches);
     expect(missing).toEqual([]);
@@ -54,7 +61,7 @@ describe('public assets', () => {
 
   it('referenced apple-splash images exist under public/splash', () => {
     const html = read(INDEX_HTML);
-    const splashRegex = /%PUBLIC_URL%\/([\w/-]*apple-splash[\w-]*-?\d+x\d+\.png)/g;
+    const splashRegex = /(?:%PUBLIC_URL%\/|\/)([\w/-]*apple-splash[\w-]*-?\d+x\d+\.png)/g;
     const matches = findMatches(html, splashRegex);
     const missing = checkExistence(matches);
     expect(missing).toEqual([]);

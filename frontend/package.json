@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "lucide-react": "^0.545.0",
+    "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet-async": "^2.0.5",
@@ -14,23 +15,26 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^14.3.1",
     "@testing-library/user-event": "^13.5.0",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "jsdom": "^27.3.0",
     "playwright": "^1.57.0",
-    "react-scripts": "5.0.1",
     "stylelint": "^16.25.0",
     "stylelint-config-standard": "^36.0.1",
-    "stylelint-order": "^6.0.4"
+    "stylelint-order": "^6.0.4",
+    "vite": "^7.3.0",
+    "vitest": "^4.1.0"
   },
   "scripts": {
-    "start": "PORT=${PORT:-3204} react-scripts start",
-    "build": "GENERATE_SOURCEMAP=false react-scripts build",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"src/**/*.{js,jsx}\"",
+    "start": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "lint": "eslint --config eslint.config.cjs \"src/**/*.{js,jsx}\"",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",
     "lint:fix": "eslint \"src/**/*.{js,jsx}\" --fix",
     "check:public-assets": "node ./scripts/check_public_assets.js",
     "cls:headless": "node ./scripts/cls_headless.js",
-    "test:ci": "react-scripts test --watchAll=false --runInBand",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "test:ci": "vitest run",
+    "test": "vitest"
   },
   "eslintConfig": {
     "extends": [

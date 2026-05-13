@@ -2,16 +2,16 @@
   RewriteEngine On
   RewriteBase /
   
-  # Serve uploaded media directly from /api/uploads while keeping /uploads URLs stable
-  RewriteRule ^uploads/(.*)$ api/uploads/$1 [L]
-  
   # Don't rewrite files or directories
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  
-  # Don't rewrite static uploads
-  RewriteCond %{REQUEST_URI} !^/uploads
-  
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^uploads/(.*)$ api/uploads/$1 [L]
+
+  # Keep the admin bundle separate from the public site bundle.
+  RewriteRule ^admin(?:/.*)?$ admin/index.html [L]
+
   # Don't rewrite API requests
   RewriteCond %{REQUEST_URI} !^/api
   

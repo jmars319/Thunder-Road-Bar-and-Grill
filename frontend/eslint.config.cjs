@@ -23,6 +23,16 @@ module.exports = {
       FormData: 'readonly',
       Blob: 'readonly',
       IntersectionObserver: 'readonly',
+      ResizeObserver: 'readonly',
+      MutationObserver: 'readonly',
+      PerformanceObserver: 'readonly',
+      AbortController: 'readonly',
+      URL: 'readonly',
+      URLSearchParams: 'readonly',
+      DOMParser: 'readonly',
+      Node: 'readonly',
+      performance: 'readonly',
+      getComputedStyle: 'readonly',
 
       // Node/process
       process: 'readonly',
@@ -39,10 +49,16 @@ module.exports = {
 
       // Jest globals
       test: 'readonly',
+      it: 'readonly',
       expect: 'readonly',
       describe: 'readonly',
+      beforeAll: 'readonly',
       beforeEach: 'readonly',
+      afterAll: 'readonly',
       afterEach: 'readonly'
+      ,
+      jest: 'readonly',
+      vi: 'readonly'
     }
   },
   rules: {
