@@ -55,13 +55,18 @@ zip_contains '^robots[.]txt$'
 zip_contains '^sitemap[.]xml$'
 zip_contains '^[.]htaccess$'
 zip_contains '^api/index[.]php$'
+zip_contains '^api/[.]env$'
 zip_contains '^api/router[.]php$'
 zip_contains '^api/vendor/autoload[.]php$'
 zip_contains '^api/uploads/[.]htaccess$'
 zip_contains '^api/cache/[.]htaccess$'
 zip_contains '^api/[.]htaccess$'
 
-zip_absent '(^|/)[.]env($|[.])' "site zip contains .env files"
+env_entries="$(unzip -Z1 "$SITE_ZIP" | grep -E '(^|/)[.]env($|[.])' || true)"
+if printf '%s\n' "$env_entries" | grep -Ev '^api/[.]env$' >/dev/null; then
+  err "site zip contains unexpected .env files"
+  exit 1
+fi
 zip_absent '^api/(incoming|logs)/' "site zip contains server-owned incoming files or logs"
 zip_absent '^api/(tests|scripts)/' "site zip contains backend tests or local scripts"
 zip_absent '^api/(composer[.](json|lock)|README[.]md|start-dev[.]sh|test-api[.]sh)$' "site zip contains backend dev files"

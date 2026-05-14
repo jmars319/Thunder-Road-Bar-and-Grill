@@ -12,13 +12,12 @@ The archive contains the public frontend at the root, the admin frontend under `
 
 Preserve these on the host between deploys:
 
-- `api/.env`
 - `api/uploads/`
 - `api/incoming/`
 - `api/logs/`
 - `api/cache/` and other writable runtime folders
 
-Normal deploy zips intentionally exclude secrets, uploaded/incoming media, logs/cache runtime data, source maps, git metadata, tests, local scripts, and dev-only files. TRBG intentionally packages required `api/vendor/` runtime code for shared hosting.
+Normal deploy zips intentionally package ignored `backend/.env.production` as `api/.env` and exclude local env files, uploaded/incoming media, logs/cache runtime data, source maps, git metadata, tests, local scripts, and dev-only files. TRBG intentionally packages required `api/vendor/` runtime code for shared hosting.
 
 ## Optional Config Restore
 

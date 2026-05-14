@@ -7,6 +7,7 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 FRONTEND_BUILD_DIR="$FRONTEND_DIR/build"
 STAGE_DIR="$ROOT_DIR/.deploy-staging"
 SITE_ZIP="$ROOT_DIR/site-deploy.zip"
+PROD_ENV_FILE="$BACKEND_DIR/.env.production"
 
 log() { printf '\033[1;34m[MAKE]\033[0m %s\n' "$*"; }
 ok() { printf '\033[1;32m[OK]\033[0m %s\n' "$*"; }
@@ -23,6 +24,15 @@ require_cmd zip
 require_cmd unzip
 require_cmd npm
 require_cmd rsync
+
+if [[ ! -f "$PROD_ENV_FILE" ]]; then
+  err "backend/.env.production is required so site-deploy.zip can include api/.env"
+  exit 1
+fi
+if grep -Eiq '^[A-Za-z_][A-Za-z0-9_]*=.*(REPLACE_WITH|CHANGE_ME|<your_|your_|cpanel_|YOUR_|TODO|TBD)' "$PROD_ENV_FILE"; then
+  err "backend/.env.production contains placeholder values; update it before building site-deploy.zip"
+  exit 1
+fi
 
 log "Removing old deploy zips"
 rm -f "$SITE_ZIP" "$ROOT_DIR/backend-deploy.zip" "$ROOT_DIR/frontend-deploy.zip"
@@ -77,6 +87,8 @@ rsync -a --delete \
   --exclude='vendor/phpmailer/phpmailer/SECURITY.md' \
   --exclude='vendor/phpmailer/phpmailer/get_oauth_token.php' \
   "$BACKEND_DIR"/ "$STAGE_DIR/api"/
+
+cp "$PROD_ENV_FILE" "$STAGE_DIR/api/.env"
 
 if [[ -f "$BACKEND_DIR/cache/.htaccess" ]]; then
   mkdir -p "$STAGE_DIR/api/cache"

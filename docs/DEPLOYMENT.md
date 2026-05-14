@@ -39,8 +39,8 @@ This archive mirrors the manual steps in this guide: public files at the web roo
 
 Deploy archive policy:
 - `site-deploy.zip` contains the Vite public build, Vite admin build, PHP runtime, required `api/vendor/`, routes, middleware, utils, cache/upload deny placeholders, and `.htaccess`.
-- `site-deploy.zip` intentionally excludes `.env*`, uploaded media, incoming files, logs/cache runtime data, tests, local scripts, README/dev files, composer manifests, source maps, git files, and macOS metadata. It includes `api/uploads/.htaccess` as the upload-directory guard only.
-- Preserve `/api/.env`, `/api/uploads/`, `/api/incoming/`, `/api/logs/`, and writable cache/runtime folders on the server. Do not delete the live `/api` folder unless those server-only files are backed up and restored.
+- `site-deploy.zip` packages ignored `backend/.env.production` as `api/.env`, intentionally excludes all other `.env*`, uploaded media, incoming files, logs/cache runtime data, tests, local scripts, README/dev files, composer manifests, source maps, git files, and macOS metadata. It includes `api/uploads/.htaccess` as the upload-directory guard only.
+- Preserve `/api/uploads/`, `/api/incoming/`, `/api/logs/`, and writable cache/runtime folders on the server. Do not delete the live `/api` folder unless server-only runtime files are backed up and restored.
 - Run `bash scripts/check-deploy-zips.sh` before every upload.
 
 ---
@@ -254,7 +254,7 @@ bash scripts/make-deploy-zips.sh
 bash scripts/check-deploy-zips.sh
 ```
 
-The normal deploy artifact is `site-deploy.zip`. Upload it to the public web root and extract-overwrite. Do not delete the live root or `api/` folder first; preserve server-owned `api/.env`, `api/uploads/`, `api/cache/`, `api/logs/`, and runtime media between releases.
+The normal deploy artifact is `site-deploy.zip`. Upload it to the public web root and extract-overwrite. Do not delete the live root or `api/` folder first; preserve server-owned `api/uploads/`, `api/cache/`, `api/logs/`, and runtime media between releases. The zip refreshes `api/.env` from local `backend/.env.production`.
 
 The archive contains the Vite public build at `/`, the admin build under `/admin`, root `.htaccess`, and the PHP backend under `/api`.
 
@@ -537,7 +537,7 @@ bash scripts/check-deploy-zips.sh
 
 # Via cPanel File Manager:
 # Upload site-deploy.zip to public_html/ and extract-overwrite.
-# Preserve api/.env, uploads/, cache/, logs/, and other server-owned runtime data.
+# Preserve uploads/, cache/, logs/, and other server-owned runtime data.
 ```
 
 #### 3. Verify (5 min)

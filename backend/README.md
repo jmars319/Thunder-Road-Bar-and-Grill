@@ -273,7 +273,7 @@ FRONTEND_URL=https://trbgmidway.com
 1. Navigate to: cPanel → File Manager
 2. Go to `public_html/`
 3. Use the repo-level `site-deploy.zip` workflow for normal releases.
-4. Preserve the live `api/.env`, `api/uploads/`, `api/cache/`, and `api/logs/` folders between releases.
+4. Preserve live `api/uploads/`, `api/cache/`, and `api/logs/` folders between releases. The zip refreshes `api/.env` from `backend/.env.production`.
 
 #### 4. File Permissions
 

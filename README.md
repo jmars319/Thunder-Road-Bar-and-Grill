@@ -112,7 +112,7 @@ The admin/menu editor uses a tightly constrained rich text workflow (uncontrolle
 
 1. Build archives: `bash scripts/make-deploy-zips.sh`
 2. Validate contents: `bash scripts/check-deploy-zips.sh`
-3. Follow `docs/DEPLOYMENT.md` for GoDaddy upload, `.env` provisioning, and DB prep.
+3. Follow `docs/DEPLOYMENT.md` for GoDaddy upload, `backend/.env.production` packaging, and DB prep.
 
 ## Project Structure
 
