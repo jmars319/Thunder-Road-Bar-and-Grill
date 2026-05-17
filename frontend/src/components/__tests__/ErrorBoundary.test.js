@@ -6,8 +6,6 @@
  * Tests error catching and fallback UI rendering.
  */
 
-/* eslint-env jest */
-
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 
@@ -46,12 +44,21 @@ const ThrowError = ({ shouldThrow }) => {
   return <div>No error</div>;
 };
 
+let suppressExpectedRenderError;
+
 beforeEach(() => {
   // React intentionally logs caught render errors while testing boundaries.
+  suppressExpectedRenderError = event => {
+    if (event.error?.message === 'Test error') {
+      event.preventDefault();
+    }
+  };
+  window.addEventListener('error', suppressExpectedRenderError);
   jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
+  window.removeEventListener('error', suppressExpectedRenderError);
   console.error.mockRestore();
 });
 

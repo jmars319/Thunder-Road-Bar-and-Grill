@@ -6,6 +6,9 @@
 
 module.exports = {
   ignores: ['node_modules/**', 'build/**', 'public/**'],
+  linterOptions: {
+    reportUnusedDisableDirectives: false
+  },
   languageOptions: {
     parserOptions: {
       ecmaVersion: 2021,
@@ -64,7 +67,9 @@ module.exports = {
   rules: {
     // Keep linting permissive here: focus on real runtime errors, not style.
     'no-undef': 'error',
-    'no-unused-vars': ['warn', { vars: 'all', args: 'after-used', ignoreRestSiblings: true }],
+    // Core no-unused-vars does not understand JSX component usage without the
+    // React plugin, so it creates false positives across this Vite app.
+    'no-unused-vars': 'off',
     'no-console': ['warn', { allow: ['warn', 'error', 'info'] }]
   }
 }

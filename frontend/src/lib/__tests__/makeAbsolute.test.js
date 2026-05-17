@@ -8,7 +8,6 @@
   Notes:
   - Keeps environment overrides local to the test and restores process env after.
 */
-/* eslint-env jest,node */
 import makeAbsolute from '../makeAbsolute';
 
 const OLD_API = process.env.REACT_APP_API_BASE;

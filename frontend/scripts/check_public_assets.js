@@ -6,29 +6,90 @@ const fs = require('fs');
 const path = require('path');
 
 // Paths
-const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const INDEX_HTML = path.join(PUBLIC_DIR, 'index.html');
+const FRONTEND_DIR = path.join(__dirname, '..');
+const PUBLIC_DIR = path.join(FRONTEND_DIR, 'public');
+const INDEX_HTML = path.join(FRONTEND_DIR, 'index.html');
 const MANIFEST = path.join(PUBLIC_DIR, 'manifest.json');
+const PUBLIC_HOSTS = new Set(['trbgmidway.com', 'www.trbgmidway.com']);
+const PUBLIC_ASSET_EXTENSIONS = /\.(?:css|html|ico|jpe?g|json|png|svg|txt|webp|woff2?|xml)$/i;
 
 function read(file) {
   if (!fs.existsSync(file)) return null;
   return fs.readFileSync(file, 'utf8');
 }
 
-function findMatches(content, regex) {
-  const set = new Set();
-  if (!content) return [];
-  let m;
-  while ((m = regex.exec(content)) !== null) set.add(m[1]);
-  return Array.from(set);
+function normalizePublicRef(ref) {
+  if (!ref) return null;
+
+  let clean = String(ref).trim();
+  if (
+    !clean ||
+    clean.startsWith('#') ||
+    /^data:/i.test(clean) ||
+    /^mailto:/i.test(clean) ||
+    /^tel:/i.test(clean)
+  ) {
+    return null;
+  }
+
+  clean = clean.replace(/^%PUBLIC_URL%\//, '');
+
+  if (/^https?:\/\//i.test(clean)) {
+    let url;
+    try {
+      url = new URL(clean);
+    } catch {
+      return null;
+    }
+
+    if (!PUBLIC_HOSTS.has(url.hostname)) {
+      return null;
+    }
+
+    clean = url.pathname;
+  }
+
+  clean = clean.split('?')[0].split('#')[0].replace(/^\/+/, '');
+
+  if (!clean || !PUBLIC_ASSET_EXTENSIONS.test(clean)) {
+    return null;
+  }
+
+  return clean;
+}
+
+function extractHtmlRefs(html) {
+  const refs = [];
+  const attrRegex = /\b(href|src|content|imagesrcset)=["']([^"']+)["']/gi;
+  let match;
+
+  while ((match = attrRegex.exec(html)) !== null) {
+    const attr = match[1].toLowerCase();
+    const value = match[2];
+
+    if (attr === 'imagesrcset') {
+      value.split(',').forEach(srcSetPart => {
+        const src = srcSetPart.trim().split(/\s+/)[0];
+        refs.push(src);
+      });
+    } else {
+      refs.push(value);
+    }
+  }
+
+  const sameHostUrlRegex = /https?:\/\/(?:www\.)?trbgmidway\.com\/([^"'\s<>)\\]+)/gi;
+  while ((match = sameHostUrlRegex.exec(html)) !== null) {
+    refs.push(match[0]);
+  }
+
+  return refs.map(normalizePublicRef).filter(Boolean);
 }
 
 function checkFiles(baseDir, paths) {
   const missing = [];
   for (const p of paths) {
-    const clean = p.replace(/^%PUBLIC_URL%\//, '');
-    const fp = path.join(baseDir, clean);
-    if (!fs.existsSync(fp)) missing.push(clean);
+    const fp = path.join(baseDir, p);
+    if (!fs.existsSync(fp)) missing.push(p);
   }
   return missing;
 }
@@ -51,13 +112,7 @@ function main() {
     process.exit(2);
   }
 
-  // OG images (any path containing "og-...png")
-  const ogRegex = /%PUBLIC_URL%\/([\w\-\/]*og[\w\-]*\.png)/g;
-  const ogMatches = findMatches(html + '\n' + manifestStr, ogRegex);
-
-  // apple splash images
-  const splashRegex = /%PUBLIC_URL%\/([\w\-\/]*apple-splash[\w\-]*-?\d+x\d+\.png)/g;
-  const splashMatches = findMatches(html + '\n' + manifestStr, splashRegex);
+  const htmlRefs = extractHtmlRefs(html);
 
   // manifest icons
   let manifestIcons = [];
@@ -81,7 +136,9 @@ function main() {
     'mstile-150x150.png'
   ];
 
-  const allRefs = uniq([].concat(ogMatches, splashMatches, manifestIcons, favicons));
+  const allRefs = uniq([]
+    .concat(htmlRefs, manifestIcons.map(normalizePublicRef).filter(Boolean), favicons)
+    .sort());
 
   if (allRefs.length === 0) {
     console.log('No asset references found to check.');
@@ -98,22 +155,21 @@ function main() {
     console.log('All referenced public assets exist.');
   }
 
-  // Dimension checks for PNG/JPEG images mentioned in splashMatches or ogMatches
+  // Dimension checks for PNG/JPEG images with an expected size in the filename.
   const dimErrors = [];
-  const imagesToCheck = uniq([...ogMatches, ...splashMatches]);
+  const imagesToCheck = allRefs.filter(ref => /\.(?:png|jpe?g)$/i.test(ref) && extractSizeFromFilename(ref));
   for (const ref of imagesToCheck) {
-    const rel = ref.replace(/^%PUBLIC_URL%\//, '');
-    const fp = path.join(PUBLIC_DIR, rel);
+    const fp = path.join(PUBLIC_DIR, ref);
     if (!fs.existsSync(fp)) continue; // already reported missing
-    const expected = extractSizeFromFilename(rel);
+    const expected = extractSizeFromFilename(ref);
     if (!expected) continue;
     const dims = tryGetImageDimensions(fp);
     if (!dims) {
-      dimErrors.push({ file: rel, error: 'unsupported or unreadable format' });
+      dimErrors.push({ file: ref, error: 'unsupported or unreadable format' });
       continue;
     }
     if (dims.width !== expected.width || dims.height !== expected.height) {
-      dimErrors.push({ file: rel, expected, actual: dims });
+      dimErrors.push({ file: ref, expected, actual: dims });
     }
   }
 
