@@ -4,7 +4,6 @@ require_once __DIR__ . '/../utils/AuditLog.php';
 
 $ref = new ReflectionClass('AuditLog');
 $method = $ref->getMethod('sanitizeMeta');
-$method->setAccessible(true);
 
 $meta = [
     'token' => 'abc.def.ghi',
@@ -17,4 +16,20 @@ $meta = [
 ];
 
 $clean = $method->invoke(null, $meta);
-echo json_encode($clean, JSON_PRETTY_PRINT) . PHP_EOL;
+if (($clean['token'] ?? null) !== '[REDACTED]') {
+    throw new Exception('Token was not redacted');
+}
+if (($clean['nested']['password'] ?? null) !== '[REDACTED]') {
+    throw new Exception('Nested password was not redacted');
+}
+if (($clean['nested']['note'] ?? null) !== 'safe') {
+    throw new Exception('Safe nested note was altered');
+}
+if (($clean['cookie'] ?? null) !== '[REDACTED]') {
+    throw new Exception('Cookie was not redacted');
+}
+if (($clean['list']['secret'] ?? null) !== '[REDACTED]') {
+    throw new Exception('List secret was not redacted');
+}
+
+echo "AuditLog sanitizer tests passed\n";

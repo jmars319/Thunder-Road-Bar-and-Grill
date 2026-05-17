@@ -13,6 +13,14 @@ class Database {
     private $pdo;
 
     /**
+     * Return a proxy that opens the PDO connection only when a route actually
+     * performs a database operation.
+     */
+    public static function lazy() {
+        return new LazyDatabaseConnection();
+    }
+
+    /**
      * Private constructor for singleton pattern
      */
     private function __construct() {
@@ -189,5 +197,21 @@ class Database {
      */
     public function __wakeup() {
         throw new Exception("Cannot unserialize singleton");
+    }
+}
+
+class LazyDatabaseConnection {
+    private $database = null;
+
+    private function database() {
+        if ($this->database === null) {
+            $this->database = Database::getInstance();
+        }
+
+        return $this->database;
+    }
+
+    public function __call($name, $arguments) {
+        return call_user_func_array([$this->database(), $name], $arguments);
     }
 }

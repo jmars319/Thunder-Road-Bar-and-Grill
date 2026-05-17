@@ -33,7 +33,7 @@ class SettingsRoutes {
     private $db;
 
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = Database::lazy();
     }
 
     private function fetchFallbackHeroMedia() {

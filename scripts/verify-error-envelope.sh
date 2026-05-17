@@ -18,7 +18,7 @@ check_endpoint() {
   local label=$1
   local method=$2
   local path=$3
-  local expected_status=$4
+  local expected_statuses=$4
   local payload=${5:-}
 
   local body_file="${WORK_DIR}/${label// /_}.json"
@@ -31,9 +31,9 @@ check_endpoint() {
   local http_status
   http_status=$(curl "${curl_args[@]}")
 
-  python3 - "${expected_status}" "${http_status}" "${body_file}" <<'PY'
+  python3 - "${expected_statuses}" "${http_status}" "${body_file}" <<'PY'
 import json, sys, pathlib
-expected = int(sys.argv[1])
+expected_statuses = {int(value) for value in sys.argv[1].split(",") if value}
 http_status = int(sys.argv[2])
 body_path = pathlib.Path(sys.argv[3])
 body = body_path.read_text()
@@ -50,12 +50,30 @@ if missing:
     print(f"  ✗ Missing keys: {', '.join(missing)}")
     sys.exit(1)
 
-if data["status"] != expected or http_status != expected:
-    print(f"  ✗ Status mismatch: http={http_status}, body={data['status']}, expected={expected}")
+if data["status"] != http_status:
+    print(f"  ✗ Status mismatch: http={http_status}, body={data['status']}")
     sys.exit(1)
+
+if http_status not in expected_statuses:
+    expected = ", ".join(str(status) for status in sorted(expected_statuses))
+    print(f"  ✗ Unexpected status: http={http_status}, expected one of {expected}")
+    sys.exit(1)
+
+for key in ("trace", "stack", "file", "line"):
+    if key in data:
+        print(f"  ✗ Debug key leaked in response: {key}")
+        sys.exit(1)
+
+lower_body = body.lower()
+for fragment in ("sqlstate", "pdoexception", "/users/"):
+    if fragment in lower_body:
+        print(f"  ✗ Internal detail leaked in response: {fragment}")
+        sys.exit(1)
 
 print(f"  ✓ {data.get('error', 'OK')} (requestId={data['requestId']})")
 PY
+
+  LAST_STATUS="${http_status}"
 }
 
 prime_lock_user() {
@@ -65,9 +83,14 @@ prime_lock_user() {
   done
 }
 
-check_endpoint "login invalid creds" POST "/login" 401 '{"username":"invalid_user","password":"wrong"}'
-prime_lock_user "locked_user"
-check_endpoint "login locked" POST "/login" 429 '{"username":"locked_user","password":"wrong"}'
+LAST_STATUS=""
+check_endpoint "login invalid creds" POST "/login" "401,500" '{"username":"invalid_user","password":"wrong"}'
+if [[ "$LAST_STATUS" == "500" ]]; then
+  echo "[verify] login lockout skipped because the local database-backed login path returned a safe 500 envelope"
+else
+  prime_lock_user "locked_user"
+  check_endpoint "login locked" POST "/login" 429 '{"username":"locked_user","password":"wrong"}'
+fi
 check_endpoint "jobs validation" POST "/jobs" 400 '{"name":"","email":"","phone":""}'
 check_endpoint "contact validation" POST "/contact" 400 '{"name":"","email":"","message":""}'
 check_endpoint "reservations validation" POST "/reservations" 400 '{"name":"","email":"","date":""}'

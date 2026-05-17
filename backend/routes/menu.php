@@ -37,7 +37,7 @@ class MenuRoutes {
     private static $cacheTTL;
 
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = Database::lazy();
         self::$cacheTTL = Config::getInt('CACHE_MENU_TTL', 300); // 5 minutes default
     }
 

@@ -24,7 +24,7 @@ class NewsletterRoutes {
     private $enabled;
 
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = Database::lazy();
         $this->enabled = Config::getBool('NEWSLETTER_ENABLED', false);
     }
 

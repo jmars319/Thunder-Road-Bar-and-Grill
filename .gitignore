@@ -65,6 +65,9 @@ backend/*.log
 backend-start.log
 test-logs/
 coverage/
+test-results/
+playwright-report/
+blob-report/
 
 # ───────────────────────────
 # OS / editor files

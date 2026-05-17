@@ -14,7 +14,7 @@ class MediaRoutes {
     private $db;
 
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = Database::lazy();
     }
 
     private function respondUploadError($message, $status = 400, $errorKey = 'bad_request', array $details = []) {
