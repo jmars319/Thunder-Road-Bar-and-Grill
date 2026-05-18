@@ -6,7 +6,9 @@ import PublicSite from './pages/PublicSite';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import AccessDeniedPage from './components/error-pages/AccessDeniedPage';
 import NotFoundPage from './components/error-pages/NotFoundPage';
+import TemporaryIssuePage from './components/error-pages/TemporaryIssuePage';
 
 export default function PublicApp() {
   useEffect(() => {
@@ -33,6 +35,33 @@ export default function PublicApp() {
   };
 
   const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+  if (path === '/status/access-denied') {
+    return (
+      <HelmetProvider>
+        <ErrorBoundary>
+          <AccessDeniedPage
+            requestId={window.__LAST_REQUEST_ID__ || null}
+            timestampUTC={new Date().toISOString()}
+          />
+        </ErrorBoundary>
+      </HelmetProvider>
+    );
+  }
+
+  if (path === '/status/server-error' || path === '/status/maintenance') {
+    return (
+      <HelmetProvider>
+        <ErrorBoundary>
+          <TemporaryIssuePage
+            requestId={window.__LAST_REQUEST_ID__ || null}
+            timestampUTC={new Date().toISOString()}
+            statusCode={path === '/status/maintenance' ? 503 : 500}
+          />
+        </ErrorBoundary>
+      </HelmetProvider>
+    );
+  }
+
   const knownPaths = new Set(['/', '/privacy', '/terms']);
 
   if (!knownPaths.has(path)) {

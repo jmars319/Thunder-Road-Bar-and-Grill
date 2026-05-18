@@ -48,6 +48,11 @@ zip_absent() {
 log "Validating site zip"
 zip_contains '^index[.]html$'
 zip_contains '^admin/index[.]html$'
+zip_contains '^403[.]html$'
+zip_contains '^404[.]html$'
+zip_contains '^500[.]html$'
+zip_contains '^503[.]html$'
+zip_contains '^error-pages[.]css$'
 zip_contains '^assets/index-.*[.]js$'
 zip_contains '^assets/admin-.*[.]js$'
 zip_contains '^assets/.*[.]css$'
@@ -94,6 +99,14 @@ fi
 root_htaccess="$(unzip -p "$SITE_ZIP" .htaccess 2>/dev/null || true)"
 if ! grep -Eq 'admin/index[.]html' <<< "$root_htaccess"; then
   err "root .htaccess is missing admin bundle routing"
+  exit 1
+fi
+if ! grep -Eq 'ErrorDocument 404 /404[.]html' <<< "$root_htaccess"; then
+  err "root .htaccess is missing branded error documents"
+  exit 1
+fi
+if ! grep -Eq 'maintenance[.]enable' <<< "$root_htaccess"; then
+  err "root .htaccess is missing maintenance-mode handling"
   exit 1
 fi
 

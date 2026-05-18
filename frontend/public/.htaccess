@@ -1,6 +1,15 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  ErrorDocument 403 /403.html
+  ErrorDocument 404 /404.html
+  ErrorDocument 500 /500.html
+  ErrorDocument 503 /503.html
+
+  <IfModule mod_headers.c>
+    Header always set Retry-After "3600" env=TRBG_MAINTENANCE
+  </IfModule>
   
   # Don't rewrite files or directories
   RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -12,11 +21,19 @@
   # Keep the admin bundle separate from the public site bundle.
   RewriteRule ^admin(?:/.*)?$ admin/index.html [L]
 
+  RewriteCond %{DOCUMENT_ROOT}/maintenance.enable -f
+  RewriteCond %{REQUEST_URI} !^/api(?:/|$) [NC]
+  RewriteCond %{REQUEST_URI} !^/admin(?:/|$) [NC]
+  RewriteRule ^ - [R=503,L,E=TRBG_MAINTENANCE:1]
+
   # Don't rewrite API requests
   RewriteCond %{REQUEST_URI} !^/api
   
-  # Rewrite everything else to index.html to allow React Router to handle it
-  RewriteRule ^ index.html [L]
+  RewriteRule ^$ index.html [L]
+  RewriteRule ^(?:privacy|terms)/?$ index.html [L,NC]
+  RewriteRule ^status/(?:access-denied|not-found|server-error|maintenance)/?$ index.html [L,NC]
+
+  RewriteRule ^ - [R=404,L]
 </IfModule>
 
 # Long cache headers for versioned static assets

@@ -30,5 +30,5 @@ CLS_BASE_URL="$FRONTEND_BASE_URL" \
   npm run cls:headless
 
 export E2E_BASE_URL="$FRONTEND_BASE_URL"
-export E2E_ROUTES="/,/privacy,/terms,/admin"
+export E2E_ROUTES="/,/privacy,/terms,/status/access-denied,/status/server-error,/status/maintenance,/missing-page-check,/admin"
 env -u NO_COLOR FORCE_COLOR=0 npx playwright test

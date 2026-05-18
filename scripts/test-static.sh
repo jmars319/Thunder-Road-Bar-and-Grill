@@ -30,5 +30,6 @@ run_if_present typecheck
 run_if_present check:types
 run_if_present lint:css
 run_if_present check:public-assets
+run_if_present check:public-errors
 
 echo "[test:static] Static checks passed"

@@ -11,6 +11,7 @@
     "test": "npm --prefix frontend run test:ci",
     "test:watch": "npm --prefix frontend run test",
     "check:public-assets": "npm --prefix frontend run check:public-assets",
+    "check:public-errors": "bash ./scripts/verify-public-error-pages.sh",
     "check:error-envelope": "bash ./scripts/verify-error-envelope.sh",
     "cls:headless": "npm --prefix frontend run cls:headless",
     "test:static": "bash ./scripts/test-static.sh",
