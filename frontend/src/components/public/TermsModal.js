@@ -35,7 +35,7 @@ export default function TermsModal({ onClose }) {
           <p>The website provides information about our business and may allow you to place orders or reservation requests. Orders placed on the site are subject to our confirmation. We may refuse or cancel an order for any reason, including unavailability of an item or suspected fraud. Prices and availability are subject to change.</p>
 
           <h4>Payments and fees</h4>
-          <p>Payments made through the website are processed by a third-party payment processor (e.g. Stripe, Square). We do not store full payment card numbers on our servers — the payment provider handles card storage and PCI compliance. You are responsible for providing accurate billing information and for any fees charged by your payment method.</p>
+          <p>Online ordering is provided through ChowNow. ChowNow or its payment partners handle card processing and payment security for online orders. We do not store full payment card numbers on our servers. You are responsible for providing accurate billing information and for any fees charged by your payment method.</p>
 
           <h4>User responsibilities</h4>
           <p>You agree not to use the site for unlawful activities, to provide accurate information when requested, and to comply with any posted policies. You are responsible for keeping any account credentials secure when applicable.</p>
@@ -60,8 +60,6 @@ export default function TermsModal({ onClose }) {
 
           <h4>Contact</h4>
           <p>If you have questions about these Terms, contact us at the email address listed in the footer.</p>
-
-          <p className="text-xs text-text-muted">Note: This is a general template and does not constitute legal advice. Please review these Terms with legal counsel and replace placeholders such as <em>[STATE]</em> before publishing.</p>
         </div>
 
         <div className="mt-4 text-right">

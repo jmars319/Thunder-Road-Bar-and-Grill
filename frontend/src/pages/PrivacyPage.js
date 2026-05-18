@@ -56,7 +56,7 @@ export default function PrivacyPage() {
           </ul>
 
           <h2>Payments</h2>
-          <p>At this time, the website does not offer online payments. If we add online ordering and payments in the future, payment processing will be handled by a third-party provider and this policy will be updated to include the provider name and details. We will not store full payment card numbers on our servers.</p>
+          <p>Online ordering is provided through ChowNow. Payment details entered during online ordering are handled by ChowNow or its payment partners. We do not store full payment card numbers on our servers.</p>
 
           <h2>Cookies and tracking</h2>
           <p>We use cookies and similar technologies to remember preferences, enable core functionality, and collect analytics data. You can control cookies through your browser settings; note that disabling certain cookies may affect site functionality.</p>
@@ -81,4 +81,3 @@ export default function PrivacyPage() {
     </>
   );
 }
-

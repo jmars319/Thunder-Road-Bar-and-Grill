@@ -18,6 +18,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { icons } from '../../icons';
 import Toast from '../ui/Toast';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import usePaginatedResource from '../../hooks/usePaginatedResource';
 import Spinner from '../ui/Spinner';
 import { authenticatedFetch, API_BASE } from '../../utils/api';
@@ -77,6 +78,7 @@ function MenuModule() {
   const { items: pagedMedia, loading: pagedLoading, total: pagedTotal, sentinelRef, fetchPage, reset } = usePaginatedResource(`${API_BASE}/media?category=menu`, { limit: MEDIA_LIMIT_MENU });
   const [selectedMediaId, setSelectedMediaId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [showZeroPriceConfirm, setShowZeroPriceConfirm] = useState(false);
   const [pendingSavePayload, setPendingSavePayload] = useState(null);
   const previewPanelsRef = useRef({});
@@ -85,6 +87,14 @@ function MenuModule() {
   const [siteSettings, setSiteSettings] = useState({});
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState({});
+  const closeConfirmDialog = useCallback(() => setConfirmDialog(null), []);
+  const runConfirmDialogAction = useCallback(async () => {
+    const action = confirmDialog?.onConfirm;
+    setConfirmDialog(null);
+    if (typeof action === 'function') {
+      await action();
+    }
+  }, [confirmDialog]);
 
   const measurePreviewPanel = (id) => {
     const el = previewPanelsRef.current[id];
@@ -373,22 +383,26 @@ function MenuModule() {
     setUploadError('Upload cancelled');
   };
 
-  const deleteCategory = async (id) => {
-    if (!window.confirm('Delete this category and all its items?')) {
-      return;
-    }
-    try {
-      const response = await authenticatedFetch(withDebugParam(`/menu/categories/${id}`), { method: 'DELETE' });
-      if (!response.ok) {
-        throw new Error('Failed to delete category');
+  const deleteCategory = (id) => {
+    setConfirmDialog({
+      title: 'Delete category?',
+      message: 'Delete this category and all its items?',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        try {
+          const response = await authenticatedFetch(withDebugParam(`/menu/categories/${id}`), { method: 'DELETE' });
+          if (!response.ok) {
+            throw new Error('Failed to delete category');
+          }
+          await fetchCategories();
+          try { window.dispatchEvent(new window.CustomEvent('menuUpdated')); } catch (e) {}
+        } catch (error) {
+          console.error('Delete category failed', error);
+          setToast({ type: 'error', message: 'Failed to delete category' });
+          setTimeout(() => setToast(null), 3000);
+        }
       }
-      await fetchCategories();
-      try { window.dispatchEvent(new window.CustomEvent('menuUpdated')); } catch (e) {}
-    } catch (error) {
-      console.error('Delete category failed', error);
-      setToast({ type: 'error', message: 'Failed to delete category' });
-      setTimeout(() => setToast(null), 3000);
-    }
+    });
   };
 
   // When saving an item, if any price equals 0.00 we require an explicit
@@ -438,21 +452,25 @@ function MenuModule() {
     doSaveItem(payload);
   };
 
-  const deleteItem = async (id) => {
-    if (!window.confirm('Delete this menu item?')) {
-      return;
-    }
-    try {
-      const response = await authenticatedFetch(withDebugParam(`/menu/items/${id}`), { method: 'DELETE' });
-      if (!response.ok) {
-        throw new Error('Failed to delete menu item');
+  const deleteItem = (id) => {
+    setConfirmDialog({
+      title: 'Delete menu item?',
+      message: 'Delete this menu item?',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        try {
+          const response = await authenticatedFetch(withDebugParam(`/menu/items/${id}`), { method: 'DELETE' });
+          if (!response.ok) {
+            throw new Error('Failed to delete menu item');
+          }
+          await fetchCategories();
+        } catch (error) {
+          console.error('Delete item failed', error);
+          setToast({ type: 'error', message: 'Failed to delete menu item' });
+          setTimeout(() => setToast(null), 3000);
+        }
       }
-      await fetchCategories();
-    } catch (error) {
-      console.error('Delete item failed', error);
-      setToast({ type: 'error', message: 'Failed to delete menu item' });
-      setTimeout(() => setToast(null), 3000);
-    }
+    });
   };
 
   // Reorder items in a category locally and persist display_order to the server
@@ -913,6 +931,16 @@ function MenuModule() {
         <div className="fixed top-6 right-6 z-50">
           <Toast type={toast.type} onClose={() => setToast(null)}>{toast.message}</Toast>
         </div>
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={runConfirmDialogAction}
+          onCancel={closeConfirmDialog}
+        />
       )}
 
       {/* Item Editor Modal */}

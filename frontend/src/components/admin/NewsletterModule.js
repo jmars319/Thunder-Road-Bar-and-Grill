@@ -11,9 +11,10 @@
   Notes:
   - For very large lists consider server-side paging or an export endpoint.
 */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { icons } from '../../icons';
 import { authenticatedFetch } from '../../utils/api';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 /*
   NewsletterModule
@@ -31,6 +32,16 @@ import { authenticatedFetch } from '../../utils/api';
 
 function NewsletterModule() {
   const [subscribers, setSubscribers] = useState([]);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const closeConfirmDialog = useCallback(() => setConfirmDialog(null), []);
+  const runConfirmDialogAction = useCallback(async () => {
+    const action = confirmDialog?.onConfirm;
+    setConfirmDialog(null);
+    if (typeof action === 'function') {
+      await action();
+    }
+  }, [confirmDialog]);
 
   useEffect(() => {
     fetchSubscribers();
@@ -47,20 +58,26 @@ function NewsletterModule() {
   };
 
   const removeSubscriber = (id) => {
-    if (!window.confirm('Remove this subscriber?')) return;
-    // Wrap in try/catch-like promise chain and surface a minimal error so
-    // maintainers can add logging or toast feedback later.
-    authenticatedFetch(`/newsletter/subscribers/${id}`, { method: 'DELETE' })
-      .then(res => {
-        if (!res.ok) throw new Error('Delete failed');
-        return res.json();
-      })
-  .then(() => fetchSubscribers())
-      .catch((_err) => {
-        // Intentionally quiet in UI, but log to console for debugging in dev.
-        // Replace with toast/notification in future iterations.
-        console.error('Failed to remove subscriber', _err);
-      });
+    setConfirmDialog({
+      title: 'Remove subscriber?',
+      message: 'Remove this subscriber?',
+      confirmLabel: 'Remove',
+      onConfirm: async () => {
+        // Wrap in try/catch-like promise chain and surface a minimal error so
+        // maintainers can add logging or toast feedback later.
+        authenticatedFetch(`/newsletter/subscribers/${id}`, { method: 'DELETE' })
+          .then(res => {
+            if (!res.ok) throw new Error('Delete failed');
+            return res.json();
+          })
+      .then(() => fetchSubscribers())
+          .catch((_err) => {
+            // Intentionally quiet in UI, but log to console for debugging in dev.
+            // Replace with toast/notification in future iterations.
+            console.error('Failed to remove subscriber', _err);
+          });
+      }
+    });
   };
 
   const exportSubscribers = () => {
@@ -161,6 +178,15 @@ function NewsletterModule() {
           </table>
         </div>
       </div>
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={runConfirmDialogAction}
+          onCancel={closeConfirmDialog}
+        />
+      )}
     </div>
   );
 }

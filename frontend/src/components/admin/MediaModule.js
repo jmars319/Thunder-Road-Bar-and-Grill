@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { icons } from '../../icons';
 import Spinner from '../ui/Spinner';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import makeAbsolute from '../../lib/makeAbsolute';
 import { authenticatedFetch, API_BASE } from '../../utils/api';
 
@@ -112,6 +113,16 @@ export default function MediaModule() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [usageMap, setUsageMap] = useState({ hero: {}, menu: {} });
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const closeConfirmDialog = useCallback(() => setConfirmDialog(null), []);
+  const runConfirmDialogAction = useCallback(async () => {
+    const action = confirmDialog?.onConfirm;
+    setConfirmDialog(null);
+    if (typeof action === 'function') {
+      await action();
+    }
+  }, [confirmDialog]);
 
   const loadUsage = useCallback(async () => {
     try {
@@ -320,20 +331,26 @@ export default function MediaModule() {
     }
   };
 
-  const handleDelete = async (item) => {
-    if (!window.confirm('Delete this image? This cannot be undone.')) return;
-    setError('');
-    try {
-      const res = await authenticatedFetch(`/media/${item.id}`, { method: 'DELETE' });
-      if (!res.ok && res.status !== 404) {
-        throw new Error('Delete failed');
+  const handleDelete = (item) => {
+    setConfirmDialog({
+      title: 'Delete image?',
+      message: 'Delete this image? This cannot be undone.',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        setError('');
+        try {
+          const res = await authenticatedFetch(`/media/${item.id}`, { method: 'DELETE' });
+          if (!res.ok && res.status !== 404) {
+            throw new Error('Delete failed');
+          }
+          setMessage('Media deleted');
+          await loadMedia();
+          try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
+        } catch (err) {
+          setError('Failed to delete media. Please try again.');
+        }
       }
-      setMessage('Media deleted');
-      await loadMedia();
-      try { window.dispatchEvent(new window.CustomEvent('mediaUpdated')); } catch (e) {}
-    } catch (err) {
-      setError('Failed to delete media. Please try again.');
-    }
+    });
   };
 
   const openEditModal = (item) => {
@@ -721,6 +738,15 @@ export default function MediaModule() {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={runConfirmDialogAction}
+          onCancel={closeConfirmDialog}
+        />
       )}
     </div>
   );

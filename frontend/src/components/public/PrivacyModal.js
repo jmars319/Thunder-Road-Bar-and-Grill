@@ -40,7 +40,7 @@ export default function PrivacyModal({ onClose }) {
           <p>We collect different types of information depending on how you use our site:</p>
           <ul>
             <li><strong>Contact & transactional data:</strong> name, email, phone, billing/shipping address, and order details when you place orders or make reservations.</li>
-            <li><strong>Payment data:</strong> if you pay online, payment processing is handled by a third-party provider (e.g. Stripe, Square). We do not store full payment card details on our servers — see "Payments" below.</li>
+            <li><strong>Payment data:</strong> online ordering and payment processing are handled by ChowNow or another third-party provider. We do not store full payment card details on our servers - see "Payments" below.</li>
             <li><strong>Job applications:</strong> name, email, resume/CV and other information you include when applying for jobs.</li>
             <li><strong>Communications:</strong> any messages you send through contact forms, email, or other channels.</li>
             <li><strong>Usage and device data:</strong> IP address, browser type, device identifiers, pages visited, and technical log information collected automatically (analytics).</li>
@@ -63,7 +63,7 @@ export default function PrivacyModal({ onClose }) {
           <h4>Sharing and third parties</h4>
           <p>We do not sell your personal information. We may share information with:</p>
           <ul>
-            <li>Service providers who process data on our behalf (payment processors, hosting providers, email delivery, analytics).</li>
+            <li>Service providers who process data on our behalf, including ChowNow for online ordering, hosting providers, email delivery, and analytics.</li>
             <li>Delivery or fulfillment partners when needed to complete an order.</li>
             <li>Law enforcement, regulators or others when required by law or to protect rights and safety.</li>
           </ul>
@@ -72,7 +72,7 @@ export default function PrivacyModal({ onClose }) {
           <p>We use cookies and similar technologies to remember preferences, enable core functionality, and collect analytics data. You can control cookies through your browser settings; note that disabling certain cookies may affect site functionality. If we add targeted advertising or third-party tracking we will disclose the providers and how to opt out.</p>
 
           <h4>Payments</h4>
-          <p>At this time, the website does not offer online payments. If we add online ordering and payments in the future, payment processing will be handled by a third-party provider and this policy will be updated to include the provider name and details. We will not store full payment card numbers on our servers.</p>
+          <p>Online ordering is provided through ChowNow. Payment details entered during online ordering are handled by ChowNow or its payment partners. We do not store full payment card numbers on our servers.</p>
 
           <h4>Data retention</h4>
           <p>We retain personal information only as long as necessary to provide the services, comply with legal obligations, and resolve disputes. For example, order records may be kept for tax and accounting purposes for a limited number of years.</p>
@@ -91,8 +91,6 @@ export default function PrivacyModal({ onClose }) {
 
           <h4>Contact</h4>
           <p>If you have questions, or want to exercise your privacy rights, please contact us at the email address in the footer or by using the contact form on the site.</p>
-
-          <p className="text-xs text-text-muted">Note: This policy is a general template and does not constitute legal advice. Please review it with legal counsel and replace placeholders such as <em>[PAYMENT_PROVIDER]</em> or contact details before publishing.</p>
         </div>
 
         <div className="mt-4 text-right">

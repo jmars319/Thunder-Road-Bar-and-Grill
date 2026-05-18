@@ -14,6 +14,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { icons } from '../../icons';
 import { authenticatedFetch } from '../../utils/api';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 /*
   ReservationsModule
@@ -50,6 +51,16 @@ function ReservationsModule() {
   const [statusFilter, setStatusFilter] = useState('pending');
   const [loading, setLoading] = useState(false);
   const [viewReservation, setViewReservation] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const closeConfirmDialog = useCallback(() => setConfirmDialog(null), []);
+  const runConfirmDialogAction = useCallback(async () => {
+    const action = confirmDialog?.onConfirm;
+    setConfirmDialog(null);
+    if (typeof action === 'function') {
+      await action();
+    }
+  }, [confirmDialog]);
 
   const fetchReservations = useCallback(async () => {
     setLoading(true);
@@ -90,10 +101,16 @@ function ReservationsModule() {
     fetchReservations();
   };
 
-  const deleteReservation = async (id) => {
-    if (!window.confirm('Permanently delete this reservation?')) return;
-    await authenticatedFetch(`/reservations/${id}`, { method: 'DELETE' });
-    fetchReservations();
+  const deleteReservation = (id) => {
+    setConfirmDialog({
+      title: 'Delete reservation?',
+      message: 'Permanently delete this reservation?',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        await authenticatedFetch(`/reservations/${id}`, { method: 'DELETE' });
+        fetchReservations();
+      }
+    });
   };
 
   const changeSort = (column) => {
@@ -254,6 +271,15 @@ function ReservationsModule() {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={runConfirmDialogAction}
+          onCancel={closeConfirmDialog}
+        />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { icons } from '../../icons';
 import { authenticatedFetch } from '../../utils/api';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 function InboxModule() {
   const [messages, setMessages] = useState([]);
@@ -12,6 +13,16 @@ function InboxModule() {
   const [sortBy, setSortBy] = useState('submitted_at');
   const [sortDir, setSortDir] = useState('DESC');
   const [loading, setLoading] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const closeConfirmDialog = useCallback(() => setConfirmDialog(null), []);
+  const runConfirmDialogAction = useCallback(async () => {
+    const action = confirmDialog?.onConfirm;
+    setConfirmDialog(null);
+    if (typeof action === 'function') {
+      await action();
+    }
+  }, [confirmDialog]);
 
   const fetchMessages = useCallback(async () => {
     setLoading(true);
@@ -52,11 +63,17 @@ function InboxModule() {
     fetchMessages();
   };
 
-  const deleteMessage = async (message) => {
-    if (!window.confirm('Delete this message?')) return;
-    await authenticatedFetch(`/contact/messages/${message.id}`, { method: 'DELETE' });
-    if (modalMessage?.id === message.id) setModalMessage(null);
-    fetchMessages();
+  const deleteMessage = (message) => {
+    setConfirmDialog({
+      title: 'Delete message?',
+      message: 'Delete this message?',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        await authenticatedFetch(`/contact/messages/${message.id}`, { method: 'DELETE' });
+        if (modalMessage?.id === message.id) setModalMessage(null);
+        fetchMessages();
+      }
+    });
   };
 
   const changeSort = (column) => {
@@ -220,6 +237,15 @@ function InboxModule() {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={runConfirmDialogAction}
+          onCancel={closeConfirmDialog}
+        />
       )}
     </div>
   );

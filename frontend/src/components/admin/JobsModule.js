@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { icons } from '../../icons';
 import { authenticatedFetch } from '../../utils/api';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const STATUS_OPTIONS = ['new', 'reviewing', 'interviewed', 'hired', 'rejected', 'archived'];
 const STATUS_ALIASES = {
@@ -31,6 +32,16 @@ function JobsModule() {
   const [sortBy, setSortBy] = useState('submitted_at');
   const [sortDir, setSortDir] = useState('DESC');
   const [loading, setLoading] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const closeConfirmDialog = useCallback(() => setConfirmDialog(null), []);
+  const runConfirmDialogAction = useCallback(async () => {
+    const action = confirmDialog?.onConfirm;
+    setConfirmDialog(null);
+    if (typeof action === 'function') {
+      await action();
+    }
+  }, [confirmDialog]);
 
   useEffect(() => {
     fetchPositions();
@@ -99,10 +110,16 @@ useEffect(() => {
     }).catch(fetchPositions);
   };
 
-  const deletePosition = async (id) => {
-    if (!window.confirm('Delete this position?')) return;
-    await authenticatedFetch(`/job-positions/${id}`, { method: 'DELETE' });
-    fetchPositions();
+  const deletePosition = (id) => {
+    setConfirmDialog({
+      title: 'Delete position?',
+      message: 'Delete this position?',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        await authenticatedFetch(`/job-positions/${id}`, { method: 'DELETE' });
+        fetchPositions();
+      }
+    });
   };
 
   const applyStatusLocally = (id, status) => {
@@ -120,11 +137,17 @@ useEffect(() => {
     applyStatusLocally(id, canonical);
   };
 
-  const deleteApplication = async (id) => {
-    if (!window.confirm('Delete this application?')) return;
-    await authenticatedFetch(`/jobs/${id}`, { method: 'DELETE' });
-    setApplications(prev => prev.filter(app => app.id !== id));
-    setSelectedApp(current => (current?.id === id ? null : current));
+  const deleteApplication = (id) => {
+    setConfirmDialog({
+      title: 'Delete application?',
+      message: 'Delete this application?',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        await authenticatedFetch(`/jobs/${id}`, { method: 'DELETE' });
+        setApplications(prev => prev.filter(app => app.id !== id));
+        setSelectedApp(current => (current?.id === id ? null : current));
+      }
+    });
   };
 
   const changeSort = (column) => {
@@ -329,6 +352,15 @@ useEffect(() => {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          onConfirm={runConfirmDialogAction}
+          onCancel={closeConfirmDialog}
+        />
       )}
     </div>
   );
