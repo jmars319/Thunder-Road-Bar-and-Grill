@@ -15,6 +15,7 @@ trap cleanup EXIT
 
 bash "$SCRIPT_DIR/dev-stop.sh" >/dev/null 2>&1 || true
 export DEV_BROWSER_OPEN=0
+bash "$SCRIPT_DIR/dev-sync-public-data.sh" >/dev/null 2>&1 || log_warn "Unable to refresh public snapshots; local database or existing snapshots must cover public routes."
 bash "$SCRIPT_DIR/dev-start.sh"
 wait_for_frontend_ready 60
 
@@ -31,4 +32,4 @@ CLS_BASE_URL="$FRONTEND_BASE_URL" \
 
 export E2E_BASE_URL="$FRONTEND_BASE_URL"
 export E2E_ROUTES="/,/privacy,/terms,/status/access-denied,/status/server-error,/status/maintenance,/missing-page-check,/admin"
-env -u NO_COLOR FORCE_COLOR=0 npx playwright test
+env -u NO_COLOR FORCE_COLOR=0 npx playwright test --workers="${PLAYWRIGHT_WORKERS:-2}"

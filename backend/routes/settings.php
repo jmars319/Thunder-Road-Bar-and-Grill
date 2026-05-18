@@ -27,6 +27,7 @@ require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
 require_once __DIR__ . '/../utils/HtmlSanitizer.php';
+require_once __DIR__ . '/../utils/DevPublicSnapshot.php';
 require_once __DIR__ . '/../utils/AuditLog.php';
 
 class SettingsRoutes {
@@ -213,7 +214,10 @@ class SettingsRoutes {
             $settings['hero_images_variants'] = $heroVariants;
             $this->sendNoCacheHeaders();
             echo json_encode(['success' => true, 'settings' => $settings]);
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
+            if (DevPublicSnapshot::respond('settings', $e)) {
+                return;
+            }
             Logger::error('GET /api/settings failed', ['error' => $e->getMessage()]);
             $this->sendNoCacheHeaders();
             http_response_code(500);

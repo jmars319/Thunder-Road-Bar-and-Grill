@@ -27,6 +27,7 @@ require_once __DIR__ . '/../utils/Logger.php';
 require_once __DIR__ . '/../utils/Config.php';
 require_once __DIR__ . '/../utils/MediaResponseBuilder.php';
 require_once __DIR__ . '/../utils/HtmlSanitizer.php';
+require_once __DIR__ . '/../utils/DevPublicSnapshot.php';
 require_once __DIR__ . '/../middleware/AdminAuthMiddleware.php';
 require_once __DIR__ . '/../middleware/ErrorHandler.php';
 require_once __DIR__ . '/../utils/AuditLog.php';
@@ -123,6 +124,7 @@ class MenuRoutes {
         header('Pragma: no-cache');
         header('Expires: 0');
 
+        try {
         $query = "
             SELECT 
                 c.id as category_id,
@@ -219,6 +221,12 @@ class MenuRoutes {
             'first_category' => $output[0] ?? null
         ]);
         echo json_encode($output);
+        } catch (Throwable $e) {
+            if (DevPublicSnapshot::respond('menu', $e)) {
+                return;
+            }
+            throw $e;
+        }
     }
 
     /**

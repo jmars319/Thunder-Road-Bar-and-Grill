@@ -17,3 +17,10 @@ for (const route of routes) {
     expect(pageErrors).toEqual([]);
   });
 }
+
+test("public home renders live-like menu/settings content in dev", async ({ page }) => {
+  const response = await page.goto("/", { waitUntil: "domcontentloaded" });
+  expect(response?.status() || 0).toBeLessThan(500);
+  await expect(page.locator("body")).not.toContainText(/Menu is being updated|Failed to load/i);
+  await expect(page.locator("body")).toContainText(/Order Online/i);
+});

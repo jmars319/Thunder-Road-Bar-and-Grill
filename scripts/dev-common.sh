@@ -213,3 +213,43 @@ verify_proxy_chain() {
   log_info "Frontend uses explicit API base $api_base and verified /api/health reachability"
   return 0
 }
+
+dev_database_reachable() {
+  (
+    cd "$BACKEND_DIR"
+    php -r '
+      require "utils/Config.php";
+      $host = Config::get("DB_HOST", "localhost");
+      $port = Config::get("DB_PORT", "3306");
+      $db = Config::get("DB_NAME", "");
+      $user = Config::get("DB_USER", "root");
+      $pass = Config::get("DB_PASSWORD", "");
+      if ($db === "") { exit(1); }
+      try {
+          new PDO("mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4", $user, $pass, [
+              PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+              PDO::ATTR_TIMEOUT => 3,
+          ]);
+          exit(0);
+      } catch (Throwable $e) {
+          exit(1);
+      }
+    '
+  ) >/dev/null 2>&1
+}
+
+dev_public_snapshots_available() {
+  [[ -s "$DEV_DIR/public-data/menu.json" && -s "$DEV_DIR/public-data/settings.json" ]]
+}
+
+warn_dev_parity_mode() {
+  if dev_database_reachable; then
+    return 0
+  fi
+
+  if dev_public_snapshots_available; then
+    log_warn "Local database is not reachable; public menu/settings will use dev snapshots. Admin routes still require the database."
+  else
+    log_warn "Local database is not reachable and public snapshots are missing. Run scripts/dev-sync-public-data.sh for public visual parity."
+  fi
+}
