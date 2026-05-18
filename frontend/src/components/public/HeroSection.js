@@ -18,6 +18,7 @@ import { buildImageVariant } from '../../utils/imageVariants';
 import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
+import { STATIC_HERO_META } from '../../config/permanentAssets';
 
 const HERO_SIZES = '(max-width: 767px) 100vw, (max-width: 1279px) calc(100vw - 32px), min(1280px, calc(100vw - 48px))';
 const HERO_FRAME_CLASS = 'absolute inset-0 rounded-none md:rounded-[32px] overflow-hidden';
@@ -36,25 +37,6 @@ const DEFAULT_HERO_COPY = {
     { label: 'Make a Reservation', href: '#reservations' }
   ]
 };
-const STATIC_HERO_META = {
-  webpSrcset: [
-    '/static/hero/hero-default-640.webp 640w',
-    '/static/hero/hero-default-960.webp 960w',
-    '/static/hero/hero-default-1x.webp 1440w',
-    '/static/hero/hero-default-2x.webp 2880w'
-  ].join(', '),
-  jpgSrcset: [
-    '/static/hero/hero-default-640.jpg 640w',
-    '/static/hero/hero-default-960.jpg 960w',
-    '/static/hero/hero-default-1x.jpg 1440w',
-    '/static/hero/hero-default-2x.jpg 2880w'
-  ].join(', '),
-  fallbackSrc: '/static/hero/hero-default-1x.webp',
-  width: 1440,
-  height: 960,
-  alt: 'Thunder Road Bar and Grill interior'
-};
-
 // New HeroSection: supports a simple slideshow driven by site settings (hero_images).
 export default function HeroSection() {
   // images: array of { src, alt }

@@ -1,0 +1,49 @@
+{
+  "site": "trbgmidway.com",
+  "policy": "Bundled assets are permanent brand/public fallbacks. Runtime uploads stay in backend/uploads and are excluded from normal deploy zips.",
+  "bundled": {
+    "brand": [
+      "frontend/src/assets/logo/logo.png",
+      "frontend/src/assets/logo/logo.webp",
+      "frontend/src/assets/logo/logo@2x.png",
+      "frontend/src/assets/logo/logo@2x.webp",
+      "frontend/src/assets/logo/logo@3x.png",
+      "frontend/src/assets/logo/logo@3x.webp"
+    ],
+    "heroFallbacks": [
+      "frontend/public/static/hero/hero-default-640.jpg",
+      "frontend/public/static/hero/hero-default-640.webp",
+      "frontend/public/static/hero/hero-default-960.jpg",
+      "frontend/public/static/hero/hero-default-960.webp",
+      "frontend/public/static/hero/hero-default-1x.jpg",
+      "frontend/public/static/hero/hero-default-1x.webp",
+      "frontend/public/static/hero/hero-default-2x.jpg",
+      "frontend/public/static/hero/hero-default-2x.webp"
+    ],
+    "share": [
+      "frontend/public/og/og-image-1200x630-with-badge.png",
+      "frontend/public/og/og-1024x1024.png"
+    ],
+    "favicons": [
+      "frontend/public/favicon-16x16.png",
+      "frontend/public/favicon-32x32.png",
+      "frontend/public/apple-touch-icon.png",
+      "frontend/public/android-chrome-192x192.png",
+      "frontend/public/android-chrome-512x512.png"
+    ]
+  },
+  "deployRequired": [
+    "static/hero/hero-default-1x.webp",
+    "static/hero/hero-default-2x.webp",
+    "og/og-image-1200x630-with-badge.png",
+    "favicon-16x16.png",
+    "favicon-32x32.png",
+    "apple-touch-icon.png",
+    "android-chrome-192x192.png",
+    "android-chrome-512x512.png"
+  ],
+  "runtimeUploads": {
+    "directory": "backend/uploads",
+    "deployArchivePolicy": "Only api/uploads/.htaccess may be packaged."
+  }
+}

@@ -67,6 +67,13 @@ zip_contains '^api/uploads/[.]htaccess$'
 zip_contains '^api/cache/[.]htaccess$'
 zip_contains '^api/[.]htaccess$'
 
+if [ -f "$ROOT_DIR/docs/permanent-assets.json" ]; then
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    zip_contains "^${entry}$"
+  done < <(node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); for (const item of (m.deployRequired || [])) console.log(item)" "$ROOT_DIR/docs/permanent-assets.json")
+fi
+
 env_entries="$(unzip -Z1 "$SITE_ZIP" | grep -E '(^|/)[.]env($|[.])' || true)"
 if printf '%s\n' "$env_entries" | grep -Ev '^api/[.]env$' >/dev/null; then
   err "site zip contains unexpected .env files"

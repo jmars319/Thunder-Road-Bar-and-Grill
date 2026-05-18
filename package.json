@@ -10,6 +10,7 @@
     "lint:fix": "npm --prefix frontend run lint:fix",
     "test": "npm --prefix frontend run test:ci",
     "test:watch": "npm --prefix frontend run test",
+    "check:permanent-assets": "bash ./scripts/verify-permanent-assets.sh",
     "check:public-assets": "npm --prefix frontend run check:public-assets",
     "check:public-errors": "bash ./scripts/verify-public-error-pages.sh",
     "check:live-reference": "bash ./scripts/verify-live-reference.sh",
