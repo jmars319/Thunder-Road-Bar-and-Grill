@@ -26,7 +26,13 @@ import { sanitizeRichText } from '../../utils/richText';
 import { normalizeMenuCategory } from '../../utils/menuDisplay';
 import MenuDisplay from '../public/MenuDisplay';
 import RichTextField from './RichTextField';
-import { buildImageVariant, hasRenderableImageVariant, applyCacheBusterToEntry, appendCacheBuster } from '../../utils/imageVariants';
+import ResponsiveImagePreview from './menu/ResponsiveImagePreview';
+import {
+  ensureCategoryResponsiveEntry,
+  getCacheBusterFromMedia,
+  mediaToResponsiveEntry,
+  normalizeMenuImageUrl,
+} from './menu/menuImageUtils';
 // ensure imports are recognized by some linters when used only in JSX
 const __usedSpinner = Spinner;
 void __usedSpinner;
@@ -132,103 +138,6 @@ function MenuModule() {
     */
 
   const apiOrigin = API_BASE.replace(/\/api$/, '');
-  const normalizeUrl = (u) => {
-    if (!u) return '';
-    if (u.startsWith('http://') || u.startsWith('https://')) return u;
-    if (u.startsWith('/')) return `${apiOrigin}${u}`;
-    return `${apiOrigin}/${u}`;
-  };
-
-  const getCacheBusterFromMedia = (media) => media?.cache_buster || media?.updated_at || media?.uploaded_at || null;
-
-  const mediaToResponsiveEntry = (media, fallbackInput = '') => {
-    if (!media) return null;
-    const fallback = fallbackInput || media.fallback_original || media.file_url || '';
-    const entry = {
-      image_variants: media.image_variants || media.responsive_variants || media.variants || {},
-      responsive_variants: media.responsive_variants || media.image_variants || media.variants || {},
-      fallback_original: fallback,
-      file_url: fallback,
-      alt_text: media.alt_text || media.title || ''
-    };
-    const cacheBuster = getCacheBusterFromMedia(media);
-    return cacheBuster ? applyCacheBusterToEntry(entry, cacheBuster) : entry;
-  };
-
-  const ensureCategoryResponsiveEntry = useCallback((category) => {
-    if (!category) return null;
-    const cacheBuster = category?.gallery_image_cache_buster || null;
-    let entry = null;
-    if (category.gallery_image_responsive) {
-      entry = category.gallery_image_responsive;
-    } else if (category.gallery_image_variants) {
-      entry = {
-        image_variants: category.gallery_image_variants,
-        responsive_variants: category.gallery_image_variants,
-        fallback_original: category.gallery_image_url || '',
-        file_url: category.gallery_image_url || '',
-        alt_text: category.name || ''
-      };
-    } else if (category.gallery_image_url) {
-      entry = {
-        image_variants: {},
-        responsive_variants: {},
-        fallback_original: category.gallery_image_url,
-        file_url: category.gallery_image_url,
-        alt_text: category.name || ''
-      };
-    }
-    if (!entry) return null;
-    return cacheBuster ? applyCacheBusterToEntry(entry, cacheBuster) : entry;
-  }, []);
-
-  const ResponsiveImagePreview = ({ entry, fallbackUrl, alt = '', className = '', sizes = '320px', cacheBuster = null }) => {
-    const hydratedEntry = cacheBuster ? applyCacheBusterToEntry(entry, cacheBuster) : entry;
-    const variant = hydratedEntry && hasRenderableImageVariant(hydratedEntry)
-      ? buildImageVariant(hydratedEntry, { sizes })
-      : null;
-    const fallbackSource = fallbackUrl ? normalizeUrl(fallbackUrl) : '';
-    const fallback = variant?.fallback
-      || (fallbackSource ? appendCacheBuster(fallbackSource, cacheBuster || hydratedEntry?.cache_buster || null) : '');
-
-    if (variant) {
-      return (
-        <picture>
-          {variant.webpSrcset && (
-            <source type="image/webp" srcSet={variant.webpSrcset} sizes={variant.sizes} />
-          )}
-          {variant.optimizedSrcset && (
-            <source type="image/jpeg" srcSet={variant.optimizedSrcset} sizes={variant.sizes} />
-          )}
-          <img
-            src={fallback}
-            alt={alt}
-            className={className}
-            loading="lazy"
-            sizes={variant.sizes}
-            srcSet={variant.optimizedSrcset || undefined}
-          />
-        </picture>
-      );
-    }
-
-    if (fallback) {
-      return (
-        <img
-          src={fallback}
-          alt={alt}
-          className={className}
-          loading="lazy"
-        />
-      );
-    }
-
-    return (
-      <div className={`bg-surface-warm text-text-secondary text-xs flex items-center justify-center ${className}`}>
-        No image selected
-      </div>
-    );
-  };
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -833,6 +742,7 @@ function MenuModule() {
                 {(editingCategory.gallery_image_responsive || editingCategory.gallery_image_url) && (
                   <div className="mt-2">
                     <ResponsiveImagePreview
+                      apiOrigin={apiOrigin}
                       entry={editingCategory.gallery_image_responsive}
                       fallbackUrl={editingCategory.gallery_image_url}
                       cacheBuster={editingCategory.gallery_image_cache_buster}
@@ -909,7 +819,7 @@ function MenuModule() {
                   <div className="grid grid-cols-4 gap-3">
                     {pagedMedia.map(m => (
                       <button key={m.id} type="button" onClick={() => setSelectedMediaId(m.id)} className={`border rounded overflow-hidden p-0 ${String(selectedMediaId) === String(m.id) ? 'ring-2 ring-primary' : ''}`}>
-                        <img loading="lazy" src={normalizeUrl(m.file_url)} alt={m.title || ''} className="w-full h-24 object-cover" />
+                        <img loading="lazy" src={normalizeMenuImageUrl(apiOrigin, m.file_url)} alt={m.title || ''} className="w-full h-24 object-cover" />
                       </button>
                     ))}
                   </div>
@@ -1099,6 +1009,7 @@ function MenuModule() {
                 </div>
                 <div className="flex items-center gap-3">
                   <ResponsiveImagePreview
+                    apiOrigin={apiOrigin}
                     entry={category.gallery_image_responsive}
                     fallbackUrl={category.gallery_image_url}
                     cacheBuster={category.gallery_image_cache_buster}
