@@ -18,7 +18,7 @@ import { buildImageVariant } from '../../utils/imageVariants';
 import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
-import { STATIC_HERO_META } from '../../config/permanentAssets';
+import { STATIC_HERO_META, STATIC_HERO_SLIDES } from '../../config/permanentAssets';
 
 const HERO_SIZES = '100vw';
 const HERO_FRAME_CLASS = 'absolute inset-0 overflow-hidden';
@@ -147,7 +147,8 @@ export default function HeroSection() {
     () => images.filter((img, i) => !failedSlideKeys.includes(getSlideKey(img, i))),
     [images, failedSlideKeys]
   );
-  const firstImageKey = availableImages.length ? availableImages[0]?.id ?? availableImages[0]?.variant?.fallback ?? 'hero' : 'empty';
+  const displayedImages = availableImages.length ? availableImages : STATIC_HERO_SLIDES;
+  const firstImageKey = displayedImages.length ? displayedImages[0]?.id ?? displayedImages[0]?.variant?.fallback ?? 'hero' : 'empty';
 
   useEffect(() => {
     setFirstImageLoaded(false);
@@ -155,16 +156,16 @@ export default function HeroSection() {
   }, [firstImageKey]);
 
   useEffect(() => {
-    if (!availableImages.length || !slideshowActive || availableImages.length <= 1) {
+    if (!displayedImages.length || !slideshowActive || displayedImages.length <= 1) {
       return undefined;
     }
     const interval = slideshowSpeed || 6000;
     const id = window.setInterval(() => {
-      idxRef.current = (idxRef.current + 1) % availableImages.length;
+      idxRef.current = (idxRef.current + 1) % displayedImages.length;
       setIndex(idxRef.current);
     }, interval);
     return () => window.clearInterval(id);
-  }, [availableImages.length, slideshowActive, slideshowSpeed]);
+  }, [displayedImages.length, slideshowActive, slideshowSpeed]);
 
   useEffect(() => {
     if (!firstImageLoaded) return undefined;
@@ -183,13 +184,14 @@ export default function HeroSection() {
     return () => window.clearTimeout(timer);
   }, [firstImageLoaded]);
 
-  const firstVariantKey = availableImages.length
-    ? availableImages[0]?.variant?.webpSrcset || availableImages[0]?.variant?.optimizedSrcset || availableImages[0]?.variant?.fallback
+  const firstVariant = displayedImages[0]?.variant || null;
+  const firstVariantKey = firstVariant
+    ? firstVariant.webpSrcset || firstVariant.optimizedSrcset || firstVariant.fallback
     : null;
 
   useEffect(() => {
     if (!firstVariantKey || typeof document === 'undefined') return undefined;
-    const variant = availableImages[0]?.variant;
+    const variant = displayedImages[0]?.variant;
     if (!variant) return undefined;
     const link = document.createElement('link');
     link.rel = 'preload';
@@ -205,9 +207,9 @@ export default function HeroSection() {
     return () => {
       document.head.removeChild(link);
     };
-  }, [firstVariantKey, availableImages]);
+  }, [firstVariantKey, displayedImages]);
 
-  const hasSlides = availableImages.length > 0;
+  const hasSlides = displayedImages.length > 0;
   const handleFirstImageLoad = () => {
     if (!firstImageLoaded) {
       setFirstImageLoaded(true);
@@ -221,7 +223,7 @@ export default function HeroSection() {
     idxRef.current = 0;
     setIndex(0);
   }, []);
-  const activeIndex = availableImages.length ? index % availableImages.length : 0;
+  const activeIndex = displayedImages.length ? index % displayedImages.length : 0;
 
   return (
     <div className={`hero-shell hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse relative overflow-hidden`}>
@@ -250,9 +252,9 @@ export default function HeroSection() {
             height={STATIC_HERO_META.height}
           />
         </picture>
-        {availableImages.length > 0 && (
+        {displayedImages.length > 0 && (
           <>
-            {availableImages.map((img, i) => {
+            {displayedImages.map((img, i) => {
               const slideKey = getSlideKey(img, i);
               const variant = i === 0 ? img.variant : limitHeroVariantToSingle(img.variant);
               const isVisible = i === activeIndex;
@@ -295,9 +297,9 @@ export default function HeroSection() {
 
         <div className="hero-content absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8">
           {/* Accessibility: provide current slide text for screen readers without triggering extra image downloads */}
-          {availableImages[activeIndex]?.alt && (
+          {displayedImages[activeIndex]?.alt && (
             <span className="sr-only" aria-live="polite">
-              {availableImages[activeIndex].alt}
+              {displayedImages[activeIndex].alt}
             </span>
           )}
           <div className="hero-copy-shell inline-flex flex-col gap-4 px-6 py-5 md:px-10 md:py-8 rounded-2xl shadow-lg max-w-4xl mx-auto">

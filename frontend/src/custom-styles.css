@@ -439,7 +439,7 @@ h3 {
 
 /* Overlay gradient used on images to improve text readability */
 .overlay-gradient {
-  background: linear-gradient(to bottom, rgb(0 0 0 / 14%), rgb(0 0 0 / 3%));
+  background: linear-gradient(to bottom, rgb(0 0 0 / 8%), rgb(0 0 0 / 0%));
 }
 
 /* Hero typography tweaks */
@@ -495,9 +495,9 @@ h3 {
   min-height: 12rem;
   justify-content: center;
   text-align: center;
-  background: rgb(0 0 0 / 14%);
-  border: 1px solid rgb(255 255 255 / 10%);
-  backdrop-filter: blur(3px);
+  background: rgb(0 0 0 / 8%);
+  border: 1px solid rgb(255 255 255 / 8%);
+  backdrop-filter: blur(2px);
 }
 
 .hero-cta-row {

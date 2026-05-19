@@ -25,9 +25,11 @@ test("public home renders live-like menu/settings content in dev", async ({ page
   await expect(page.locator("body")).toContainText(/Order Online/i);
 });
 
-test("public menu category images render from upload paths", async ({ page }) => {
-  await page.goto("/", { waitUntil: "networkidle" });
+test("public menu category images render from permanent or upload media", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#menu")).toBeVisible();
   await page.locator("#menu").scrollIntoViewIfNeeded();
+  await expect(page.locator("#menu .menu-card")).not.toHaveCount(0);
   await page.waitForFunction(() => {
     const images = Array.from(document.querySelectorAll("#menu .menu-card--image img"));
     return images.length > 0 && images.every((img) => img.complete && img.naturalWidth > 0);
@@ -39,15 +41,16 @@ test("public menu category images render from upload paths", async ({ page }) =>
 });
 
 test("about map links target the Thunder Road listing", async ({ page }) => {
-  await page.goto("/", { waitUntil: "networkidle" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#about")).toBeVisible();
   await page.locator("#about").scrollIntoViewIfNeeded();
 
   const goTo = page.locator("#about a", { hasText: "Go To" });
   const directions = page.locator("#about a", { hasText: "Get Directions" });
-  await expect(goTo).toHaveAttribute("href", /Thunder%20Road%20Bar%20and%20Grill/);
-  await expect(goTo).toHaveAttribute("href", /query_place_id=/);
-  await expect(directions).toHaveAttribute("href", /Thunder%20Road%20Bar%20and%20Grill/);
-  await expect(directions).toHaveAttribute("href", /destination_place_id=/);
+  await expect(goTo).toHaveAttribute("href", /Thunder(\+|%20)Road(\+|%20)Bar(\+|%20)and(\+|%20)Grill/i);
+  await expect(directions).toHaveAttribute("href", /Thunder(\+|%20)Road(\+|%20)Bar(\+|%20)and(\+|%20)Grill/i);
+  await expect(goTo).not.toHaveAttribute("href", /query_place_id=/);
+  await expect(directions).not.toHaveAttribute("href", /destination_place_id=/);
 });
 
 test("admin route loads the admin app", async ({ page }) => {

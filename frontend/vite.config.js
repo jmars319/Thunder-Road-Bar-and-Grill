@@ -37,6 +37,8 @@ function adminHistoryFallback() {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const defaultApiBase = mode === 'test' ? 'http://localhost:3304/api' : '/api';
+  const frontendPort = Number(process.env.FRONTEND_PORT || process.env.PORT || env.FRONTEND_PORT || env.PORT || 3204);
+  const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3304';
 
   return {
     plugins: [adminHistoryFallback(), reactJsxInJs(), react()],
@@ -62,11 +64,11 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: 3204,
+      port: frontendPort,
       strictPort: true,
       proxy: {
-        '/api': 'http://127.0.0.1:3304',
-        '/uploads': 'http://127.0.0.1:3304',
+        '/api': apiProxyTarget,
+        '/uploads': apiProxyTarget,
       },
     },
     test: {

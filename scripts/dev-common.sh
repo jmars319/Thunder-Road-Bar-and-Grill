@@ -8,9 +8,10 @@ __TRBG_DEV_COMMON_SOURCED=1
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Optional overrides default to .dev/dev-config.sh
-if [[ -f "$ROOT_DIR/.dev/dev-config.sh" ]]; then
+DEV_CONFIG_FILE="${DEV_CONFIG_FILE:-$ROOT_DIR/.dev/dev-config.sh}"
+if [[ -f "$DEV_CONFIG_FILE" ]]; then
   # shellcheck disable=SC1090
-  source "$ROOT_DIR/.dev/dev-config.sh"
+  source "$DEV_CONFIG_FILE"
 fi
 
 DEV_DIR="${DEV_DIR:-$ROOT_DIR/.dev}"
@@ -185,11 +186,23 @@ verify_proxy_chain() {
   fi
 
   local api_base
-  api_base=$(grep -Eo "process\.env\.REACT_APP_API_BASE \|\| '[^']+'" "$api_config" | head -n1 | sed -E "s/.*\|\| '([^']+)'.*/\1/")
+  api_base="${REACT_APP_API_BASE:-${VITE_API_BASE:-}}"
+  if [[ -z "$api_base" ]]; then
+    api_base=$(grep -Eo "process\.env\.REACT_APP_API_BASE \|\| '[^']+'" "$api_config" | head -n1 | sed -E "s/.*\|\| '([^']+)'.*/\1/")
+  fi
 
   if [[ -z "$api_base" ]]; then
     log_error "Unable to parse API base default from $api_config"
     return 1
+  fi
+
+  if [[ "$api_base" == "/api" ]]; then
+    if ! curl --silent --fail --max-time 2 "$FRONTEND_BASE_URL/api/health" >/dev/null; then
+      log_error "Frontend proxy did not respond at $FRONTEND_BASE_URL/api/health"
+      return 1
+    fi
+    log_info "Frontend uses same-origin /api and verified proxy reachability"
+    return 0
   fi
 
   local expected_api="http://$BACKEND_HOST:$BACKEND_PORT/api"

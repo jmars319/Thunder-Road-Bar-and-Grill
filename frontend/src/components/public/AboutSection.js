@@ -27,25 +27,6 @@ function buildMapsEmbedUrlFromAddress(address) {
   return `https://www.google.com/maps?q=${q}&output=embed`;
 }
 
-function extractGooglePlaceId(...values) {
-  for (const value of values) {
-    if (!value) continue;
-    const raw = String(value);
-    const patterns = [
-      /[?&]placeid=([^&]+)/i,
-      /[?&]place_id=([^&]+)/i,
-      /query=place_id:([^&]+)/i,
-    ];
-    for (const pattern of patterns) {
-      const match = raw.match(pattern);
-      if (match?.[1]) {
-        return decodeURIComponent(match[1]);
-      }
-    }
-  }
-  return null;
-}
-
 function buildVenueMapQuery(siteSettings, about) {
   const name = siteSettings?.business_name || 'Thunder Road Bar and Grill';
   const address = about?.address || siteSettings?.address || '';
@@ -105,14 +86,11 @@ export default function AboutSection() {
     }
     if (!embedSrc) return null;
 
-    const placeId = extractGooglePlaceId(siteSettings?.google, siteSettings?.google_url, siteSettings?.social?.google, embedSrc);
     const venueQuery = buildVenueMapQuery(siteSettings, about) || 'Thunder Road Bar and Grill Winston-Salem NC';
     const encodedVenueQuery = encodeURIComponent(venueQuery);
-    const placeIdQuery = placeId ? `&query_place_id=${encodeURIComponent(placeId)}` : '';
-    const destinationPlaceIdQuery = placeId ? `&destination_place_id=${encodeURIComponent(placeId)}` : '';
 
-    const destinationUrl = `https://www.google.com/maps/search/?api=1&query=${encodedVenueQuery}${placeIdQuery}`;
-    const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedVenueQuery}${destinationPlaceIdQuery}`;
+    const destinationUrl = `https://www.google.com/maps/search/?api=1&query=${encodedVenueQuery}`;
+    const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedVenueQuery}`;
     const previewQuery = venueQuery || (!isUrl && raw ? raw : '');
 
     return { embedSrc, destinationUrl, directionsUrl, previewQuery };

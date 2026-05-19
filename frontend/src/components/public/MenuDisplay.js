@@ -162,10 +162,17 @@ export default function MenuDisplay({
           ) : hasCategories ? (
             categories.map(category => {
             const heroVariant = category.heroVariant || null;
+            const permanentHeroVariant = category.permanentHeroVariant || null;
             const fallbackBackground = category.gallery_image_url || null;
             const backgroundFailed = failedBackgrounds.includes(String(category.id));
-            const hasResponsiveHero = !backgroundFailed && Boolean(heroVariant?.fallback || heroVariant?.optimizedSrcset || heroVariant?.webpSrcset);
-            const hasFallbackImage = !backgroundFailed && Boolean(fallbackBackground);
+            const selectedHeroVariant = backgroundFailed && permanentHeroVariant
+              ? permanentHeroVariant
+              : (heroVariant || permanentHeroVariant);
+            const selectedFallbackBackground = backgroundFailed && permanentHeroVariant
+              ? permanentHeroVariant.fallback
+              : fallbackBackground;
+            const hasResponsiveHero = Boolean(selectedHeroVariant?.fallback || selectedHeroVariant?.optimizedSrcset || selectedHeroVariant?.webpSrcset);
+            const hasFallbackImage = Boolean(selectedFallbackBackground);
             const hasBackground = hasResponsiveHero || hasFallbackImage;
             const cardSurfaceClass = hasBackground ? 'menu-card--image' : 'menu-card--plain';
             return (
@@ -184,7 +191,7 @@ export default function MenuDisplay({
                   <div className="absolute inset-0" aria-hidden="true">
                     {hasResponsiveHero ? (
                       <ResponsiveImage
-                        variant={heroVariant}
+                        variant={selectedHeroVariant}
                         alt=""
                         loading="lazy"
                         pictureClassName="absolute inset-0 block w-full h-full"
@@ -193,7 +200,7 @@ export default function MenuDisplay({
                       />
                     ) : (
                     <img
-                      src={fallbackBackground}
+                      src={selectedFallbackBackground}
                       alt=""
                       loading="lazy"
                       decoding="async"

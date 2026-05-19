@@ -182,7 +182,20 @@ function ReservationsModule() {
                 </tr>
               ) : (
                 reservations.map(res => (
-                  <tr key={res.id} className="hover:bg-surface-warm/60">
+                  <tr
+                    key={res.id}
+                    className="hover:bg-surface-warm/60 cursor-pointer focus-within:bg-surface-warm/60"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Open reservation for ${res.name || 'guest'}`}
+                    onClick={() => setViewReservation(res)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setViewReservation(res);
+                      }
+                    }}
+                  >
                     <td className="px-4 py-3">
                       <div className="font-medium text-text-primary">{res.name}</div>
                       {res.special_requests && <div className="text-xs text-text-secondary mt-1">{res.special_requests}</div>}
@@ -197,7 +210,7 @@ function ReservationsModule() {
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusClass(res.status)}`}>{res.status}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"

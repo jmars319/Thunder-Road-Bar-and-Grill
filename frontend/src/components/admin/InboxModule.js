@@ -134,9 +134,22 @@ function InboxModule() {
                 </tr>
               ) : (
                 messages.map(msg => (
-                  <tr key={msg.id} className="hover:bg-surface-warm/60">
+                  <tr
+                    key={msg.id}
+                    className="hover:bg-surface-warm/60 cursor-pointer focus-within:bg-surface-warm/60"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Open message from ${msg.name || 'guest'}`}
+                    onClick={() => openModal(msg)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openModal(msg);
+                      }
+                    }}
+                  >
                     <td className="px-4 py-3">
-                      <button type="button" className="text-left font-medium text-text-primary" onClick={() => openModal(msg)}>
+                      <button type="button" className="text-left font-medium text-text-primary" onClick={(event) => { event.stopPropagation(); openModal(msg); }}>
                         {msg.name}
                       </button>
                       <div className="text-xs text-text-secondary">{msg.email}</div>
@@ -144,7 +157,7 @@ function InboxModule() {
                     <td className="px-4 py-3">{msg.subject}</td>
                     <td className="px-4 py-3">{msg.submitted_at ? new Date(msg.submitted_at).toLocaleString() : ''}</td>
                     <td className="px-4 py-3">{msg.status}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                       <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => openModal(msg)} className="px-2 py-1 rounded-full text-xs border border-divider text-text-primary">
                           View

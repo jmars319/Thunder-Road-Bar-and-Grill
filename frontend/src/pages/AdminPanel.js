@@ -75,6 +75,7 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
                 key={key}
                 type="button"
                 onClick={() => setActiveModule(key)}
+                title={entry.name}
                 aria-pressed={activeModule === key}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${
                   activeModule === key ? 'bg-primary text-text-inverse' : 'text-text-inverse'
@@ -90,15 +91,17 @@ export default function AdminPanel({ user = { name: 'Admin' }, token = null, onL
         <div className="p-4 border-t border-divider space-y-2">
           <button
             onClick={onBackToSite}
+            title="Back to Site"
             className="w-full text-left px-3 py-2 rounded-lg border border-divider text-text-inverse hover:bg-surface-warm hover:text-text-primary"
           >
-            Back to Site
+            {sidebarOpen ? 'Back to Site' : 'Back'}
           </button>
           <button
             onClick={onLogout}
+            title="Logout"
             className="w-full text-left px-3 py-2 rounded-lg bg-error text-text-inverse hover:bg-error-muted"
           >
-            Logout
+            {sidebarOpen ? 'Logout' : 'Exit'}
           </button>
         </div>
       </aside>

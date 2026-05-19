@@ -265,6 +265,15 @@ class MenuRoutes {
         }
 
         $output = $this->hydrateMissingMenuImagesFromSnapshot(array_values($categories));
+        if (empty($output)) {
+            $snapshot = DevPublicSnapshot::load('menu');
+            if (is_array($snapshot) && !empty($snapshot)) {
+                Logger::warning('Serving dev public snapshot because local menu is empty', ['snapshot' => 'menu']);
+                header('X-Dev-Public-Snapshot: menu-empty');
+                echo json_encode($snapshot);
+                return;
+            }
+        }
         $this->debugLog('api.menu.response.sample', [
             'count' => count($output),
             'first_category' => $output[0] ?? null

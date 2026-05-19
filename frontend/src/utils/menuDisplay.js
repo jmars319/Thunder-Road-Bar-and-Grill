@@ -5,6 +5,16 @@ import {
   applyCacheBusterToEntry,
   appendCacheBuster
 } from './imageVariants';
+import { MENU_CATEGORY_ASSETS } from '../config/permanentAssets';
+
+function slugifyCategory(value = '') {
+  return String(value)
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 export function normalizeMenuCategory(cat = {}) {
   const fallbackUrlRaw = cat.gallery_image_url || cat.image_url || '';
@@ -33,11 +43,14 @@ export function normalizeMenuCategory(cat = {}) {
       sizes: displaySizes
     };
   }
+  const categorySlug = cat.slug || slugifyCategory(cat.name || '');
+  const permanentHeroVariant = MENU_CATEGORY_ASSETS[categorySlug] || null;
 
   return {
     ...cat,
     display_columns: cat.display_columns || 2,
     gallery_image_url: fallbackUrl,
-    heroVariant
+    heroVariant,
+    permanentHeroVariant
   };
 }

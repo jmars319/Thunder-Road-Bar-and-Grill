@@ -294,6 +294,18 @@ class SettingsRoutes {
             if (!$row) {
                 $row = [];
             }
+
+            $hasPublicLocation = !empty($row['paragraph']) || !empty($row['address']) || !empty($row['map_embed_url']);
+            if (!$hasPublicLocation) {
+                $snapshot = DevPublicSnapshot::load('about');
+                if (is_array($snapshot) && !empty($snapshot)) {
+                    Logger::warning('Serving dev public snapshot because local about content is empty', ['snapshot' => 'about']);
+                    header('Cache-Control: public, max-age=300');
+                    header('X-Dev-Public-Snapshot: about-empty');
+                    echo json_encode($snapshot);
+                    return;
+                }
+            }
             
             header('Cache-Control: public, max-age=300');
             echo json_encode($row);
