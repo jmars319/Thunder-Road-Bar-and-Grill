@@ -26,6 +26,14 @@ export default function MenuDisplay({
   const resizeObserverRef = React.useRef(null);
   const observerKeyRef = React.useRef(null);
   const lastReportedHeight = React.useRef(0);
+  const [failedBackgrounds, setFailedBackgrounds] = React.useState([]);
+
+  const handleBackgroundError = React.useCallback((categoryId) => {
+    const key = String(categoryId);
+    setFailedBackgrounds((current) => (
+      current.includes(key) ? current : [...current, key]
+    ));
+  }, []);
 
   const cancelMeasurementRafs = React.useCallback(() => {
     if (measurementRaf.current.read) {
@@ -155,8 +163,9 @@ export default function MenuDisplay({
             categories.map(category => {
             const heroVariant = category.heroVariant || null;
             const fallbackBackground = category.gallery_image_url || null;
-            const hasResponsiveHero = Boolean(heroVariant?.fallback || heroVariant?.optimizedSrcset || heroVariant?.webpSrcset);
-            const hasFallbackImage = Boolean(fallbackBackground);
+            const backgroundFailed = failedBackgrounds.includes(String(category.id));
+            const hasResponsiveHero = !backgroundFailed && Boolean(heroVariant?.fallback || heroVariant?.optimizedSrcset || heroVariant?.webpSrcset);
+            const hasFallbackImage = !backgroundFailed && Boolean(fallbackBackground);
             const hasBackground = hasResponsiveHero || hasFallbackImage;
             const cardSurfaceClass = hasBackground ? 'menu-card--image' : 'menu-card--plain';
             return (
@@ -180,6 +189,7 @@ export default function MenuDisplay({
                         loading="lazy"
                         pictureClassName="absolute inset-0 block w-full h-full"
                         className="absolute inset-0 w-full h-full object-cover"
+                        imgProps={{ onError: () => handleBackgroundError(category.id) }}
                       />
                     ) : (
                     <img
@@ -190,14 +200,15 @@ export default function MenuDisplay({
                       width="960"
                       height="540"
                       className="absolute inset-0 w-full h-full object-cover"
+                      onError={() => handleBackgroundError(category.id)}
                     />
                     )}
-                    <div className="absolute inset-0 bg-black/35" />
+                    <div className="absolute inset-0 bg-black/25" />
                   </div>
                 )}
                 <div className="relative z-10 flex items-center justify-between p-4">
                   <div className={`text-left max-w-3xl ${hasBackground ? 'text-white' : ''}`}>
-                    <div className={`inline-flex flex-col gap-2 px-4 py-3 rounded-lg ${hasBackground ? 'bg-black/35 backdrop-blur-md' : ''}`}>
+                    <div className={`inline-flex flex-col gap-2 px-4 py-3 rounded-lg ${hasBackground ? 'bg-black/30 backdrop-blur-sm' : ''}`}>
                       <h3 className="text-xl md:text-2xl font-heading font-bold mb-1">{category.name}</h3>
                       {category.description && (
                         <div

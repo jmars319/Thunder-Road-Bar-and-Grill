@@ -149,6 +149,7 @@ Admin (JWT) endpoints cover authentication, menu CRUD, media uploads, and site s
 ## Scripts Reference
 
 - Dev orchestration: `scripts/dev-start.sh`, `dev-stop.sh`, `dev-restart.sh`, `dev-status.sh`, `dev-verify.sh`
+- Local DB/admin parity: `npm run dev:verify-local` checks the ignored `backend/.env` MySQL connection and local `admin` / `admin123` admin row without printing secrets.
 - Backend only: `scripts/dev-backend-start.sh`, `dev-backend-stop.sh`, `dev-backend-restart.sh`
 - Frontend only: `scripts/dev-frontend-start.sh`, `dev-frontend-stop.sh`, `dev-frontend-restart.sh`
 - Deployment: `scripts/make-deploy-zips.sh`, `scripts/check-deploy-zips.sh`

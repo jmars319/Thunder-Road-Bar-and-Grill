@@ -31,5 +31,10 @@ mkdir -p "$OUT_DIR"
 
 fetch_json "menu" "${LIVE_API_BASE%/}/menu"
 fetch_json "settings" "${LIVE_API_BASE%/}/settings"
+fetch_json "site-settings" "${LIVE_API_BASE%/}/site-settings"
+fetch_json "navigation" "${LIVE_API_BASE%/}/navigation"
+fetch_json "business-hours" "${LIVE_API_BASE%/}/business-hours"
+fetch_json "about" "${LIVE_API_BASE%/}/about"
+fetch_json "footer-columns" "${LIVE_API_BASE%/}/footer-columns"
 
 printf '[dev-sync-public-data] Saved public snapshots under %s\n' "$OUT_DIR"

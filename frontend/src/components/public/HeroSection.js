@@ -13,20 +13,19 @@
 
 // React 17+ with new JSX transform doesn't require importing React for JSX usage.
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { buildImageVariant } from '../../utils/imageVariants';
 import ResponsiveImage from '../common/ResponsiveImage';
 import { getApiUrl } from '../../config/api';
 import cachedFetch from '../../lib/cachedFetch';
 import { STATIC_HERO_META } from '../../config/permanentAssets';
 
-const HERO_SIZES = '(max-width: 767px) 100vw, (max-width: 1279px) calc(100vw - 32px), min(1280px, calc(100vw - 48px))';
-const HERO_FRAME_CLASS = 'absolute inset-0 rounded-none md:rounded-[32px] overflow-hidden';
-const HERO_OVERLAY_CLASS = 'absolute inset-0 rounded-none md:rounded-[32px] z-10 overlay-gradient pointer-events-none';
-const HERO_STAGE_CLASS = 'relative w-full max-w-6xl mx-auto hero-stage';
+const HERO_SIZES = '100vw';
+const HERO_FRAME_CLASS = 'absolute inset-0 overflow-hidden';
+const HERO_OVERLAY_CLASS = 'absolute inset-0 z-10 overlay-gradient pointer-events-none';
+const HERO_STAGE_CLASS = 'relative w-full hero-stage';
 const HERO_STAGE_STYLE = {
-  aspectRatio: '3 / 2',
-  minHeight: '360px',
+  minHeight: 'clamp(520px, 68vh, 760px)',
   width: '100%'
 };
 const DEFAULT_HERO_COPY = {
@@ -47,6 +46,7 @@ export default function HeroSection() {
   const [index, setIndex] = useState(0);
   const [firstImageLoaded, setFirstImageLoaded] = useState(false);
   const [slideshowActive, setSlideshowActive] = useState(false);
+  const [failedSlideKeys, setFailedSlideKeys] = useState([]);
 
   const applySlides = useCallback((slides) => {
     if (!Array.isArray(slides)) {
@@ -54,6 +54,7 @@ export default function HeroSection() {
     }
     idxRef.current = 0;
     setIndex(0);
+    setFailedSlideKeys([]);
     setImages(slides);
   }, []);
 
@@ -142,7 +143,11 @@ export default function HeroSection() {
     };
   }, [applySlides]);
 
-  const firstImageKey = images.length ? images[0]?.id ?? images[0]?.variant?.fallback ?? 'hero' : 'empty';
+  const availableImages = useMemo(
+    () => images.filter((img, i) => !failedSlideKeys.includes(getSlideKey(img, i))),
+    [images, failedSlideKeys]
+  );
+  const firstImageKey = availableImages.length ? availableImages[0]?.id ?? availableImages[0]?.variant?.fallback ?? 'hero' : 'empty';
 
   useEffect(() => {
     setFirstImageLoaded(false);
@@ -150,16 +155,16 @@ export default function HeroSection() {
   }, [firstImageKey]);
 
   useEffect(() => {
-    if (!images.length || !slideshowActive || images.length <= 1) {
+    if (!availableImages.length || !slideshowActive || availableImages.length <= 1) {
       return undefined;
     }
     const interval = slideshowSpeed || 6000;
     const id = window.setInterval(() => {
-      idxRef.current = (idxRef.current + 1) % images.length;
+      idxRef.current = (idxRef.current + 1) % availableImages.length;
       setIndex(idxRef.current);
     }, interval);
     return () => window.clearInterval(id);
-  }, [images, slideshowActive, slideshowSpeed]);
+  }, [availableImages.length, slideshowActive, slideshowSpeed]);
 
   useEffect(() => {
     if (!firstImageLoaded) return undefined;
@@ -178,13 +183,13 @@ export default function HeroSection() {
     return () => window.clearTimeout(timer);
   }, [firstImageLoaded]);
 
-  const firstVariantKey = images.length
-    ? images[0]?.variant?.webpSrcset || images[0]?.variant?.optimizedSrcset || images[0]?.variant?.fallback
+  const firstVariantKey = availableImages.length
+    ? availableImages[0]?.variant?.webpSrcset || availableImages[0]?.variant?.optimizedSrcset || availableImages[0]?.variant?.fallback
     : null;
 
   useEffect(() => {
     if (!firstVariantKey || typeof document === 'undefined') return undefined;
-    const variant = images[0]?.variant;
+    const variant = availableImages[0]?.variant;
     if (!variant) return undefined;
     const link = document.createElement('link');
     link.rel = 'preload';
@@ -200,17 +205,26 @@ export default function HeroSection() {
     return () => {
       document.head.removeChild(link);
     };
-  }, [firstVariantKey, images]);
+  }, [firstVariantKey, availableImages]);
 
-  const hasSlides = images.length > 0;
+  const hasSlides = availableImages.length > 0;
   const handleFirstImageLoad = () => {
     if (!firstImageLoaded) {
       setFirstImageLoaded(true);
     }
   };
+  const handleSlideError = useCallback((slideKey) => {
+    setFailedSlideKeys((current) => (
+      current.includes(slideKey) ? current : [...current, slideKey]
+    ));
+    setFirstImageLoaded(true);
+    idxRef.current = 0;
+    setIndex(0);
+  }, []);
+  const activeIndex = availableImages.length ? index % availableImages.length : 0;
 
   return (
-    <div className={`hero-shell hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse py-20 relative overflow-hidden px-0 md:px-4 lg:px-6`}>
+    <div className={`hero-shell hero-gradient ${hasSlides ? 'hero-gradient--with-images' : 'hero-gradient--empty'} text-text-inverse relative overflow-hidden`}>
       <div className={HERO_STAGE_CLASS} style={HERO_STAGE_STYLE}>
         {/* image slideshow: using <img> so it's discoverable and preloadable */}
         <div className={`${HERO_FRAME_CLASS} z-0`} aria-hidden="true">
@@ -236,15 +250,17 @@ export default function HeroSection() {
             height={STATIC_HERO_META.height}
           />
         </picture>
-        {images.length > 0 && (
+        {availableImages.length > 0 && (
           <>
-            {images.map((img, i) => {
+            {availableImages.map((img, i) => {
+              const slideKey = getSlideKey(img, i);
               const variant = i === 0 ? img.variant : limitHeroVariantToSingle(img.variant);
-              const isVisible = i === index;
+              const isVisible = i === activeIndex;
               const transitionClass = slideshowActive ? 'transition-opacity duration-1000' : '';
               const baseImgProps = {
                 width: variant?.width || undefined,
-                height: variant?.height || undefined
+                height: variant?.height || undefined,
+                onError: () => handleSlideError(slideKey)
               };
               const eagerProps = i === 0
                 ? {
@@ -255,7 +271,7 @@ export default function HeroSection() {
               const imgProps = { ...baseImgProps, ...eagerProps };
               return (
               <div
-                key={img.id || i}
+                key={slideKey}
                 className={`absolute inset-0 w-full h-full ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${transitionClass}`}
               >
                 <ResponsiveImage
@@ -277,16 +293,16 @@ export default function HeroSection() {
         {/* overlay gradient must sit above images but below content */}
         <div className={HERO_OVERLAY_CLASS} aria-hidden="true" />
 
-        <div className="hero-content relative z-20 flex flex-col items-center justify-center h-full text-center px-4 sm:px-6 lg:px-8">
+        <div className="hero-content absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8">
           {/* Accessibility: provide current slide text for screen readers without triggering extra image downloads */}
-          {images[index]?.alt && (
+          {availableImages[activeIndex]?.alt && (
             <span className="sr-only" aria-live="polite">
-              {images[index].alt}
+              {availableImages[activeIndex].alt}
             </span>
           )}
-          <div className="hero-copy-shell inline-flex flex-col gap-4 px-6 py-5 rounded-2xl bg-black/45 backdrop-blur-md shadow-xl max-w-3xl mx-auto">
+          <div className="hero-copy-shell inline-flex flex-col gap-4 px-6 py-5 md:px-10 md:py-8 rounded-2xl shadow-lg max-w-4xl mx-auto">
             {heroCopy.title && (
-              <h1 className="text-4xl md:text-5xl font-heading font-extrabold tracking-tight text-brand-cream drop-shadow-sm">
+              <h1 className="text-4xl md:text-6xl font-heading font-extrabold tracking-tight text-brand-cream drop-shadow-sm">
                 {heroCopy.title}
               </h1>
             )}
@@ -312,6 +328,10 @@ export default function HeroSection() {
       </div>
     </div>
   );
+}
+
+function getSlideKey(img, i) {
+  return String(img?.id ?? img?.variant?.fallback ?? i);
 }
 
 function limitHeroVariantToSingle(variant) {

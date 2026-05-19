@@ -113,6 +113,55 @@ class MenuRoutes {
         self::$cache = ['payload' => null, 'expires' => 0];
     }
 
+    private function menuCategorySnapshotKey($name) {
+        $value = html_entity_decode((string) $name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = strtolower(str_replace('&', ' and ', $value));
+        $value = preg_replace('/[^a-z0-9]+/', ' ', $value);
+        return trim(preg_replace('/\s+/', ' ', $value));
+    }
+
+    private function hydrateMissingMenuImagesFromSnapshot($categories) {
+        $snapshot = DevPublicSnapshot::load('menu');
+        if (!is_array($snapshot)) {
+            return $categories;
+        }
+
+        $snapshotByName = [];
+        foreach ($snapshot as $snapshotCategory) {
+            if (!is_array($snapshotCategory) || empty($snapshotCategory['name'])) {
+                continue;
+            }
+            $key = $this->menuCategorySnapshotKey($snapshotCategory['name']);
+            if ($key !== '') {
+                $snapshotByName[$key] = $snapshotCategory;
+            }
+        }
+
+        $merged = 0;
+        foreach ($categories as &$category) {
+            if (!empty($category['gallery_image_url']) || !empty($category['gallery_image_responsive'])) {
+                continue;
+            }
+            $key = $this->menuCategorySnapshotKey($category['name'] ?? '');
+            $snapshotCategory = $snapshotByName[$key] ?? null;
+            if (!$snapshotCategory || (empty($snapshotCategory['gallery_image_url']) && empty($snapshotCategory['gallery_image_responsive']))) {
+                continue;
+            }
+            $category['gallery_image_url'] = $snapshotCategory['gallery_image_url'] ?? null;
+            $category['gallery_image_responsive'] = $snapshotCategory['gallery_image_responsive'] ?? null;
+            $category['gallery_image_cache_buster'] = $snapshotCategory['gallery_image_cache_buster'] ?? null;
+            $merged++;
+        }
+        unset($category);
+
+        if ($merged > 0) {
+            Logger::warning('Merged dev public snapshot menu images', ['count' => $merged]);
+            header('X-Dev-Public-Snapshot-Merged: menu-images');
+        }
+
+        return $categories;
+    }
+
     /**
      * GET /api/menu - Public menu with active categories and available items
      */
@@ -215,7 +264,7 @@ class MenuRoutes {
             }
         }
 
-        $output = array_values($categories);
+        $output = $this->hydrateMissingMenuImagesFromSnapshot(array_values($categories));
         $this->debugLog('api.menu.response.sample', [
             'count' => count($output),
             'first_category' => $output[0] ?? null

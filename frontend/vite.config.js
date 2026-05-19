@@ -18,12 +18,28 @@ function reactJsxInJs() {
   };
 }
 
+function adminHistoryFallback() {
+  return {
+    name: 'admin-history-fallback',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const pathname = (req.url || '').split('?')[0];
+        const looksLikeAsset = /\.[a-zA-Z0-9]+$/.test(pathname);
+        if ((pathname === '/admin' || pathname.startsWith('/admin/')) && !looksLikeAsset) {
+          req.url = `/admin/index.html${(req.url || '').includes('?') ? `?${(req.url || '').split('?').slice(1).join('?')}` : ''}`;
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const defaultApiBase = mode === 'test' ? 'http://localhost:3304/api' : '/api';
 
   return {
-    plugins: [reactJsxInJs(), react()],
+    plugins: [adminHistoryFallback(), reactJsxInJs(), react()],
     define: {
       'process.env.REACT_APP_API_BASE': JSON.stringify(env.REACT_APP_API_BASE || env.VITE_API_BASE || defaultApiBase),
       'process.env.REACT_APP_BRAND_KEY': JSON.stringify(env.REACT_APP_BRAND_KEY || env.VITE_BRAND_KEY || 'trbg'),
@@ -50,6 +66,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy: {
         '/api': 'http://127.0.0.1:3304',
+        '/uploads': 'http://127.0.0.1:3304',
       },
     },
     test: {

@@ -239,7 +239,11 @@ dev_database_reachable() {
 }
 
 dev_public_snapshots_available() {
-  [[ -s "$DEV_DIR/public-data/menu.json" && -s "$DEV_DIR/public-data/settings.json" ]]
+  [[ -s "$DEV_DIR/public-data/menu.json" \
+    && -s "$DEV_DIR/public-data/settings.json" \
+    && -s "$DEV_DIR/public-data/navigation.json" \
+    && -s "$DEV_DIR/public-data/about.json" \
+    && -s "$DEV_DIR/public-data/footer-columns.json" ]]
 }
 
 warn_dev_parity_mode() {

@@ -129,12 +129,14 @@ class SettingsRoutes {
 
             $this->sendNoCacheHeaders();
             echo json_encode($row);
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             // Return empty settings if table doesn't exist
-            if (strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($e instanceof PDOException && strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing site_settings table', ['error' => $e->getMessage()]);
                 $this->sendNoCacheHeaders();
                 echo json_encode([]);
+            } elseif (DevPublicSnapshot::respond('site-settings', $e)) {
+                return;
             } else {
                 throw $e;
             }
@@ -234,12 +236,14 @@ class SettingsRoutes {
             
             header('Cache-Control: public, max-age=300');
             echo json_encode($results);
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             // Return empty array if table doesn't exist
-            if (strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($e instanceof PDOException && strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing navigation_links table', ['error' => $e->getMessage()]);
                 header('Cache-Control: public, max-age=300');
                 echo json_encode([]);
+            } elseif (DevPublicSnapshot::respond('navigation', $e)) {
+                return;
             } else {
                 throw $e;
             }
@@ -266,12 +270,14 @@ class SettingsRoutes {
             
             header('Cache-Control: public, max-age=300');
             echo json_encode($results);
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             // Return empty array if table doesn't exist
-            if (strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($e instanceof PDOException && strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing business_hours table', ['error' => $e->getMessage()]);
                 header('Cache-Control: public, max-age=300');
                 echo json_encode([]);
+            } elseif (DevPublicSnapshot::respond('business-hours', $e)) {
+                return;
             } else {
                 throw $e;
             }
@@ -291,12 +297,14 @@ class SettingsRoutes {
             
             header('Cache-Control: public, max-age=300');
             echo json_encode($row);
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             // Return empty object if table doesn't exist
-            if (strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($e instanceof PDOException && strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing about_content table', ['error' => $e->getMessage()]);
                 header('Cache-Control: public, max-age=300');
                 echo json_encode(new stdClass());
+            } elseif (DevPublicSnapshot::respond('about', $e)) {
+                return;
             } else {
                 throw $e;
             }
@@ -349,12 +357,14 @@ class SettingsRoutes {
             
             header('Cache-Control: public, max-age=300');
             echo json_encode(array_values($columns));
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             // Return empty array if tables don't exist
-            if (strpos($e->getMessage(), "doesn't exist") !== false) {
+            if ($e instanceof PDOException && strpos($e->getMessage(), "doesn't exist") !== false) {
                 Logger::warning('Missing footer tables', ['error' => $e->getMessage()]);
                 header('Cache-Control: public, max-age=300');
                 echo json_encode([]);
+            } elseif (DevPublicSnapshot::respond('footer-columns', $e)) {
+                return;
             } else {
                 throw $e;
             }

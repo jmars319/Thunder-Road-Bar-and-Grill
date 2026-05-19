@@ -18,6 +18,26 @@ class DevPublicSnapshot {
         return is_file($path) && filesize($path) > 0;
     }
 
+    public static function load($name) {
+        if (!self::enabled() || !self::has($name)) {
+            return null;
+        }
+
+        $path = self::pathFor($name);
+        $raw = file_get_contents($path);
+        if (!is_string($raw)) {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Logger::warning('Dev public snapshot is invalid JSON', ['snapshot' => $name]);
+            return null;
+        }
+
+        return $decoded;
+    }
+
     public static function respond($name, ?Throwable $reason = null) {
         if (!self::enabled() || !self::has($name)) {
             return false;

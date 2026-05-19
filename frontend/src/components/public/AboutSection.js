@@ -27,6 +27,31 @@ function buildMapsEmbedUrlFromAddress(address) {
   return `https://www.google.com/maps?q=${q}&output=embed`;
 }
 
+function extractGooglePlaceId(...values) {
+  for (const value of values) {
+    if (!value) continue;
+    const raw = String(value);
+    const patterns = [
+      /[?&]placeid=([^&]+)/i,
+      /[?&]place_id=([^&]+)/i,
+      /query=place_id:([^&]+)/i,
+    ];
+    for (const pattern of patterns) {
+      const match = raw.match(pattern);
+      if (match?.[1]) {
+        return decodeURIComponent(match[1]);
+      }
+    }
+  }
+  return null;
+}
+
+function buildVenueMapQuery(siteSettings, about) {
+  const name = siteSettings?.business_name || 'Thunder Road Bar and Grill';
+  const address = about?.address || siteSettings?.address || '';
+  return [name, address].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+}
+
 export default function AboutSection() {
   // NOTE: This component uses `bg-surface` and `bg-surface-warm` tokens for
   // panels and page background. Edit tokens in `custom-styles.css` for global
@@ -80,37 +105,15 @@ export default function AboutSection() {
     }
     if (!embedSrc) return null;
 
-    let destinationUrl = embedSrc;
-    try {
-      if (/\/maps\/embed/i.test(embedSrc)) {
-        destinationUrl = embedSrc.replace('/embed?', '/?');
-      } else if (/\boutput=embed\b/i.test(embedSrc)) {
-        destinationUrl = embedSrc.replace(/&?output=embed/i, '');
-      }
-    } catch (e) {
-      destinationUrl = embedSrc;
-    }
+    const placeId = extractGooglePlaceId(siteSettings?.google, siteSettings?.google_url, siteSettings?.social?.google, embedSrc);
+    const venueQuery = buildVenueMapQuery(siteSettings, about) || 'Thunder Road Bar and Grill Winston-Salem NC';
+    const encodedVenueQuery = encodeURIComponent(venueQuery);
+    const placeIdQuery = placeId ? `&query_place_id=${encodeURIComponent(placeId)}` : '';
+    const destinationPlaceIdQuery = placeId ? `&destination_place_id=${encodeURIComponent(placeId)}` : '';
 
-    let placeId = null;
-    try {
-      const m1 = embedSrc.match(/[?&]place_id=([^&]+)/i);
-      const m2 = embedSrc.match(/query=place_id:([^&]+)/i);
-      if (m1 && m1[1]) placeId = decodeURIComponent(m1[1]);
-      else if (m2 && m2[1]) placeId = decodeURIComponent(m2[1]);
-    } catch (e) {
-      placeId = null;
-    }
-
-    let directionsUrl;
-    if (placeId) {
-      directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=place_id:${encodeURIComponent(placeId)}`;
-    } else if (siteSettings?.address) {
-      directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(siteSettings.address)}`;
-    } else {
-      directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationUrl || '')}`;
-    }
-
-    const previewQuery = siteSettings?.address || (!isUrl && raw ? raw : '');
+    const destinationUrl = `https://www.google.com/maps/search/?api=1&query=${encodedVenueQuery}${placeIdQuery}`;
+    const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedVenueQuery}${destinationPlaceIdQuery}`;
+    const previewQuery = venueQuery || (!isUrl && raw ? raw : '');
 
     return { embedSrc, destinationUrl, directionsUrl, previewQuery };
   }, [about, siteSettings]);

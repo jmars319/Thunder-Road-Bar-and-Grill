@@ -15,6 +15,11 @@ trap cleanup EXIT
 
 bash "$SCRIPT_DIR/dev-stop.sh" >/dev/null 2>&1 || true
 export DEV_BROWSER_OPEN=0
+# Keep rate limiting enabled while allowing the e2e runner's single loopback IP
+# to make repeated public requests during CLS and route-smoke passes.
+export RATE_LIMIT_GLOBAL="${RATE_LIMIT_GLOBAL:-2000}"
+export RATE_LIMIT_PUBLIC="${RATE_LIMIT_PUBLIC:-1000}"
+export RATE_LIMIT_STRICT="${RATE_LIMIT_STRICT:-500}"
 bash "$SCRIPT_DIR/dev-sync-public-data.sh" >/dev/null 2>&1 || log_warn "Unable to refresh public snapshots; local database or existing snapshots must cover public routes."
 bash "$SCRIPT_DIR/dev-start.sh"
 wait_for_frontend_ready 60
